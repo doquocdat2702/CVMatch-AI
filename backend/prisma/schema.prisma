@@ -1,11 +1,100 @@
 // Prisma schema cho CVMatch-AI
-// Models sẽ được định nghĩa ở task sau.
+// Phần 1: enum + nhóm model User / Company / Profile
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
+}
+
+// ===== ENUM =====
+
+enum CvStatus {
+  UPLOADED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum RequirementType {
+  REQUIRED
+  PREFERRED
+  OPTIONAL
+}
+
+enum MatchStatus {
+  SUPPORTED
+  UNCERTAIN
+  NOT_FOUND
+}
+
+enum ApplicationStatus {
+  APPLIED
+  REVIEWING
+  ACCEPTED
+  REJECTED
+}
+
+// ===== MODEL =====
+
+model Role {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique @db.VarChar(191) // ADMIN | CANDIDATE | RECRUITER
+  description String? @db.VarChar(255)
+
+  users User[]
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique @db.VarChar(191)
+  password  String   @db.VarChar(255)
+  isActive  Boolean  @default(true)
+  roleId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  role             Role              @relation(fields: [roleId], references: [id])
+  candidateProfile CandidateProfile?
+  recruiterProfile RecruiterProfile?
+
+  @@index([roleId])
+}
+
+model Company {
+  id          Int     @id @default(autoincrement())
+  name        String  @db.VarChar(255)
+  description String? @db.Text
+  address     String? @db.VarChar(255)
+  website     String? @db.VarChar(255)
+
+  recruiters RecruiterProfile[]
+}
+
+model RecruiterProfile {
+  id        Int     @id @default(autoincrement())
+  userId    Int     @unique
+  fullName  String  @db.VarChar(255)
+  phone     String? @db.VarChar(50)
+  position  String? @db.VarChar(255)
+  companyId Int
+
+  user    User    @relation(fields: [userId], references: [id])
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+}
+
+model CandidateProfile {
+  id       Int     @id @default(autoincrement())
+  userId   Int     @unique
+  fullName String  @db.VarChar(255)
+  phone    String? @db.VarChar(50)
+  address  String? @db.VarChar(255)
+  headline String? @db.VarChar(255)
+
+  user User @relation(fields: [userId], references: [id])
 }
