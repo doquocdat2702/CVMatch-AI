@@ -72,6 +72,7 @@ model Company {
   website     String? @db.VarChar(255)
 
   recruiters RecruiterProfile[]
+  jobs       Job[]
 }
 
 model RecruiterProfile {
@@ -84,6 +85,7 @@ model RecruiterProfile {
 
   user    User    @relation(fields: [userId], references: [id])
   company Company @relation(fields: [companyId], references: [id])
+  jobs    Job[]
 
   @@index([companyId])
 }
@@ -96,11 +98,12 @@ model CandidateProfile {
   address  String? @db.VarChar(255)
   headline String? @db.VarChar(255)
 
-  user        User                  @relation(fields: [userId], references: [id])
-  cvs         CV[]
-  skills      CandidateSkill[]
-  experiences CandidateExperience[]
-  educations  CandidateEducation[]
+  user         User                  @relation(fields: [userId], references: [id])
+  cvs          CV[]
+  skills       CandidateSkill[]
+  experiences  CandidateExperience[]
+  educations   CandidateEducation[]
+  applications Application[]
 }
 
 model CV {
@@ -126,6 +129,7 @@ model Skill {
   aliases String @db.Text // các alias cách nhau bởi dấu phẩy
 
   candidateSkills CandidateSkill[]
+  jobRequirements JobRequirement[]
 }
 
 model CandidateSkill {
@@ -175,4 +179,56 @@ model CandidateEducation {
   candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id])
 
   @@index([candidateProfileId])
+}
+
+model Job {
+  id                 Int      @id @default(autoincrement())
+  title              String   @db.VarChar(255)
+  description        String   @db.LongText // JD gốc
+  location           String?  @db.VarChar(255)
+  isOpen             Boolean  @default(true)
+  companyId          Int
+  recruiterProfileId Int
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  company          Company          @relation(fields: [companyId], references: [id])
+  recruiterProfile RecruiterProfile @relation(fields: [recruiterProfileId], references: [id])
+  requirements     JobRequirement[]
+  applications     Application[]
+
+  @@index([companyId])
+  @@index([recruiterProfileId])
+}
+
+model JobRequirement {
+  id             Int             @id @default(autoincrement())
+  jobId          Int
+  rawText        String          @db.Text // câu gốc trong JD
+  normalizedName String          @db.VarChar(255)
+  skillId        Int?
+  type           RequirementType
+  minYears       Int?
+
+  job   Job    @relation(fields: [jobId], references: [id])
+  skill Skill? @relation(fields: [skillId], references: [id])
+
+  @@index([jobId])
+  @@index([skillId])
+}
+
+model Application {
+  id                 Int               @id @default(autoincrement())
+  candidateProfileId Int
+  jobId              Int
+  status             ApplicationStatus @default(APPLIED)
+  coverage           Float?
+  appliedAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id])
+  job              Job              @relation(fields: [jobId], references: [id])
+
+  @@unique([candidateProfileId, jobId])
+  @@index([jobId])
 }
