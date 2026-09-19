@@ -96,5 +96,83 @@ model CandidateProfile {
   address  String? @db.VarChar(255)
   headline String? @db.VarChar(255)
 
-  user User @relation(fields: [userId], references: [id])
+  user        User                  @relation(fields: [userId], references: [id])
+  cvs         CV[]
+  skills      CandidateSkill[]
+  experiences CandidateExperience[]
+  educations  CandidateEducation[]
+}
+
+model CV {
+  id                 Int       @id @default(autoincrement())
+  candidateProfileId Int
+  fileName           String    @db.VarChar(255)
+  filePath           String    @db.VarChar(500)
+  fileType           String    @db.VarChar(10) // PDF | DOCX
+  rawText            String?   @db.LongText
+  status             CvStatus  @default(UPLOADED)
+  errorMessage       String?   @db.Text
+  uploadedAt         DateTime  @default(now())
+  parsedAt           DateTime?
+
+  candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id])
+
+  @@index([candidateProfileId])
+}
+
+model Skill {
+  id      Int    @id @default(autoincrement())
+  name    String @unique @db.VarChar(191) // tên đã chuẩn hóa
+  aliases String @db.Text // các alias cách nhau bởi dấu phẩy
+
+  candidateSkills CandidateSkill[]
+}
+
+model CandidateSkill {
+  id                 Int     @id @default(autoincrement())
+  candidateProfileId Int
+  skillId            Int?
+  rawName            String  @db.VarChar(255) // tên kỹ năng như xuất hiện trong CV
+  evidence           String? @db.Text
+  source             String  @db.VarChar(20) // RULE | NLP | MANUAL
+  isConfirmed        Boolean @default(false)
+
+  candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id])
+  skill            Skill?           @relation(fields: [skillId], references: [id])
+
+  @@index([candidateProfileId])
+  @@index([skillId])
+}
+
+model CandidateExperience {
+  id                 Int       @id @default(autoincrement())
+  candidateProfileId Int
+  position           String    @db.VarChar(255)
+  companyName        String    @db.VarChar(255)
+  startDate          DateTime?
+  endDate            DateTime?
+  description        String?   @db.Text
+  evidence           String?   @db.Text
+  source             String    @db.VarChar(20) // RULE | NLP | MANUAL
+  isConfirmed        Boolean   @default(false)
+
+  candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id])
+
+  @@index([candidateProfileId])
+}
+
+model CandidateEducation {
+  id                 Int       @id @default(autoincrement())
+  candidateProfileId Int
+  school             String    @db.VarChar(255)
+  major              String    @db.VarChar(255)
+  degree             String    @db.VarChar(255)
+  startDate          DateTime?
+  endDate            DateTime?
+  source             String    @db.VarChar(20) // RULE | NLP | MANUAL
+  isConfirmed        Boolean   @default(false)
+
+  candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id])
+
+  @@index([candidateProfileId])
 }
