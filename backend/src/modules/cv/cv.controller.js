@@ -37,4 +37,13 @@ async function remove(req, res, next) {
   }
 }
 
-module.exports = { upload, list, detail, remove };
+async function extract(req, res, next) {
+  try {
+    const data = await cvService.extractCvText(req.user.userId, req.params.id);
+    return success(res, data, 'Trích xuất nội dung CV thành công');
+  } catch (err) {
+    return next(err);
+  }
+}
+
+module.exports = { upload, list, detail, remove, extract };

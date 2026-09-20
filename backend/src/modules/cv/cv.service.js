@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const prisma = require('../../config/prisma');
+const { extractText } = require('../ai/text-extraction');
 
 function createError(message, statusCode) {
   const err = new Error(message);
@@ -108,4 +109,45 @@ async function deleteCv(userId, cvId) {
   return { id: cv.id };
 }
 
-module.exports = { createCv, listMyCvs, getCvDetail, deleteCv };
+// Trích xuất text từ file CV và cập nhật trạng thái xử lý
+async function extractCvText(userId, cvId) {
+  const cv = await findOwnedCv(userId, cvId);
+
+  if (cv.status === 'PROCESSING') {
+    throw createError('CV đang được xử lý, vui lòng đợi', 400);
+  }
+
+  await prisma.cV.update({
+    where: { id: cv.id },
+    data: { status: 'PROCESSING', errorMessage: null },
+  });
+
+  const absolutePath = path.resolve(process.cwd(), cv.filePath);
+
+  try {
+    const rawText = await extractText(absolutePath, cv.fileType);
+
+    return await prisma.cV.update({
+      where: { id: cv.id },
+      data: {
+        rawText,
+        status: 'COMPLETED',
+        errorMessage: null,
+        parsedAt: new Date(),
+      },
+    });
+  } catch (err) {
+    // Thất bại thì đánh dấu FAILED, giữ nguyên file vật lý
+    await prisma.cV.update({
+      where: { id: cv.id },
+      data: {
+        status: 'FAILED',
+        errorMessage: err.message,
+        parsedAt: null,
+      },
+    });
+    throw err;
+  }
+}
+
+module.exports = { createCv, listMyCvs, getCvDetail, deleteCv, extractCvText };
