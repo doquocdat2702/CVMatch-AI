@@ -19,4 +19,27 @@ async function login(req, res, next) {
   }
 }
 
-module.exports = { register, login };
+async function me(req, res, next) {
+  try {
+    const data = await authService.getMe(req.user.userId);
+    return success(res, data, 'Lấy thông tin tài khoản thành công');
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function changePassword(req, res, next) {
+  try {
+    const data = await authService.changePassword(req.user.userId, req.body || {});
+    return success(res, data, 'Đổi mật khẩu thành công');
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// Hệ thống không lưu token phía server, client tự xóa token khi đăng xuất
+async function logout(req, res) {
+  return success(res, null, 'Đăng xuất thành công');
+}
+
+module.exports = { register, login, me, changePassword, logout };

@@ -98,4 +98,65 @@ async function login({ email, password }) {
   };
 }
 
-module.exports = { register, login };
+// Thông tin tài khoản đang đăng nhập
+async function getMe(userId) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      role: true,
+      candidateProfile: true,
+      recruiterProfile: true,
+    },
+  });
+
+  if (!user) {
+    throw createError('Không tìm thấy tài khoản', 404);
+  }
+
+  const result = {
+    id: user.id,
+    email: user.email,
+    role: user.role.name,
+  };
+
+  if (user.candidateProfile) {
+    result.candidateProfile = user.candidateProfile;
+  }
+  if (user.recruiterProfile) {
+    result.recruiterProfile = user.recruiterProfile;
+  }
+
+  return result;
+}
+
+async function changePassword(userId, { oldPassword, newPassword }) {
+  if (typeof oldPassword !== 'string' || !oldPassword) {
+    throw createError('Mật khẩu cũ không được để trống', 400);
+  }
+  if (typeof newPassword !== 'string' || newPassword.length < MIN_PASSWORD_LENGTH) {
+    throw createError(`Mật khẩu mới phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự`, 400);
+  }
+  if (newPassword === oldPassword) {
+    throw createError('Mật khẩu mới phải khác mật khẩu cũ', 400);
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw createError('Không tìm thấy tài khoản', 404);
+  }
+
+  const isMatch = await comparePassword(oldPassword, user.password);
+  if (!isMatch) {
+    throw createError('Mật khẩu cũ không đúng', 400);
+  }
+
+  const hashedPassword = await hashPassword(newPassword);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { password: hashedPassword },
+  });
+
+  return { id: user.id, email: user.email };
+}
+
+module.exports = { register, login, getMe, changePassword };
