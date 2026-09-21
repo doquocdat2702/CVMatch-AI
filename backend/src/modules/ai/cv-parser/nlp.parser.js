@@ -6,6 +6,12 @@ const API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 const MAX_TOKENS = 8000;
 const TIMEOUT_MS = 60000;
 const MAX_RETRY = 2; // tối đa 2 lần thử lại, tổng cộng 3 lần gọi
+// Chờ giữa các lần thử, vì lỗi 429/503 của API là giới hạn theo phút
+const RETRY_DELAY_MS = [3000, 8000];
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 // Cấu trúc rỗng, dùng khi không gọi được LLM hoặc kết quả không hợp lệ
 function emptyResult() {
@@ -274,7 +280,7 @@ async function parseByNlp(rawText, sections) {
 
   if (!env.GEMINI_API_KEY) {
     console.warn('[NLP] Thiếu GEMINI_API_KEY trong .env, bỏ qua bước NLP');
-    return emptyResult();
+    return { ...emptyResult(), failed: true };
   }
 
   const userPrompt = buildUserPrompt(rawText, sections);
@@ -293,8 +299,9 @@ async function parseByNlp(rawText, sections) {
           `[NLP] Lần ${attempt + 1}: JSON trả về không hợp lệ - ${parseErr.message}`
         );
         if (attempt === MAX_RETRY) {
-          return emptyResult();
+          return { ...emptyResult(), failed: true };
         }
+        await delay(RETRY_DELAY_MS[attempt]);
       }
     } catch (err) {
       const reason = err.name === 'AbortError' ? `quá ${TIMEOUT_MS}ms không phản hồi` : err.message;
@@ -307,12 +314,13 @@ async function parseByNlp(rawText, sections) {
       }
 
       if (attempt === MAX_RETRY) {
-        return emptyResult();
+        return { ...emptyResult(), failed: true };
       }
+      await delay(RETRY_DELAY_MS[attempt]);
     }
   }
 
-  return emptyResult();
+  return { ...emptyResult(), failed: true };
 }
 
 module.exports = { parseByNlp };

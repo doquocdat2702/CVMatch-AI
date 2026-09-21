@@ -46,4 +46,13 @@ async function extract(req, res, next) {
   }
 }
 
-module.exports = { upload, list, detail, remove, extract };
+async function parse(req, res, next) {
+  try {
+    const data = await cvService.parseCvToProfile(req.user.userId, req.params.id);
+    return success(res, data, 'Bóc tách CV thành công');
+  } catch (err) {
+    return next(err);
+  }
+}
+
+module.exports = { upload, list, detail, remove, extract, parse };

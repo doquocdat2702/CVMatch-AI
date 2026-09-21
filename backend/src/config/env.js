@@ -21,7 +21,7 @@ const env = {
   // Dùng cho bước NLP parsing, không bắt buộc:
   // thiếu key thì hệ thống tự lùi về phần rule-based
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || null,
-  GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-3.6-flash',
+  GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
 };
 
 module.exports = env;

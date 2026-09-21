@@ -11,6 +11,7 @@ router.use(authenticate, authorize('CANDIDATE'));
 router.post('/upload', uploadSingleFile, cvController.upload);
 router.get('/', cvController.list);
 router.post('/:id/extract', cvController.extract);
+router.post('/:id/parse', cvController.parse);
 router.get('/:id', cvController.detail);
 router.delete('/:id', cvController.remove);
 

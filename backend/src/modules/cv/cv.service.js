@@ -3,6 +3,7 @@ const path = require('path');
 
 const prisma = require('../../config/prisma');
 const { extractText } = require('../ai/text-extraction');
+const { parseCV } = require('../ai/cv-parser/hybrid.parser');
 
 function createError(message, statusCode) {
   const err = new Error(message);
@@ -150,4 +151,128 @@ async function extractCvText(userId, cvId) {
   }
 }
 
-module.exports = { createCv, listMyCvs, getCvDetail, deleteCv, extractCvText };
+// Các cột dưới DB đang là NOT NULL, NLP không bóc được thì lưu chuỗi rỗng
+function textOrEmpty(value) {
+  return typeof value === 'string' && value.trim() ? value.trim() : '';
+}
+
+// Bóc tách CV đã trích xuất text và ghi kết quả xuống database
+async function parseCvToProfile(userId, cvId) {
+  const cv = await findOwnedCv(userId, cvId);
+
+  if (cv.status !== 'COMPLETED') {
+    throw createError(
+      'CV chưa trích xuất nội dung thành công, hãy gọi /extract trước khi bóc tách',
+      400
+    );
+  }
+  if (!cv.rawText || !cv.rawText.trim()) {
+    throw createError('CV không có nội dung text để bóc tách', 400);
+  }
+
+  const profile = await getCandidateProfile(userId);
+
+  // Gọi parser trước, xong mới mở transaction để không giữ kết nối DB trong lúc chờ LLM
+  const parsed = await parseCV(cv.rawText);
+
+  // NLP hỏng mà không bóc được gì thì giữ nguyên dữ liệu cũ, tránh xóa trắng hồ sơ
+  const nothingParsed =
+    parsed.skills.length === 0 &&
+    parsed.experiences.length === 0 &&
+    parsed.educations.length === 0;
+
+  if (parsed.errors.nlp && nothingParsed) {
+    throw createError(
+      'Dịch vụ NLP đang không khả dụng, chưa bóc tách được CV. Dữ liệu cũ được giữ nguyên, vui lòng thử lại sau',
+      503
+    );
+  }
+
+  return prisma.$transaction(async (tx) => {
+    // 1. Chỉ xóa bản ghi chưa được người dùng xác nhận
+    const where = { candidateProfileId: profile.id, isConfirmed: false };
+    await tx.candidateSkill.deleteMany({ where });
+    await tx.candidateExperience.deleteMany({ where });
+    await tx.candidateEducation.deleteMany({ where });
+
+    // 2. Ghi bản ghi mới, luôn ở trạng thái chưa xác nhận
+    for (const skill of parsed.skills) {
+      await tx.candidateSkill.create({
+        data: {
+          candidateProfileId: profile.id,
+          rawName: skill.rawName,
+          evidence: skill.evidence,
+          source: skill.source,
+          isConfirmed: false,
+        },
+      });
+    }
+
+    for (const experience of parsed.experiences) {
+      await tx.candidateExperience.create({
+        data: {
+          candidateProfileId: profile.id,
+          position: textOrEmpty(experience.position),
+          companyName: textOrEmpty(experience.companyName),
+          startDate: experience.startDate,
+          endDate: experience.endDate,
+          description: experience.description,
+          evidence: experience.evidence,
+          source: experience.source,
+          isConfirmed: false,
+        },
+      });
+    }
+
+    for (const education of parsed.educations) {
+      await tx.candidateEducation.create({
+        data: {
+          candidateProfileId: profile.id,
+          school: textOrEmpty(education.school),
+          major: textOrEmpty(education.major),
+          degree: textOrEmpty(education.degree),
+          startDate: education.startDate,
+          endDate: education.endDate,
+          source: education.source,
+          isConfirmed: false,
+        },
+      });
+    }
+
+    // 3. Chỉ điền vào hồ sơ những trường đang trống, không ghi đè dữ liệu người dùng tự nhập
+    const profileData = {};
+    if (!profile.fullName && parsed.fullName) {
+      profileData.fullName = parsed.fullName;
+    }
+    if (!profile.phone && parsed.phone) {
+      profileData.phone = parsed.phone;
+    }
+    if (!profile.headline && parsed.headline) {
+      profileData.headline = parsed.headline;
+    }
+
+    const updatedProfile =
+      Object.keys(profileData).length > 0
+        ? await tx.candidateProfile.update({ where: { id: profile.id }, data: profileData })
+        : profile;
+
+    const [skills, experiences, educations] = await Promise.all([
+      tx.candidateSkill.findMany({ where: { candidateProfileId: profile.id } }),
+      tx.candidateExperience.findMany({ where: { candidateProfileId: profile.id } }),
+      tx.candidateEducation.findMany({ where: { candidateProfileId: profile.id } }),
+    ]);
+
+    return {
+      cvId: cv.id,
+      profile: updatedProfile,
+      contact: { email: parsed.email, phone: parsed.phone, urls: parsed.urls },
+      totalYears: parsed.totalYears,
+      skills,
+      experiences,
+      educations,
+      parserErrors: parsed.errors,
+    };
+  });
+}
+
+module.exports = { createCv, listMyCvs, getCvDetail, deleteCv, extractCvText, parseCvToProfile };
