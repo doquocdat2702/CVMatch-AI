@@ -18,6 +18,10 @@ const env = {
   JWT_SECRET: process.env.JWT_SECRET,
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '1d',
   UPLOAD_DIR: process.env.UPLOAD_DIR || 'uploads',
+  // Dùng cho bước NLP parsing, không bắt buộc:
+  // thiếu key thì hệ thống tự lùi về phần rule-based
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY || null,
+  GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-3.6-flash',
 };
 
 module.exports = env;
