@@ -4,6 +4,11 @@ const path = require('path');
 const prisma = require('../../config/prisma');
 const { extractText } = require('../ai/text-extraction');
 const { parseCV } = require('../ai/cv-parser/hybrid.parser');
+const {
+  normalizeSkillName,
+  resolveSkillId,
+  loadSkillIndex,
+} = require('../ai/normalization/normalizer');
 
 function createError(message, statusCode) {
   const err = new Error(message);
@@ -188,6 +193,15 @@ async function parseCvToProfile(userId, cvId) {
     );
   }
 
+  // Chuẩn hóa tên kỹ năng và tra skillId trước, nạp bảng Skill đúng một lần
+  const skillIndex = await loadSkillIndex();
+  const normalizedSkills = [];
+  for (const skill of parsed.skills) {
+    const { canonical, matched } = normalizeSkillName(skill.rawName);
+    const skillId = await resolveSkillId(canonical, skillIndex);
+    normalizedSkills.push({ ...skill, canonical, matchedDictionary: matched, skillId });
+  }
+
   return prisma.$transaction(async (tx) => {
     // 1. Chỉ xóa bản ghi chưa được người dùng xác nhận
     const where = { candidateProfileId: profile.id, isConfirmed: false };
@@ -196,11 +210,13 @@ async function parseCvToProfile(userId, cvId) {
     await tx.candidateEducation.deleteMany({ where });
 
     // 2. Ghi bản ghi mới, luôn ở trạng thái chưa xác nhận
-    for (const skill of parsed.skills) {
+    for (const skill of normalizedSkills) {
       await tx.candidateSkill.create({
         data: {
           candidateProfileId: profile.id,
+          // Luôn giữ tên gốc trong CV, skillId chỉ gán khi khớp từ điển và bảng Skill
           rawName: skill.rawName,
+          skillId: skill.skillId,
           evidence: skill.evidence,
           source: skill.source,
           isConfirmed: false,
@@ -257,7 +273,10 @@ async function parseCvToProfile(userId, cvId) {
         : profile;
 
     const [skills, experiences, educations] = await Promise.all([
-      tx.candidateSkill.findMany({ where: { candidateProfileId: profile.id } }),
+      tx.candidateSkill.findMany({
+        where: { candidateProfileId: profile.id },
+        include: { skill: true },
+      }),
       tx.candidateExperience.findMany({ where: { candidateProfileId: profile.id } }),
       tx.candidateEducation.findMany({ where: { candidateProfileId: profile.id } }),
     ]);
