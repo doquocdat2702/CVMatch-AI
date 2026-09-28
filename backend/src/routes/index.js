@@ -5,6 +5,7 @@ const candidateRoute = require('../modules/candidate/candidate.route');
 const cvRoute = require('../modules/cv/cv.route');
 const recruiterRoute = require('../modules/recruiter/recruiter.route');
 const companyRoute = require('../modules/company/company.route');
+const jobRoute = require('../modules/job/job.route');
 
 const router = express.Router();
 
@@ -17,5 +18,6 @@ router.use('/candidates', candidateRoute);
 router.use('/cvs', cvRoute);
 router.use('/recruiters', recruiterRoute);
 router.use('/companies', companyRoute);
+router.use('/jobs', jobRoute);
 
 module.exports = router;
