@@ -215,6 +215,7 @@ async function deleteJob(userId, jobId) {
 }
 
 module.exports = {
+  getOwnedJob,
   createJob,
   listOpenJobs,
   listMyJobs,
