@@ -1,5 +1,9 @@
 const prisma = require('../../config/prisma');
 const { matchJobWithCandidate } = require('./matching/matcher');
+const {
+  recommendJobsForCandidate,
+  recommendCandidatesForJob,
+} = require('./recommendation/recommend.service');
 const { success } = require('../../utils/response');
 
 function createError(message, statusCode) {
@@ -59,4 +63,36 @@ async function getMatching(req, res, next) {
   }
 }
 
-module.exports = { getMatching };
+// Ứng viên xem job gợi ý cho chính mình
+async function getRecommendedJobs(req, res, next) {
+  try {
+    const profile = await prisma.candidateProfile.findUnique({
+      where: { userId: req.user.userId },
+      select: { id: true },
+    });
+    if (!profile) {
+      throw createError('Không tìm thấy hồ sơ ứng viên', 404);
+    }
+
+    const data = await recommendJobsForCandidate(profile.id, req.query.limit);
+    return success(res, data, data.message || 'Lấy danh sách job gợi ý thành công');
+  } catch (err) {
+    return next(err);
+  }
+}
+
+// Nhà tuyển dụng xem ứng viên gợi ý cho job thuộc công ty mình
+async function getRecommendedCandidates(req, res, next) {
+  try {
+    const jobId = parseId(req.params.jobId, 'Mã tin tuyển dụng');
+
+    await ensureCanViewMatching(req.user, jobId);
+
+    const data = await recommendCandidatesForJob(jobId, req.query.limit);
+    return success(res, data, data.message || 'Lấy danh sách ứng viên gợi ý thành công');
+  } catch (err) {
+    return next(err);
+  }
+}
+
+module.exports = { getMatching, getRecommendedJobs, getRecommendedCandidates };

@@ -13,4 +13,18 @@ router.get(
   aiController.getMatching
 );
 
+// Gợi ý dựa trên matcher, sắp theo coverage giảm dần, luôn kèm evidence và note
+router.get(
+  '/recommended-jobs',
+  authenticate,
+  authorize('CANDIDATE'),
+  aiController.getRecommendedJobs
+);
+router.get(
+  '/recommended-candidates/:jobId',
+  authenticate,
+  authorize('RECRUITER'),
+  aiController.getRecommendedCandidates
+);
+
 module.exports = router;
