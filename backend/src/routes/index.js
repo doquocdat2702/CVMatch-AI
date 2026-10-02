@@ -6,6 +6,7 @@ const cvRoute = require('../modules/cv/cv.route');
 const recruiterRoute = require('../modules/recruiter/recruiter.route');
 const companyRoute = require('../modules/company/company.route');
 const jobRoute = require('../modules/job/job.route');
+const aiRoute = require('../modules/ai/ai.route');
 
 const router = express.Router();
 
@@ -19,5 +20,6 @@ router.use('/cvs', cvRoute);
 router.use('/recruiters', recruiterRoute);
 router.use('/companies', companyRoute);
 router.use('/jobs', jobRoute);
+router.use('/matching', aiRoute);
 
 module.exports = router;
