@@ -294,4 +294,12 @@ async function parseCvToProfile(userId, cvId) {
   });
 }
 
-module.exports = { createCv, listMyCvs, getCvDetail, deleteCv, extractCvText, parseCvToProfile };
+module.exports = {
+  createCv,
+  listMyCvs,
+  getCvDetail,
+  deleteCv,
+  extractCvText,
+  parseCvToProfile,
+  removeFile,
+};

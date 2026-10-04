@@ -9,6 +9,7 @@ const jobRoute = require('../modules/job/job.route');
 const aiRoute = require('../modules/ai/ai.route');
 const notificationRoute = require('../modules/notification/notification.route');
 const applicationRoute = require('../modules/application/application.route');
+const adminRoute = require('../modules/admin/admin.route');
 
 const router = express.Router();
 
@@ -25,5 +26,6 @@ router.use('/jobs', jobRoute);
 router.use('/matching', aiRoute);
 router.use('/notifications', notificationRoute);
 router.use('/applications', applicationRoute);
+router.use('/admin', adminRoute);
 
 module.exports = router;
