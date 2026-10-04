@@ -60,6 +60,7 @@ model User {
   role             Role              @relation(fields: [roleId], references: [id])
   candidateProfile CandidateProfile?
   recruiterProfile RecruiterProfile?
+  notifications    Notification[]
 
   @@index([roleId])
 }
@@ -228,7 +229,25 @@ model Application {
 
   candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id])
   job              Job              @relation(fields: [jobId], references: [id])
+  notifications    Notification[]
 
   @@unique([candidateProfileId, jobId])
   @@index([jobId])
+}
+
+model Notification {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  type          String   @db.VarChar(50) // NEW_APPLICATION | APPLICATION_STATUS_CHANGED
+  message       String   @db.Text
+  applicationId Int?
+  isRead        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  user        User         @relation(fields: [userId], references: [id])
+  // Đơn bị xóa (ứng viên rút đơn) thì giữ thông báo, chỉ bỏ liên kết
+  application Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead])
+  @@index([applicationId])
 }
