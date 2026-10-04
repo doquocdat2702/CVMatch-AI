@@ -8,6 +8,7 @@ const companyRoute = require('../modules/company/company.route');
 const jobRoute = require('../modules/job/job.route');
 const aiRoute = require('../modules/ai/ai.route');
 const notificationRoute = require('../modules/notification/notification.route');
+const applicationRoute = require('../modules/application/application.route');
 
 const router = express.Router();
 
@@ -23,5 +24,6 @@ router.use('/companies', companyRoute);
 router.use('/jobs', jobRoute);
 router.use('/matching', aiRoute);
 router.use('/notifications', notificationRoute);
+router.use('/applications', applicationRoute);
 
 module.exports = router;
