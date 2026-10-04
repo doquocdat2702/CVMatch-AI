@@ -1,9 +1,12 @@
 const prisma = require('../../config/prisma');
 const { matchJobWithCandidate } = require('../ai/matching/matcher');
 const { COVERAGE_NOTE } = require('../ai/matching/coverage');
+const { getOwnedJob } = require('../job/job.service');
 const {
   NOTIFICATION_TYPES,
+  APPLICATION_STATUS_LABELS,
   buildNewApplicationMessage,
+  buildStatusChangedMessage,
   createNotification,
 } = require('../notification/notification.service');
 
@@ -166,4 +169,198 @@ async function withdrawApplication(userId, applicationId) {
   return { id };
 }
 
-module.exports = { applyForJob, listMyApplications, withdrawApplication };
+// ===== Phía recruiter =====
+
+const APPLICATION_STATUSES = ['APPLIED', 'REVIEWING', 'ACCEPTED', 'REJECTED'];
+
+// Luồng hợp lệ: APPLIED -> REVIEWING -> ACCEPTED | REJECTED, và APPLIED -> REJECTED.
+// ACCEPTED, REJECTED là trạng thái cuối, không đổi tiếp.
+const STATUS_TRANSITIONS = {
+  APPLIED: ['REVIEWING', 'REJECTED'],
+  REVIEWING: ['ACCEPTED', 'REJECTED'],
+  ACCEPTED: [],
+  REJECTED: [],
+};
+
+function parseStatus(value) {
+  const status = typeof value === 'string' ? value.trim().toUpperCase() : '';
+  if (!APPLICATION_STATUSES.includes(status)) {
+    throw createError(`Trạng thái phải là một trong: ${APPLICATION_STATUSES.join(', ')}`, 400);
+  }
+  return status;
+}
+
+function statusLabel(status) {
+  return APPLICATION_STATUS_LABELS[status] || status;
+}
+
+async function getRecruiterProfile(userId) {
+  const profile = await prisma.recruiterProfile.findUnique({ where: { userId } });
+  if (!profile) {
+    throw createError('Không tìm thấy hồ sơ nhà tuyển dụng', 404);
+  }
+  return profile;
+}
+
+// Recruiter chỉ thao tác trên đơn nộp vào job thuộc công ty mình
+async function getApplicationForRecruiter(userId, applicationId) {
+  const id = parseId(applicationId, 'Mã đơn ứng tuyển');
+  const profile = await getRecruiterProfile(userId);
+
+  const application = await prisma.application.findUnique({
+    where: { id },
+    include: {
+      job: { select: { id: true, title: true, companyId: true } },
+      candidateProfile: { select: { id: true, userId: true, fullName: true } },
+    },
+  });
+  if (!application) {
+    throw createError('Không tìm thấy đơn ứng tuyển', 404);
+  }
+  if (application.job.companyId !== profile.companyId) {
+    throw createError('Bạn không có quyền với đơn ứng tuyển này', 403);
+  }
+
+  return application;
+}
+
+// Đơn của một job: lọc theo status, coverage lúc nộp giảm dần
+async function listApplicationsForJob(userId, jobId, { status } = {}) {
+  const { job } = await getOwnedJob(userId, jobId);
+
+  const where = { jobId: job.id };
+  if (status !== undefined && status !== '') {
+    where.status = parseStatus(status);
+  }
+
+  const applications = await prisma.application.findMany({
+    where,
+    // MySQL xếp NULL cuối khi sắp DESC: đơn nộp lúc job chưa phân tích JD nằm cuối danh sách.
+    // Bằng coverage thì đơn nộp trước đứng trước.
+    orderBy: [{ coverage: 'desc' }, { appliedAt: 'asc' }, { id: 'asc' }],
+    include: { candidateProfile: { select: { id: true, fullName: true } } },
+  });
+
+  return {
+    job: { id: job.id, title: job.title },
+    items: applications.map((application) => ({
+      id: application.id,
+      status: application.status,
+      coverage: application.coverage,
+      appliedAt: application.appliedAt,
+      candidate: {
+        id: application.candidateProfile.id,
+        fullName: application.candidateProfile.fullName,
+      },
+    })),
+    note: COVERAGE_NOTE,
+  };
+}
+
+async function updateApplicationStatus(userId, applicationId, { status } = {}) {
+  const application = await getApplicationForRecruiter(userId, applicationId);
+  const nextStatus = parseStatus(status);
+  const currentStatus = application.status;
+
+  const allowed = STATUS_TRANSITIONS[currentStatus] || [];
+  if (allowed.length === 0) {
+    throw createError(`Đơn đã ở trạng thái ${statusLabel(currentStatus)}, không thể đổi tiếp`, 400);
+  }
+  if (nextStatus === currentStatus) {
+    throw createError(`Đơn đang ở trạng thái ${statusLabel(currentStatus)}`, 400);
+  }
+  if (!allowed.includes(nextStatus)) {
+    throw createError(
+      `Không thể chuyển đơn từ ${statusLabel(currentStatus)} sang ${statusLabel(nextStatus)}`,
+      400
+    );
+  }
+
+  // Chỉ cập nhật khi trạng thái vẫn đúng như lúc đọc: hai người đổi cùng lúc
+  // hoặc ứng viên vừa rút đơn thì không ghi đè
+  const result = await prisma.application.updateMany({
+    where: { id: application.id, status: currentStatus },
+    data: { status: nextStatus },
+  });
+  if (result.count === 0) {
+    throw createError('Trạng thái đơn vừa được thay đổi, vui lòng tải lại', 400);
+  }
+
+  // Thông báo cho ứng viên; lỗi chỉ ghi log, không làm hỏng việc đổi trạng thái
+  await createNotification({
+    userId: application.candidateProfile.userId,
+    type: NOTIFICATION_TYPES.APPLICATION_STATUS_CHANGED,
+    message: buildStatusChangedMessage({ jobTitle: application.job.title, status: nextStatus }),
+    applicationId: application.id,
+  });
+
+  return {
+    id: application.id,
+    previousStatus: currentStatus,
+    status: nextStatus,
+    job: { id: application.job.id, title: application.job.title },
+    candidate: {
+      id: application.candidateProfile.id,
+      fullName: application.candidateProfile.fullName,
+    },
+  };
+}
+
+// ===== Chi tiết đơn =====
+
+// Candidate chỉ xem đơn của mình, recruiter chỉ xem đơn vào job công ty mình
+async function getApplicationDetail(user, applicationId) {
+  const id = parseId(applicationId, 'Mã đơn ứng tuyển');
+
+  const application = await prisma.application.findUnique({
+    where: { id },
+    include: { job: { select: { companyId: true } } },
+  });
+  if (!application) {
+    throw createError('Không tìm thấy đơn ứng tuyển', 404);
+  }
+
+  if (user.role === 'CANDIDATE') {
+    const profile = await getCandidateProfile(user.userId);
+    if (application.candidateProfileId !== profile.id) {
+      throw createError('Bạn chỉ được xem đơn ứng tuyển của chính mình', 403);
+    }
+  } else if (user.role === 'RECRUITER') {
+    const profile = await getRecruiterProfile(user.userId);
+    if (application.job.companyId !== profile.companyId) {
+      throw createError('Bạn không có quyền với đơn ứng tuyển này', 403);
+    }
+  } else {
+    throw createError('Bạn không có quyền truy cập', 403);
+  }
+
+  // Ma trận tính LẠI từ dữ liệu hiện tại; coverageAtApply là giá trị đã lưu lúc nộp
+  const match = await matchJobWithCandidate(application.jobId, application.candidateProfileId);
+
+  return {
+    id: application.id,
+    status: application.status,
+    appliedAt: application.appliedAt,
+    updatedAt: application.updatedAt,
+    job: match.job,
+    candidate: match.candidate,
+    coverageAtApply: application.coverage,
+    coverage: match.coverage,
+    supported: match.supported,
+    uncertain: match.uncertain,
+    notFound: match.notFound,
+    total: match.total,
+    matrix: match.matrix,
+    note: match.note,
+    ...(match.message ? { message: match.message } : {}),
+  };
+}
+
+module.exports = {
+  applyForJob,
+  listMyApplications,
+  withdrawApplication,
+  listApplicationsForJob,
+  updateApplicationStatus,
+  getApplicationDetail,
+};

@@ -32,4 +32,39 @@ async function withdraw(req, res, next) {
   }
 }
 
-module.exports = { apply, listMine, withdraw };
+async function listByJob(req, res, next) {
+  try {
+    const data = await applicationService.listApplicationsForJob(
+      req.user.userId,
+      req.params.jobId,
+      req.query || {}
+    );
+    return success(res, data, 'Lấy danh sách đơn ứng tuyển của job thành công');
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function updateStatus(req, res, next) {
+  try {
+    const data = await applicationService.updateApplicationStatus(
+      req.user.userId,
+      req.params.id,
+      req.body || {}
+    );
+    return success(res, data, 'Cập nhật trạng thái đơn ứng tuyển thành công');
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function detail(req, res, next) {
+  try {
+    const data = await applicationService.getApplicationDetail(req.user, req.params.id);
+    return success(res, data, data.message || 'Lấy chi tiết đơn ứng tuyển thành công');
+  } catch (err) {
+    return next(err);
+  }
+}
+
+module.exports = { apply, listMine, withdraw, listByJob, updateStatus, detail };
