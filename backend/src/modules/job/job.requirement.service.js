@@ -1,5 +1,5 @@
 const prisma = require('../../config/prisma');
-const { getOwnedJob } = require('./job.service');
+const { assertCanManageJob } = require('./job.service');
 const { extractRequirements } = require('../ai/jd-parser/requirement.extractor');
 const { classifyBatch, REQUIREMENT_TYPES } = require('../ai/jd-parser/requirement.classifier');
 const {
@@ -87,8 +87,8 @@ const REQUIREMENT_INCLUDE = { skill: { select: { id: true, name: true } } };
 // ===== Phần A: phân tích JD =====
 
 // JD -> extractRequirements -> classifyBatch -> chuẩn hóa -> ghi đè toàn bộ JobRequirement
-async function parseJobDescription(userId, jobId) {
-  const { job } = await getOwnedJob(userId, jobId);
+async function parseJobDescription(user, jobId) {
+  const job = await assertCanManageJob(user, jobId);
 
   const description = typeof job.description === 'string' ? job.description.trim() : '';
   if (!description) {
@@ -146,8 +146,8 @@ async function listRequirements(jobId) {
   });
 }
 
-async function createRequirement(userId, jobId, body) {
-  const { job } = await getOwnedJob(userId, jobId);
+async function createRequirement(user, jobId, body) {
+  const job = await assertCanManageJob(user, jobId);
 
   const rawText = requiredText(body.rawText, 'Câu yêu cầu gốc');
   const name = requiredText(body.normalizedName, 'Tên yêu cầu');
@@ -163,8 +163,8 @@ async function createRequirement(userId, jobId, body) {
 }
 
 // Chỉ cho sửa normalizedName, type, minYears; rawText là câu gốc trong JD nên giữ nguyên
-async function updateRequirement(userId, jobId, reqId, body) {
-  const { job } = await getOwnedJob(userId, jobId);
+async function updateRequirement(user, jobId, reqId, body) {
+  const job = await assertCanManageJob(user, jobId);
   const requirement = await findRequirementOfJob(job.id, reqId);
   const data = {};
 
@@ -195,8 +195,8 @@ async function updateRequirement(userId, jobId, reqId, body) {
   });
 }
 
-async function deleteRequirement(userId, jobId, reqId) {
-  const { job } = await getOwnedJob(userId, jobId);
+async function deleteRequirement(user, jobId, reqId) {
+  const job = await assertCanManageJob(user, jobId);
   const requirement = await findRequirementOfJob(job.id, reqId);
 
   await prisma.jobRequirement.delete({ where: { id: requirement.id } });

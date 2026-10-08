@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
@@ -12,27 +13,13 @@ if (!fs.existsSync(UPLOAD_PATH)) {
   fs.mkdirSync(UPLOAD_PATH, { recursive: true });
 }
 
-// Làm sạch tên file gốc: bỏ dấu cách và ký tự đặc biệt
-function sanitizeFileName(originalName) {
-  const ext = path.extname(originalName).toLowerCase();
-  const baseName = path.basename(originalName, path.extname(originalName));
-
-  const cleanBase = baseName
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9_-]/g, '')
-    .slice(0, 80);
-
-  return `${cleanBase || 'cv'}${ext}`;
-}
-
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, UPLOAD_PATH);
   },
   filename: (req, file, cb) => {
-    // Tên file: {candidateProfileId}-{timestamp}-{ten_goc_da_lam_sach}
+    // Tên file: {uuid}.{pdf|docx}, không dùng tên gốc do người dùng gửi lên.
+    // fileFilter đã chạy trước nên đuôi chắc chắn là .pdf hoặc .docx
     prisma.candidateProfile
       .findUnique({ where: { userId: req.user.userId } })
       .then((profile) => {
@@ -43,10 +30,11 @@ const storage = multer.diskStorage({
         }
 
         req.candidateProfileId = profile.id;
-        return cb(null, `${profile.id}-${Date.now()}-${sanitizeFileName(file.originalname)}`);
+        const ext = path.extname(file.originalname).toLowerCase();
+        return cb(null, `${crypto.randomUUID()}${ext}`);
       })
       .catch((err) => cb(err));
   },
 });
 
-module.exports = { storage, UPLOAD_PATH, sanitizeFileName };
+module.exports = { storage, UPLOAD_PATH };

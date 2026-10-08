@@ -3,7 +3,7 @@ const { success } = require('../../utils/response');
 
 async function parseJd(req, res, next) {
   try {
-    const data = await requirementService.parseJobDescription(req.user.userId, req.params.id);
+    const data = await requirementService.parseJobDescription(req.user, req.params.id);
     return success(res, data, `Phân tích JD thành công, trích xuất được ${data.length} yêu cầu`);
   } catch (err) {
     return next(err);
@@ -22,7 +22,7 @@ async function list(req, res, next) {
 async function create(req, res, next) {
   try {
     const data = await requirementService.createRequirement(
-      req.user.userId,
+      req.user,
       req.params.id,
       req.body || {}
     );
@@ -35,7 +35,7 @@ async function create(req, res, next) {
 async function update(req, res, next) {
   try {
     const data = await requirementService.updateRequirement(
-      req.user.userId,
+      req.user,
       req.params.id,
       req.params.reqId,
       req.body || {}
@@ -49,7 +49,7 @@ async function update(req, res, next) {
 async function remove(req, res, next) {
   try {
     const data = await requirementService.deleteRequirement(
-      req.user.userId,
+      req.user,
       req.params.id,
       req.params.reqId
     );

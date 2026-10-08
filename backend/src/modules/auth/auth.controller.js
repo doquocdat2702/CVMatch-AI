@@ -42,4 +42,23 @@ async function logout(req, res) {
   return success(res, null, 'Đăng xuất thành công');
 }
 
-module.exports = { register, login, me, changePassword, logout };
+// Luôn trả cùng một câu, không để lộ email nào có tài khoản
+async function forgotPassword(req, res, next) {
+  try {
+    await authService.forgotPassword(req.body || {});
+    return success(res, null, 'Nếu email tồn tại, chúng tôi đã gửi hướng dẫn đặt lại mật khẩu');
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function resetPassword(req, res, next) {
+  try {
+    const data = await authService.resetPassword(req.body || {});
+    return success(res, data, 'Đặt lại mật khẩu thành công');
+  } catch (err) {
+    return next(err);
+  }
+}
+
+module.exports = { register, login, me, changePassword, logout, forgotPassword, resetPassword };

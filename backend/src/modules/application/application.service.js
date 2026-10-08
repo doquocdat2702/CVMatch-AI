@@ -1,7 +1,7 @@
 const prisma = require('../../config/prisma');
 const { matchJobWithCandidate } = require('../ai/matching/matcher');
 const { COVERAGE_NOTE } = require('../ai/matching/coverage');
-const { getOwnedJob } = require('../job/job.service');
+const { getOwnedJob, assertCanManageJob } = require('../job/job.service');
 const {
   NOTIFICATION_TYPES,
   APPLICATION_STATUS_LABELS,
@@ -202,24 +202,22 @@ async function getRecruiterProfile(userId) {
   return profile;
 }
 
-// Recruiter chỉ thao tác trên đơn nộp vào job thuộc công ty mình
-async function getApplicationForRecruiter(userId, applicationId) {
+// Chỉ người đăng job (hoặc ADMIN) được đổi trạng thái đơn: tìm đơn -> lấy jobId -> kiểm tra
+async function getManagedApplication(user, applicationId) {
   const id = parseId(applicationId, 'Mã đơn ứng tuyển');
-  const profile = await getRecruiterProfile(userId);
 
   const application = await prisma.application.findUnique({
     where: { id },
     include: {
-      job: { select: { id: true, title: true, companyId: true } },
+      job: { select: { id: true, title: true } },
       candidateProfile: { select: { id: true, userId: true, fullName: true } },
     },
   });
   if (!application) {
     throw createError('Không tìm thấy đơn ứng tuyển', 404);
   }
-  if (application.job.companyId !== profile.companyId) {
-    throw createError('Bạn không có quyền với đơn ứng tuyển này', 403);
-  }
+
+  await assertCanManageJob(user, application.jobId);
 
   return application;
 }
@@ -257,8 +255,8 @@ async function listApplicationsForJob(userId, jobId, { status } = {}) {
   };
 }
 
-async function updateApplicationStatus(userId, applicationId, { status } = {}) {
-  const application = await getApplicationForRecruiter(userId, applicationId);
+async function updateApplicationStatus(user, applicationId, { status } = {}) {
+  const application = await getManagedApplication(user, applicationId);
   const nextStatus = parseStatus(status);
   const currentStatus = application.status;
 

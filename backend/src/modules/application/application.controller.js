@@ -48,7 +48,7 @@ async function listByJob(req, res, next) {
 async function updateStatus(req, res, next) {
   try {
     const data = await applicationService.updateApplicationStatus(
-      req.user.userId,
+      req.user,
       req.params.id,
       req.body || {}
     );

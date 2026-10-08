@@ -8,15 +8,18 @@ const router = express.Router();
 // Mọi endpoint của module admin đều chỉ dành cho ADMIN
 router.use(authenticate, authorize('ADMIN'));
 
+// Trang Tổng quan của Admin
+router.get('/dashboard', adminController.dashboard);
+
 router.get('/users', adminController.listUsers);
 router.get('/users/:id', adminController.getUser);
 router.patch('/users/:id/status', adminController.updateStatus);
 router.patch('/users/:id/role', adminController.updateRole);
+router.patch('/users/:id/password', adminController.updatePassword);
 router.delete('/users/:id', adminController.deleteUser);
 
-// Đường duy nhất để có tài khoản Recruiter (không có tự đăng ký)
+// Đường duy nhất để có tài khoản Recruiter (không có tự đăng ký),
+// tự gán vào công ty duy nhất của hệ thống
 router.post('/recruiters', adminController.createRecruiter);
-
-router.get('/companies', adminController.listCompanies);
 
 module.exports = router;

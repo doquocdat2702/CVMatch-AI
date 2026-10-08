@@ -94,6 +94,41 @@ async function seedAdmin() {
   console.log(`Đã seed tài khoản admin: ${email}`);
 }
 
+// Hệ thống phục vụ MỘT công ty: chỉ tạo khi DB chưa có công ty nào.
+// Đã có công ty thì giữ nguyên (tên có thể đã được HR sửa qua PUT /api/companies/me).
+// Có nhiều hơn 1 công ty thì chỉ in cảnh báo, KHÔNG tự gộp hay xóa.
+async function seedCompany() {
+  const companies = await prisma.company.findMany({
+    orderBy: { id: 'asc' },
+    include: { _count: { select: { recruiters: true, jobs: true } } },
+  });
+
+  if (companies.length === 0) {
+    const name = typeof process.env.COMPANY_NAME === 'string' ? process.env.COMPANY_NAME.trim() : '';
+    if (!name) {
+      throw new Error('Thiếu COMPANY_NAME trong .env. Hãy bổ sung trước khi chạy seed.');
+    }
+    const company = await prisma.company.create({ data: { name } });
+    console.log(`Đã seed công ty: ${company.name} (id ${company.id})`);
+    return;
+  }
+
+  if (companies.length === 1) {
+    console.log(`Công ty đã tồn tại, giữ nguyên: ${companies[0].name} (id ${companies[0].id})`);
+    return;
+  }
+
+  console.warn(
+    `CẢNH BÁO: DB đang có ${companies.length} công ty, hệ thống chỉ dùng một công ty. ` +
+      'Seed không tự gộp hay xóa, hãy xử lý thủ công:'
+  );
+  for (const company of companies) {
+    console.warn(
+      `  - id ${company.id}: ${company.name} | ${company._count.recruiters} recruiter | ${company._count.jobs} tin tuyển dụng`
+    );
+  }
+}
+
 async function seedSkills() {
   for (const skill of SKILLS) {
     await prisma.skill.upsert({
@@ -108,6 +143,7 @@ async function seedSkills() {
 async function main() {
   await seedRoles();
   await seedAdmin();
+  await seedCompany();
   await seedSkills();
   console.log('Seed hoàn tất.');
 }

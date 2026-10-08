@@ -16,6 +16,17 @@ function createError(message, statusCode) {
   return err;
 }
 
+const EXTRACT_TIMEOUT_MS = 15 * 1000;
+
+// Hết thời gian thì reject; promise gốc vẫn chạy nốt ở nền nhưng kết quả bị bỏ qua
+function withTimeout(promise, ms, message) {
+  let timer;
+  const timeout = new Promise((resolve, reject) => {
+    timer = setTimeout(() => reject(createError(message, 400)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 // Xóa file vật lý, bỏ qua nếu file không còn tồn tại
 async function removeFile(filePath) {
   try {
@@ -131,7 +142,12 @@ async function extractCvText(userId, cvId) {
   const absolutePath = path.resolve(process.cwd(), cv.filePath);
 
   try {
-    const rawText = await extractText(absolutePath, cv.fileType);
+    // File quá nặng hoặc cố tình làm treo parser: quá 15 giây thì đánh dấu FAILED
+    const rawText = await withTimeout(
+      extractText(absolutePath, cv.fileType),
+      EXTRACT_TIMEOUT_MS,
+      'Quá thời gian xử lý file'
+    );
 
     return await prisma.cV.update({
       where: { id: cv.id },

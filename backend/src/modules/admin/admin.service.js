@@ -1,5 +1,7 @@
+const { ApplicationStatus, CvStatus } = require('@prisma/client');
 const prisma = require('../../config/prisma');
 const { hashPassword } = require('../../utils/hash');
+const { monthKey, lastNMonths, countByPeriod, countByEnum } = require('../../utils/stats');
 const { removeFile } = require('../cv/cv.service');
 
 // Cùng quy tắc với auth.service (đăng ký)
@@ -39,6 +41,30 @@ async function findRoleByName(roleName) {
 function ensureNotSelf(adminId, userId, message) {
   if (adminId === userId) {
     throw createError(message, 400);
+  }
+}
+
+// Hệ thống phục vụ MỘT công ty, do seed tạo từ COMPANY_NAME.
+// DB lỡ có nhiều hơn 1 công ty (dữ liệu cũ) thì dùng công ty tạo sớm nhất.
+async function getSingleCompany() {
+  const company = await prisma.company.findFirst({ orderBy: { id: 'asc' } });
+  if (!company) {
+    throw createError('Chưa cấu hình công ty, hãy chạy seed', 400);
+  }
+  return company;
+}
+
+// Chặn khóa, hạ role, xóa ADMIN đang hoạt động cuối cùng. user phải kèm role.
+async function ensureNotLastActiveAdmin(user) {
+  if (user.role.name !== 'ADMIN' || !user.isActive) {
+    return;
+  }
+
+  const otherActiveAdmins = await prisma.user.count({
+    where: { id: { not: user.id }, isActive: true, role: { name: 'ADMIN' } },
+  });
+  if (otherActiveAdmins === 0) {
+    throw createError('Hệ thống phải còn ít nhất một quản trị viên', 400);
   }
 }
 
@@ -146,6 +172,7 @@ async function getUserDetail(userId) {
 
 // ===== Tạo tài khoản Recruiter (đường duy nhất để có Recruiter) =====
 
+// Recruiter là HR nội bộ, luôn được gán vào công ty duy nhất của hệ thống
 async function createRecruiter(body) {
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
   if (!email) {
@@ -163,23 +190,7 @@ async function createRecruiter(body) {
     throw createError('Họ tên không được để trống', 400);
   }
 
-  const hasCompanyId = body.companyId !== undefined && body.companyId !== null && body.companyId !== '';
-  const companyName = optionalText(body.companyName);
-  if (hasCompanyId && companyName) {
-    throw createError('Chỉ truyền một trong hai: companyId (công ty có sẵn) hoặc companyName (tạo công ty mới)', 400);
-  }
-  if (!hasCompanyId && !companyName) {
-    throw createError('Cần companyId (công ty có sẵn) hoặc companyName (tạo công ty mới)', 400);
-  }
-
-  let existingCompany = null;
-  if (hasCompanyId) {
-    const companyId = parseId(body.companyId, 'Mã công ty');
-    existingCompany = await prisma.company.findUnique({ where: { id: companyId } });
-    if (!existingCompany) {
-      throw createError('Không tìm thấy công ty', 404);
-    }
-  }
+  const company = await getSingleCompany();
 
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
@@ -199,8 +210,6 @@ async function createRecruiter(body) {
       const user = await tx.user.create({
         data: { email, password: hashedPassword, roleId: recruiterRole.id, isActive: true },
       });
-
-      const company = existingCompany || (await tx.company.create({ data: { name: companyName } }));
 
       await tx.recruiterProfile.create({
         data: {
@@ -233,9 +242,12 @@ async function updateUserStatus(adminId, userId, { isActive } = {}) {
     throw createError('isActive phải là true hoặc false', 400);
   }
 
-  const user = await prisma.user.findUnique({ where: { id } });
+  const user = await prisma.user.findUnique({ where: { id }, include: { role: true } });
   if (!user) {
     throw createError('Không tìm thấy tài khoản', 404);
+  }
+  if (!isActive) {
+    await ensureNotLastActiveAdmin(user);
   }
 
   const updated = await prisma.user.update({ where: { id }, data: { isActive } });
@@ -248,6 +260,11 @@ async function updateUserRole(adminId, userId, { roleName } = {}) {
 
   const role = await findRoleByName(roleName);
 
+  // Hệ thống chỉ có một quản trị viên (do seed tạo), không nâng ai lên ADMIN
+  if (role.name === 'ADMIN') {
+    throw createError('Không thể nâng tài khoản lên ADMIN, hệ thống chỉ có một quản trị viên', 400);
+  }
+
   const user = await prisma.user.findUnique({
     where: { id },
     include: { role: true, candidateProfile: true, recruiterProfile: true },
@@ -259,15 +276,23 @@ async function updateUserRole(adminId, userId, { roleName } = {}) {
     throw createError(`Tài khoản đã có role ${role.name}`, 400);
   }
 
-  // Recruiter bắt buộc thuộc một công ty, chỉ tạo được qua POST /admin/recruiters
+  // Role mới khác role hiện tại, nên nếu đang là ADMIN thì đây là hạ role
+  await ensureNotLastActiveAdmin(user);
+
+  // Chuyển sang RECRUITER mà chưa có hồ sơ nhà tuyển dụng thì cần công ty duy nhất
+  // để tạo hồ sơ tối thiểu; lấy trước khi mở transaction
+  let company = null;
   if (role.name === 'RECRUITER' && !user.recruiterProfile) {
-    throw createError(
-      'Tài khoản chưa có hồ sơ nhà tuyển dụng (chưa gắn công ty). Hãy tạo tài khoản Recruiter mới qua POST /api/admin/recruiters',
-      400
-    );
+    company = await getSingleCompany();
   }
 
   await prisma.$transaction(async (tx) => {
+    if (company) {
+      const fullName =
+        (user.candidateProfile && user.candidateProfile.fullName) || user.email.split('@')[0];
+      await tx.recruiterProfile.create({ data: { userId: user.id, fullName, companyId: company.id } });
+    }
+
     // Chuyển sang CANDIDATE mà chưa có hồ sơ ứng viên thì tạo hồ sơ tối thiểu,
     // giống lúc ứng viên tự đăng ký, để các chức năng của ứng viên dùng được ngay
     if (role.name === 'CANDIDATE' && !user.candidateProfile) {
@@ -289,6 +314,7 @@ async function deleteUser(adminId, userId) {
   const user = await prisma.user.findUnique({
     where: { id },
     include: {
+      role: true,
       candidateProfile: {
         include: {
           cvs: { select: { filePath: true } },
@@ -301,6 +327,7 @@ async function deleteUser(adminId, userId) {
   if (!user) {
     throw createError('Không tìm thấy tài khoản', 404);
   }
+  await ensureNotLastActiveAdmin(user);
 
   // Có dữ liệu tuyển dụng gắn với người khác thì không xóa, chỉ khóa
   const { candidateProfile, recruiterProfile } = user;
@@ -345,19 +372,88 @@ async function deleteUser(adminId, userId) {
   return { id };
 }
 
-// ===== Công ty =====
+// ===== Đặt lại mật khẩu =====
 
-async function listCompanies() {
-  const companies = await prisma.company.findMany({
-    orderBy: { id: 'asc' },
-    include: { _count: { select: { recruiters: true, jobs: true } } },
-  });
+// Admin đặt mật khẩu mới cho tài khoản khác; mật khẩu của chính mình
+// thì đổi qua PUT /api/auth/change-password (cần mật khẩu cũ)
+async function updateUserPassword(adminId, userId, { newPassword } = {}) {
+  const id = parseId(userId, 'Mã tài khoản');
+  ensureNotSelf(
+    adminId,
+    id,
+    'Không thể đặt lại mật khẩu của chính mình tại đây, hãy dùng PUT /api/auth/change-password'
+  );
 
-  return companies.map(({ _count, ...company }) => ({
-    ...company,
-    recruiterCount: _count.recruiters,
-    jobCount: _count.jobs,
-  }));
+  if (typeof newPassword !== 'string' || newPassword.length < MIN_PASSWORD_LENGTH) {
+    throw createError(`Mật khẩu mới phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự`, 400);
+  }
+
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) {
+    throw createError('Không tìm thấy tài khoản', 404);
+  }
+
+  const hashedPassword = await hashPassword(newPassword);
+  await prisma.user.update({ where: { id }, data: { password: hashedPassword } });
+
+  return { id: user.id, email: user.email };
+}
+
+// ===== Trang Tổng quan của Admin =====
+
+// Chỉ dùng count / groupBy, không lưu bảng thống kê riêng
+async function getDashboard() {
+  const months = lastNMonths(6);
+
+  const [
+    roles,
+    roleGroups,
+    lockedUsers,
+    totalJobs,
+    openJobs,
+    totalApplications,
+    applicationStatusGroups,
+    newUserGroups,
+    cvStatusGroups,
+  ] = await Promise.all([
+    prisma.role.findMany({ orderBy: { id: 'asc' }, select: { id: true, name: true } }),
+    prisma.user.groupBy({ by: ['roleId'], _count: { _all: true } }),
+    prisma.user.count({ where: { isActive: false } }),
+    prisma.job.count(),
+    prisma.job.count({ where: { isOpen: true } }),
+    prisma.application.count(),
+    prisma.application.groupBy({ by: ['status'], _count: { _all: true } }),
+    prisma.user.groupBy({
+      by: ['createdAt'],
+      where: { createdAt: { gte: months.start } },
+      _count: { _all: true },
+    }),
+    prisma.cV.groupBy({ by: ['status'], _count: { _all: true } }),
+  ]);
+
+  const usersByRoleId = new Map(roleGroups.map((group) => [group.roleId, group._count._all]));
+  const cvByStatus = countByEnum(cvStatusGroups, 'status', Object.values(CvStatus));
+
+  // Tỉ lệ trích xuất thành công = COMPLETED / (COMPLETED + FAILED), chưa có CV xử lý xong thì 0
+  const cvCount = (status) => cvByStatus.find((item) => item.status === status).count;
+  const finishedCvs = cvCount('COMPLETED') + cvCount('FAILED');
+  const cvSuccessRate =
+    finishedCvs === 0 ? 0 : Math.round((cvCount('COMPLETED') / finishedCvs) * 10000) / 10000;
+
+  return {
+    usersByRole: roles.map((role) => ({ role: role.name, count: usersByRoleId.get(role.id) || 0 })),
+    lockedUsers,
+    jobs: { total: totalJobs, open: openJobs },
+    applications: {
+      total: totalApplications,
+      byStatus: countByEnum(applicationStatusGroups, 'status', Object.values(ApplicationStatus)),
+    },
+    newUsersByMonth: countByPeriod(newUserGroups, 'createdAt', monthKey, months.keys).map(
+      ({ key, count }) => ({ month: key, count })
+    ),
+    cvByStatus,
+    cvSuccessRate,
+  };
 }
 
 module.exports = {
@@ -367,5 +463,6 @@ module.exports = {
   updateUserStatus,
   updateUserRole,
   deleteUser,
-  listCompanies,
+  updateUserPassword,
+  getDashboard,
 };

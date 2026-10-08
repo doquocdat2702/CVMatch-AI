@@ -55,21 +55,31 @@ async function deleteUser(req, res, next) {
   }
 }
 
-async function listCompanies(req, res, next) {
+async function updatePassword(req, res, next) {
   try {
-    const data = await adminService.listCompanies();
-    return success(res, data, 'Lấy danh sách công ty thành công');
+    const data = await adminService.updateUserPassword(req.user.userId, req.params.id, req.body || {});
+    return success(res, data, 'Đặt lại mật khẩu thành công');
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function dashboard(req, res, next) {
+  try {
+    const data = await adminService.getDashboard();
+    return success(res, data, 'Lấy số liệu tổng quan thành công');
   } catch (err) {
     return next(err);
   }
 }
 
 module.exports = {
+  dashboard,
   listUsers,
   getUser,
   createRecruiter,
   updateStatus,
   updateRole,
   deleteUser,
-  listCompanies,
+  updatePassword,
 };

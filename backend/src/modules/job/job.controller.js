@@ -40,7 +40,7 @@ async function getById(req, res, next) {
 async function update(req, res, next) {
   try {
     const { job, requireReparse } = await jobService.updateJob(
-      req.user.userId,
+      req.user,
       req.params.id,
       req.body || {}
     );
@@ -58,7 +58,7 @@ async function update(req, res, next) {
 
 async function close(req, res, next) {
   try {
-    const data = await jobService.closeJob(req.user.userId, req.params.id);
+    const data = await jobService.closeJob(req.user, req.params.id);
     return success(res, data, 'Đóng tin tuyển dụng thành công');
   } catch (err) {
     return next(err);
@@ -67,7 +67,7 @@ async function close(req, res, next) {
 
 async function remove(req, res, next) {
   try {
-    const data = await jobService.deleteJob(req.user.userId, req.params.id);
+    const data = await jobService.deleteJob(req.user, req.params.id);
     return success(res, data, 'Xóa tin tuyển dụng thành công');
   } catch (err) {
     return next(err);

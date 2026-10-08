@@ -19,4 +19,13 @@ async function updateMe(req, res, next) {
   }
 }
 
-module.exports = { getMe, updateMe };
+async function dashboard(req, res, next) {
+  try {
+    const data = await recruiterService.getDashboard(req.user.userId, req.query || {});
+    return success(res, data, 'Lấy số liệu tổng quan thành công');
+  } catch (err) {
+    return next(err);
+  }
+}
+
+module.exports = { getMe, updateMe, dashboard };

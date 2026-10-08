@@ -42,6 +42,27 @@ async function getOwnedJob(userId, jobId) {
   return { job, profile };
 }
 
+// HR xem chung, sửa riêng: chỉ người đăng job (hoặc ADMIN) được thay đổi job
+// và dữ liệu thuộc job (requirement, trạng thái đơn). user = req.user { userId, role }
+async function assertCanManageJob(user, jobId) {
+  const id = parseId(jobId, 'Mã tin tuyển dụng');
+
+  const job = await prisma.job.findUnique({ where: { id } });
+  if (!job) {
+    throw createError('Không tìm thấy tin tuyển dụng', 404);
+  }
+  if (user.role === 'ADMIN') {
+    return job;
+  }
+
+  const profile = await prisma.recruiterProfile.findUnique({ where: { userId: user.userId } });
+  if (!profile || job.recruiterProfileId !== profile.id) {
+    throw createError('Bạn chỉ được chỉnh sửa tin tuyển dụng do mình đăng', 403);
+  }
+
+  return job;
+}
+
 async function createJob(userId, { title, description, location }) {
   const profile = await getRecruiterProfile(userId);
 
@@ -147,8 +168,8 @@ async function getJobById(jobId) {
   return job;
 }
 
-async function updateJob(userId, jobId, { title, description, location }) {
-  const { job } = await getOwnedJob(userId, jobId);
+async function updateJob(user, jobId, { title, description, location }) {
+  const job = await assertCanManageJob(user, jobId);
   const data = {};
 
   if (title !== undefined) {
@@ -187,8 +208,8 @@ async function updateJob(userId, jobId, { title, description, location }) {
   return { job: updated, requireReparse };
 }
 
-async function closeJob(userId, jobId) {
-  const { job } = await getOwnedJob(userId, jobId);
+async function closeJob(user, jobId) {
+  const job = await assertCanManageJob(user, jobId);
 
   return prisma.job.update({
     where: { id: job.id },
@@ -197,8 +218,8 @@ async function closeJob(userId, jobId) {
   });
 }
 
-async function deleteJob(userId, jobId) {
-  const { job } = await getOwnedJob(userId, jobId);
+async function deleteJob(user, jobId) {
+  const job = await assertCanManageJob(user, jobId);
 
   const applicationCount = await prisma.application.count({ where: { jobId: job.id } });
   if (applicationCount > 0) {
@@ -216,6 +237,7 @@ async function deleteJob(userId, jobId) {
 
 module.exports = {
   getOwnedJob,
+  assertCanManageJob,
   createJob,
   listOpenJobs,
   listMyJobs,
