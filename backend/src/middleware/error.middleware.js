@@ -11,9 +11,11 @@ function errorMiddleware(err, req, res, next) {
     console.error(err.stack);
   }
 
-  // Production: lỗi hệ thống không trả stack trace hay chi tiết nội bộ ra ngoài
-  // (message lỗi Prisma có cả đường dẫn file và đoạn code). Lỗi 4xx vẫn giữ message.
-  if (env.NODE_ENV === 'production' && statusCode >= 500) {
+  // Production: chỉ ẩn message của lỗi 500 không xác định (lỗi bất ngờ, lỗi Prisma có cả đường dẫn
+  // file và đoạn code). Lỗi đã định nghĩa (có statusCode do code tự đặt: 400, 403, 404, 503...)
+  // giữ nguyên message để người dùng biết chuyện gì xảy ra.
+  const isDefinedError = Number.isInteger(err.statusCode || err.status) && statusCode !== 500;
+  if (env.NODE_ENV === 'production' && statusCode >= 500 && !isDefinedError) {
     message = 'Lỗi hệ thống, vui lòng thử lại sau';
   }
 

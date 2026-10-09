@@ -4,17 +4,25 @@
 // Thứ tự xử lý:
 //   1. Rule từ khóa chạy trước (không tốn lượt gọi API).
 //   2. Rule không quyết được thì hỏi LLM, bắt trả ĐÚNG MỘT TỪ trong 3 giá trị.
-//   3. LLM lỗi hoặc trả giá trị lạ -> mặc định OPTIONAL.
+//   3. LLM trả giá trị lạ cho một mục -> mục đó mặc định OPTIONAL.
 //
-// classifyBatch gộp toàn bộ yêu cầu chưa quyết được vào MỘT lần gọi LLM.
+// classifyBatch gộp toàn bộ yêu cầu chưa quyết được vào MỘT lần gọi LLM;
+// lỗi tạm thời (mạng, timeout, 5xx) thì thử lại theo llm-retry, không thử lại 429 / 401 / 403;
+// thiếu GEMINI_API_KEY hoặc LLM vẫn lỗi thì throw lỗi 503, KHÔNG lùi về OPTIONAL.
+// classifyRequirement (phân loại lẻ một câu) vẫn lùi về OPTIONAL khi LLM lỗi.
+//
+// NLP_MODE=rule: KHÔNG gọi LLM; mục rule không quyết được -> PREFERRED
+// (vẫn hiện trong ma trận đối chiếu nhưng không bị coi là bắt buộc).
 
 const env = require('../../../config/env');
+const { callWithRetry } = require('../llm-retry');
 
 const API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 const TIMEOUT_MS = 60000;
 
 const REQUIREMENT_TYPES = ['REQUIRED', 'PREFERRED', 'OPTIONAL'];
 const DEFAULT_TYPE = 'OPTIONAL';
+const RULE_MODE_TYPE = 'PREFERRED';
 
 // ===== Bước 1: rule từ khóa =====
 
@@ -135,7 +143,7 @@ function pickType(text) {
   return words.length === 1 ? words[0] : null;
 }
 
-// Gọi Gemini một lần, có timeout. Lỗi thì throw để hàm gọi tự lùi về OPTIONAL.
+// Gọi Gemini một lần, có timeout. Lỗi thì throw, hàm gọi tự quyết lùi về OPTIONAL hay báo 503.
 async function callLlm(userPrompt, responseSchema) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -149,6 +157,9 @@ async function callLlm(userPrompt, responseSchema) {
     generationConfig.responseMimeType = 'application/json';
     generationConfig.responseSchema = responseSchema;
   }
+
+  // Mỗi lần thật sự gửi request tới Gemini đều ghi một dòng, để kiểm tra chế độ rule không gọi Gemini
+  console.log('[GEMINI] Gửi request phân loại yêu cầu JD');
 
   try {
     const response = await fetch(`${API_BASE_URL}/${env.GEMINI_MODEL}:generateContent`, {
@@ -168,7 +179,10 @@ async function callLlm(userPrompt, responseSchema) {
 
     if (!response.ok) {
       const detail = await response.text().catch(() => '');
-      throw new Error(`LLM trả về HTTP ${response.status}: ${detail.slice(0, 200)}`);
+      const err = new Error(`LLM trả về HTTP ${response.status}: ${detail.slice(0, 200)}`);
+      // Để llm-retry phân biệt lỗi tạm thời (5xx) với lỗi không thử lại (429, 401, 403...)
+      err.httpStatus = response.status;
+      throw err;
     }
 
     const payload = await response.json();
@@ -208,6 +222,10 @@ async function classifyRequirement(rawText) {
   const byRule = classifyByRule(text);
   if (byRule) {
     return byRule;
+  }
+
+  if (env.NLP_MODE === 'rule') {
+    return RULE_MODE_TYPE;
   }
 
   if (!env.GEMINI_API_KEY) {
@@ -255,12 +273,25 @@ const BATCH_RESPONSE_SCHEMA = {
   },
 };
 
-// classifyBatch(requirements) -> ['REQUIRED', 'OPTIONAL', ...] cùng thứ tự đầu vào.
+const NLP_UNAVAILABLE_MESSAGE = 'Dịch vụ NLP đang không khả dụng, chưa phân tích được JD';
+
+// Còn mục rule không quyết được mà không hỏi được LLM: báo 503, không đoán bừa OPTIONAL
+function nlpUnavailableError() {
+  const err = new Error(NLP_UNAVAILABLE_MESSAGE);
+  err.statusCode = 503;
+  return err;
+}
+
+// classifyBatch(requirements) -> { types: ['REQUIRED', 'OPTIONAL', ...], unresolvedCount }
+// types cùng thứ tự đầu vào; unresolvedCount = số mục rule không phân loại được
+// (chế độ rule: gán PREFERRED; chế độ hybrid: đã hỏi LLM).
 // requirements nhận mảng string hoặc mảng { rawText } do extractRequirements trả về.
 // Toàn bộ mục rule không quyết được gộp vào MỘT lần gọi LLM.
+// Rule quyết được hết thì không gọi LLM. Chế độ hybrid còn mục phải hỏi LLM mà thiếu
+// GEMINI_API_KEY hoặc gọi LLM lỗi thì throw lỗi 503 (statusCode = 503).
 async function classifyBatch(requirements) {
   if (!Array.isArray(requirements) || requirements.length === 0) {
-    return [];
+    return { types: [], unresolvedCount: 0 };
   }
 
   const texts = requirements.map((item) => {
@@ -278,16 +309,22 @@ async function classifyBatch(requirements) {
     .map((type, index) => (type ? -1 : index))
     .filter((index) => index !== -1);
 
-  if (pendingIndexes.length === 0) {
-    return results;
+  const unresolvedCount = pendingIndexes.length;
+  if (unresolvedCount === 0) {
+    return { types: results, unresolvedCount };
+  }
+
+  // Chế độ rule: không gọi LLM, mục rule không quyết được để PREFERRED
+  if (env.NLP_MODE === 'rule') {
+    pendingIndexes.forEach((index) => {
+      results[index] = RULE_MODE_TYPE;
+    });
+    return { types: results, unresolvedCount };
   }
 
   if (!env.GEMINI_API_KEY) {
-    console.warn('[JD] Thiếu GEMINI_API_KEY trong .env, mức độ yêu cầu mặc định OPTIONAL');
-    pendingIndexes.forEach((index) => {
-      results[index] = DEFAULT_TYPE;
-    });
-    return results;
+    console.warn(`[JD] Thiếu GEMINI_API_KEY trong .env, ${pendingIndexes.length} yêu cầu chưa phân loại được`);
+    throw nlpUnavailableError();
   }
 
   const listing = pendingIndexes
@@ -307,7 +344,16 @@ async function classifyBatch(requirements) {
   ].join('\n');
 
   try {
-    const responseText = await callLlm(userPrompt, BATCH_RESPONSE_SCHEMA);
+    // Chỉ lỗi tạm thời (mạng, timeout, 5xx) mới được gọi lại, xem llm-retry
+    const responseText = await callWithRetry(
+      () => callLlm(userPrompt, BATCH_RESPONSE_SCHEMA),
+      (err, attempt, willRetry) => {
+        if (willRetry) {
+          const reason = err.name === 'AbortError' ? `quá ${TIMEOUT_MS}ms không phản hồi` : err.message;
+          console.error(`[JD] Lần ${attempt} gọi LLM thất bại, lỗi tạm thời, thử lại: ${reason}`);
+        }
+      }
+    );
     const parsed = JSON.parse(responseText);
 
     if (!Array.isArray(parsed)) {
@@ -332,12 +378,10 @@ async function classifyBatch(requirements) {
   } catch (err) {
     const reason = err.name === 'AbortError' ? `quá ${TIMEOUT_MS}ms không phản hồi` : err.message;
     console.error(`[JD] Gọi LLM phân loại theo lô thất bại: ${reason}`);
-    pendingIndexes.forEach((index) => {
-      results[index] = DEFAULT_TYPE;
-    });
+    throw nlpUnavailableError();
   }
 
-  return results;
+  return { types: results, unresolvedCount };
 }
 
 module.exports = { classifyRequirement, classifyBatch, REQUIREMENT_TYPES };

@@ -1,5 +1,6 @@
 // Parser rule-based cho CV: chỉ dùng regex và luật, không gọi AI, không dùng thư viện NLP.
 // Nguyên tắc: không tìm thấy thì trả null hoặc mảng rỗng, tuyệt đối không đoán.
+const { normalizeText } = require('../normalization/normalizer');
 
 // ===== Tiện ích dùng chung =====
 
@@ -464,6 +465,105 @@ function splitSections(rawText) {
   return sections;
 }
 
+// ===== Hàm: extractSkillsByDictionary =====
+// Bóc kỹ năng bằng từ điển bảng Skill (name + aliases); chạy ở cả chế độ rule và hybrid.
+// skillIndex: Map<khóa đã chuẩn hóa bằng normalizeText (T14), skillId> do loadSkillIndex() dựng.
+// - So khớp nguyên cụm, hai đầu không dính chữ / số; cụm dài xét trước nên
+//   "java script" chỉ ra JavaScript, không đếm thêm Java.
+// - Khóa dưới 3 ký tự (ai, ps, qa, js...) dễ trùng chữ thường trong CV: chỉ nhận khi CV viết HOA
+//   đúng nguyên khóa và đứng riêng thành một từ (QA, QC, AI, JS); viết thường hay lẫn hoa thường thì bỏ.
+// - Bỏ qua email và URL trong dòng.
+// - Mỗi kỹ năng lấy một lần: rawName là cụm đúng như trong CV, evidence là dòng đầu tiên chứa nó.
+// Test case (bảng Skill theo seed):
+//   "Thành thạo MS Excel, ReactJS"
+//     -> [{ rawName: 'MS Excel', skillId: <Excel>, evidence: 'Thành thạo MS Excel, ReactJS', source: 'RULE' },
+//         { rawName: 'ReactJS', skillId: <React>, ... }]
+//   "Ai cũng cần làm việc nhóm" -> chỉ ra Làm việc nhóm, không ra Illustrator ("Ai" không viết HOA)
+//   "Kiểm thử QA/QC, viết JS"   -> Quản lý chất lượng (QA), JavaScript (JS)
+//   "Email: react.dev@gmail.com" -> [] (bỏ qua email)
+
+const MIN_DICTIONARY_KEY_LENGTH = 3;
+const SKILL_SOURCE_RULE = 'RULE';
+
+// Cùng quy tắc với normalizeText (T14) nhưng giữ nguyên độ dài, để cắt lại đúng cụm gốc trong CV
+function normalizeKeepLength(text) {
+  let result = '';
+  for (const ch of removeDiacriticsKeepLength(text)) {
+    const lower = ch.toLowerCase();
+    const keep = lower.length === ch.length && /^[a-z0-9+#/.&\s-]+$/.test(lower);
+    result += keep ? lower : ' '.repeat(ch.length);
+  }
+  return result;
+}
+
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Thay email, URL bằng khoảng trắng cùng độ dài để vị trí các ký tự khác không đổi
+function blankOutContacts(line) {
+  const blank = (match) => ' '.repeat(match.length);
+  return line.replace(new RegExp(EMAIL_REGEX.source, 'g'), blank).replace(URL_REGEX, blank);
+}
+
+function buildDictionaryMatchers(skillIndex) {
+  return [...skillIndex.entries()]
+    .sort((a, b) => b[0].length - a[0].length)
+    .map(([key, skillId]) => ({
+      key,
+      skillId,
+      // Khóa ngắn chỉ nhận khi CV viết HOA đúng nguyên khóa (QA, AI, JS...)
+      uppercaseOnly: key.length < MIN_DICTIONARY_KEY_LENGTH,
+      regex: new RegExp(`(?<![a-z0-9])${escapeRegExp(key).replace(/ /g, '\\s+')}(?![a-z0-9])`, 'g'),
+    }));
+}
+
+function extractSkillsByDictionary(rawText, skillIndex) {
+  if (typeof rawText !== 'string' || !rawText.trim() || !skillIndex || skillIndex.size === 0) {
+    return [];
+  }
+
+  const matchers = buildDictionaryMatchers(skillIndex);
+  const foundSkillIds = new Set();
+  const skills = [];
+
+  for (const line of rawText.split('\n')) {
+    if (!line.trim()) {
+      continue;
+    }
+    const lineKey = normalizeKeepLength(blankOutContacts(line));
+    // Đánh dấu ký tự đã thuộc một cụm dài hơn, cụm ngắn nằm đè lên thì bỏ
+    const taken = new Array(lineKey.length).fill(false);
+
+    for (const { key, skillId, regex, uppercaseOnly } of matchers) {
+      regex.lastIndex = 0;
+      let match;
+      while ((match = regex.exec(lineKey)) !== null) {
+        const start = match.index;
+        const end = start + match[0].length;
+        // So với chữ gốc trong CV: "qa", "Qa", "ÁI" đều không phải "QA" / "AI"
+        if (uppercaseOnly && line.slice(start, end) !== key.toUpperCase()) {
+          continue;
+        }
+        if (taken.slice(start, end).some(Boolean)) {
+          continue;
+        }
+        taken.fill(true, start, end);
+
+        const rawName = line.slice(start, end).trim();
+        // Kiểm lại bằng chính hàm chuẩn hóa T14: cụm cắt ra phải chuẩn hóa về đúng khóa từ điển
+        if (foundSkillIds.has(skillId) || normalizeText(rawName) !== key) {
+          continue;
+        }
+        foundSkillIds.add(skillId);
+        skills.push({ rawName, skillId, evidence: line.trim(), source: SKILL_SOURCE_RULE });
+      }
+    }
+  }
+
+  return skills;
+}
+
 // ===== Hàm tổng: parseByRule =====
 // Test case:
 //   Input: rawText của CV marketing 2 trang
@@ -495,5 +595,6 @@ module.exports = {
   extractDateRanges,
   calculateYears,
   splitSections,
+  extractSkillsByDictionary,
   parseByRule,
 };

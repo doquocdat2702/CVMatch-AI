@@ -73,6 +73,8 @@ const upload = multer({
   storage,
   fileFilter,
   limits: { fileSize: MAX_FILE_SIZE },
+  // Trình duyệt gửi tên file dạng UTF-8; mặc định multer đọc theo latin1 làm hỏng tên tiếng Việt
+  defParamCharset: 'utf8',
 });
 
 // Nhận đúng 1 file ở field "file", dịch lỗi của multer sang format chuẩn,

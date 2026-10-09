@@ -1,16 +1,16 @@
 // Parser dựa trên LLM (Google Gemini), gọi qua HTTP bằng fetch có sẵn của Node.
 // Nguyên tắc: lỗi mạng hay JSON hỏng đều KHÔNG throw, chỉ ghi log và trả về cấu trúc rỗng.
+// Thử lại theo quy tắc chung trong llm-retry: chỉ lỗi tạm thời (mạng, timeout, 5xx).
 const env = require('../../../config/env');
+const { isTransientLlmError, callWithRetry } = require('../llm-retry');
 
 const API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 const MAX_TOKENS = 8000;
 const TIMEOUT_MS = 60000;
-const MAX_RETRY = 2; // tối đa 2 lần thử lại, tổng cộng 3 lần gọi
-// Chờ giữa các lần thử, vì lỗi 429/503 của API là giới hạn theo phút
-const RETRY_DELAY_MS = [3000, 8000];
 
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+// Gemini trả 400 và nhắc tới schema: model không hỗ trợ responseSchema
+function isSchemaRejected(err) {
+  return err.httpStatus === 400 && /schema/i.test(err.message || '');
 }
 
 // Cấu trúc rỗng, dùng khi không gọi được LLM hoặc kết quả không hợp lệ
@@ -224,6 +224,9 @@ async function callLlmOnce(userPrompt, useSchema) {
     generationConfig.responseSchema = RESPONSE_SCHEMA;
   }
 
+  // Mỗi lần thật sự gửi request tới Gemini đều ghi một dòng, để kiểm tra chế độ rule không gọi Gemini
+  console.log('[GEMINI] Gửi request phân tích CV');
+
   try {
     const response = await fetch(`${API_BASE_URL}/${env.GEMINI_MODEL}:generateContent`, {
       method: 'POST',
@@ -284,43 +287,44 @@ async function parseByNlp(rawText, sections) {
   }
 
   const userPrompt = buildUserPrompt(rawText, sections);
-  let useSchema = true;
 
-  for (let attempt = 0; attempt <= MAX_RETRY; attempt += 1) {
-    try {
-      const responseText = await callLlmOnce(userPrompt, useSchema);
-      const jsonText = stripCodeFence(responseText);
-
-      try {
-        return normalizeResult(JSON.parse(jsonText));
-      } catch (parseErr) {
-        // JSON hỏng: thử lại nếu còn lượt, hết lượt thì trả cấu trúc rỗng
-        console.error(
-          `[NLP] Lần ${attempt + 1}: JSON trả về không hợp lệ - ${parseErr.message}`
-        );
-        if (attempt === MAX_RETRY) {
-          return { ...emptyResult(), failed: true };
-        }
-        await delay(RETRY_DELAY_MS[attempt]);
-      }
-    } catch (err) {
-      const reason = err.name === 'AbortError' ? `quá ${TIMEOUT_MS}ms không phản hồi` : err.message;
-      console.error(`[NLP] Lần ${attempt + 1} gọi LLM thất bại: ${reason}`);
-
-      // API từ chối schema thì lần sau gọi lại không kèm schema
-      if (useSchema && err.httpStatus === 400) {
-        console.warn('[NLP] API không chấp nhận responseSchema, thử lại không dùng schema');
-        useSchema = false;
-      }
-
-      if (attempt === MAX_RETRY) {
-        return { ...emptyResult(), failed: true };
-      }
-      await delay(RETRY_DELAY_MS[attempt]);
+  // Ghi log sau mỗi lần gọi thất bại; chỉ lỗi tạm thời mới được thử lại
+  const logFailure = (err, attempt, willRetry) => {
+    const reason = err.name === 'AbortError' ? `quá ${TIMEOUT_MS}ms không phản hồi` : err.message;
+    let next = ', lỗi không tạm thời nên không thử lại';
+    if (willRetry) {
+      next = ', lỗi tạm thời, thử lại';
+    } else if (isTransientLlmError(err)) {
+      next = ', đã hết lượt thử lại';
     }
+    console.error(`[NLP] Lần ${attempt} gọi LLM thất bại${next}: ${reason}`);
+  };
+  const callLlm = (useSchema) => callWithRetry(() => callLlmOnce(userPrompt, useSchema), logFailure);
+
+  let responseText;
+  try {
+    try {
+      responseText = await callLlm(true);
+    } catch (err) {
+      // API từ chối responseSchema: gọi lại ngay không kèm schema
+      // (đổi cách gọi cho hợp model, không phải thử lại vì lỗi tạm thời)
+      if (!isSchemaRejected(err)) {
+        throw err;
+      }
+      console.warn('[NLP] API không chấp nhận responseSchema, gọi lại không dùng schema');
+      responseText = await callLlm(false);
+    }
+  } catch (err) {
+    return { ...emptyResult(), failed: true };
   }
 
-  return { ...emptyResult(), failed: true };
+  try {
+    return normalizeResult(JSON.parse(stripCodeFence(responseText)));
+  } catch (parseErr) {
+    // JSON hỏng là lỗi nội dung, gọi lại cũng ra như cũ nên không thử lại
+    console.error(`[NLP] JSON trả về không hợp lệ: ${parseErr.message}`);
+    return { ...emptyResult(), failed: true };
+  }
 }
 
 module.exports = { parseByNlp };

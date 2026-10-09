@@ -21,6 +21,14 @@ if (process.env.JWT_SECRET.length < MIN_JWT_SECRET_LENGTH) {
   );
 }
 
+// Chế độ phân tích CV / JD: hybrid = rule + Gemini (mặc định), rule = chỉ rule, không gọi Gemini.
+// Sai giá trị thì không cho server khởi động, tránh âm thầm chạy sai chế độ.
+const NLP_MODES = ['rule', 'hybrid'];
+const nlpMode = (process.env.NLP_MODE || 'hybrid').trim().toLowerCase();
+if (!NLP_MODES.includes(nlpMode)) {
+  throw new Error(`NLP_MODE phải là ${NLP_MODES.join(' hoặc ')} (đang là "${process.env.NLP_MODE}").`);
+}
+
 const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: Number(process.env.PORT) || 5000,
@@ -28,8 +36,12 @@ const env = {
   JWT_SECRET: process.env.JWT_SECRET,
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '1d',
   UPLOAD_DIR: process.env.UPLOAD_DIR || 'uploads',
-  // Dùng cho bước NLP parsing, không bắt buộc:
-  // thiếu key thì hệ thống tự lùi về phần rule-based
+  // Thời gian tối đa (ms) trích xuất text một file CV, quá thì CV chuyển FAILED; không bắt buộc
+  EXTRACT_TIMEOUT_MS:
+    Number(process.env.EXTRACT_TIMEOUT_MS) > 0 ? Number(process.env.EXTRACT_TIMEOUT_MS) : 15000,
+  NLP_MODE: nlpMode,
+  // Dùng cho bước NLP ở chế độ hybrid: thiếu key thì parse CV / JD trả 503.
+  // Chế độ rule không dùng tới key này
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || null,
   GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
   // Gửi thư quên mật khẩu qua Gmail, không bắt buộc:

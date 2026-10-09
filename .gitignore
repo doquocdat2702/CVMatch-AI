@@ -1,0 +1,7 @@
+samples/
+.env
+.env.test
+backend/scripts/lib/
+backend/scripts/smoke-test.js
+backend/scripts/test-*.js
+!backend/scripts/test-extract.js

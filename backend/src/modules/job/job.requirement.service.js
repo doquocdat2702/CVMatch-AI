@@ -1,3 +1,4 @@
+const env = require('../../config/env');
 const prisma = require('../../config/prisma');
 const { assertCanManageJob } = require('./job.service');
 const { extractRequirements } = require('../ai/jd-parser/requirement.extractor');
@@ -86,7 +87,9 @@ const REQUIREMENT_INCLUDE = { skill: { select: { id: true, name: true } } };
 
 // ===== Phần A: phân tích JD =====
 
-// JD -> extractRequirements -> classifyBatch -> chuẩn hóa -> ghi đè toàn bộ JobRequirement
+// JD -> extractRequirements -> classifyBatch -> chuẩn hóa -> ghi đè toàn bộ JobRequirement.
+// Trả { requirements, mode, unresolvedCount }: unresolvedCount = số yêu cầu rule không phân loại được
+// (chế độ rule: để PREFERRED; chế độ hybrid: đã hỏi LLM)
 async function parseJobDescription(user, jobId) {
   const job = await assertCanManageJob(user, jobId);
 
@@ -96,8 +99,9 @@ async function parseJobDescription(user, jobId) {
   }
 
   const extracted = extractRequirements(description);
-  // classifyBatch không throw: LLM lỗi thì mục chưa quyết được mặc định OPTIONAL
-  const types = await classifyBatch(extracted);
+  // Gọi LLM TRƯỚC khi mở transaction: chế độ hybrid còn mục rule không phân loại được mà thiếu key
+  // hoặc LLM lỗi thì classifyBatch throw 503 tại đây, JobRequirement cũ giữ nguyên
+  const { types, unresolvedCount } = await classifyBatch(extracted);
 
   // Nạp bảng Skill đúng một lần cho cả danh sách
   const skillIndex = await loadSkillIndex();
@@ -118,7 +122,7 @@ async function parseJobDescription(user, jobId) {
     });
   }
 
-  return prisma.$transaction(async (tx) => {
+  const requirements = await prisma.$transaction(async (tx) => {
     await tx.jobRequirement.deleteMany({ where: { jobId: job.id } });
 
     for (const data of rows) {
@@ -131,6 +135,8 @@ async function parseJobDescription(user, jobId) {
       include: REQUIREMENT_INCLUDE,
     });
   });
+
+  return { requirements, mode: env.NLP_MODE, unresolvedCount };
 }
 
 // ===== Phần B: quản lý requirement =====

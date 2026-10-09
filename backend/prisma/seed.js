@@ -18,7 +18,12 @@ const SKILLS = [
   { name: 'Node.js', aliases: 'nodejs,node,express' },
   { name: 'Python', aliases: 'python3,py' },
   { name: 'Java', aliases: 'core java,java se' },
-  { name: 'SQL', aliases: 'mysql,postgresql,sql server,truy van sql' },
+  // SQL khác MySQL, PostgreSQL, SQL Server (quy tắc T14): mỗi hệ quản trị CSDL là Skill riêng,
+  // không làm alias của SQL
+  { name: 'SQL', aliases: 'truy van sql' },
+  { name: 'MySQL', aliases: 'my sql,mysql server' },
+  { name: 'PostgreSQL', aliases: 'postgres,postgresql' },
+  { name: 'SQL Server', aliases: 'mssql,sql server' },
   { name: 'Docker', aliases: 'container,docker compose' },
   // Marketing
   { name: 'SEO', aliases: 'search engine optimization,toi uu cong cu tim kiem' },
@@ -41,7 +46,8 @@ const SKILLS = [
   { name: 'Đào tạo nội bộ', aliases: 'training,l&d,dao tao nhan vien' },
   // Thiết kế
   { name: 'Photoshop', aliases: 'ps,adobe photoshop' },
-  { name: 'Illustrator', aliases: 'ai,adobe illustrator' },
+  // Không dùng alias "ai": trong CV thường là trí tuệ nhân tạo, không phải Illustrator
+  { name: 'Illustrator', aliases: 'adobe illustrator' },
   { name: 'Figma', aliases: 'figma design,thiet ke figma' },
   { name: 'UI/UX', aliases: 'ui ux,thiet ke giao dien,user experience' },
   { name: 'Dựng video', aliases: 'premiere,after effect,video editing' },

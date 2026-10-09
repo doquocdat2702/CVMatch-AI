@@ -1,7 +1,10 @@
 // Gộp kết quả của rule-based parser và NLP parser.
 // Một parser lỗi thì vẫn dùng được kết quả của parser còn lại.
-const { parseByRule, extractDateRanges } = require('./rule.parser');
+// Chế độ rule: chỉ chạy rule (kể cả bóc kỹ năng bằng từ điển), KHÔNG gọi NLP.
+// Chế độ hybrid: chạy cả hai, kỹ năng của NLP và của từ điển gộp lại, mỗi kỹ năng một lần.
+const { parseByRule, extractDateRanges, extractSkillsByDictionary } = require('./rule.parser');
 const { parseByNlp } = require('./nlp.parser');
+const { normalizeText, normalizeSkillName, resolveSkillId, loadSkillIndex } = require('../normalization/normalizer');
 
 const SOURCE_RULE = 'RULE';
 const SOURCE_NLP = 'NLP';
@@ -57,8 +60,9 @@ function emptyNlpResult() {
   return { fullName: null, headline: null, skills: [], experiences: [], educations: [] };
 }
 
-// Khử trùng lặp skill theo tên đã lowercase + trim, giữ bản ghi đầu tiên
-function dedupeSkills(skills) {
+// Khử trùng lặp skill, giữ bản ghi đầu tiên. Mặc định so theo tên đã lowercase + trim;
+// truyền keyOf để so theo khóa khác (ví dụ theo skillId).
+function dedupeSkills(skills, keyOf = (skill) => skill.rawName.toLowerCase()) {
   const seen = new Set();
   const result = [];
 
@@ -68,16 +72,40 @@ function dedupeSkills(skills) {
       continue;
     }
 
-    const key = rawName.toLowerCase();
+    const key = keyOf({ ...skill, rawName });
     if (seen.has(key)) {
       continue;
     }
 
     seen.add(key);
-    result.push({ rawName, evidence: skill.evidence || null, source: skill.source || SOURCE_NLP });
+    result.push({
+      rawName,
+      skillId: skill.skillId === undefined ? null : skill.skillId,
+      evidence: skill.evidence || null,
+      source: skill.source || SOURCE_NLP,
+    });
   }
 
   return result;
+}
+
+// Gộp kỹ năng NLP (đứng trước, giữ evidence của NLP) với kỹ năng bóc bằng từ điển.
+// Cùng một kỹ năng thì chỉ giữ một: so theo skillId nếu tra được bảng Skill,
+// không tra được thì so theo tên đã chuẩn hóa (T14).
+async function mergeSkills(nlpSkills, ruleSkills, skillIndex) {
+  const withIds = [];
+  for (const skill of nlpSkills) {
+    const rawName = typeof skill.rawName === 'string' ? skill.rawName.trim() : '';
+    const { canonical } = normalizeSkillName(rawName);
+    const skillId = rawName ? await resolveSkillId(canonical, skillIndex) : null;
+    withIds.push({ ...skill, rawName, skillId, source: SOURCE_NLP });
+  }
+
+  return dedupeSkills([...withIds, ...ruleSkills], (skill) =>
+    skill.skillId !== null && skill.skillId !== undefined
+      ? `id:${skill.skillId}`
+      : `name:${normalizeText(normalizeSkillName(skill.rawName).canonical)}`
+  );
 }
 
 // Ngày tháng ưu tiên rule: nếu tìm được mốc thời gian ngay trong evidence/description
@@ -150,8 +178,10 @@ function resolveEducationDates(education, educationSection) {
   };
 }
 
-async function parseCV(rawText) {
+// mode: 'rule' | 'hybrid'. skillIndex: chỉ mục bảng Skill (loadSkillIndex), không truyền thì tự nạp.
+async function parseCV(rawText, { mode = 'hybrid', skillIndex } = {}) {
   const errors = { rule: null, nlp: null };
+  const index = skillIndex || (await loadSkillIndex());
 
   // Chạy rule-based
   let ruleResult = emptyRuleResult();
@@ -162,23 +192,32 @@ async function parseCV(rawText) {
     console.error(`[HYBRID] Rule parser lỗi: ${err.message}`);
   }
 
-  // Chạy NLP (parseByNlp tự nuốt lỗi, vẫn bọc thêm cho chắc)
-  let nlpResult = emptyNlpResult();
+  // Bóc kỹ năng bằng từ điển bảng Skill: chạy ở cả hai chế độ
+  let ruleSkills = [];
   try {
-    nlpResult = await parseByNlp(rawText, ruleResult.sections);
+    ruleSkills = extractSkillsByDictionary(rawText, index);
   } catch (err) {
-    errors.nlp = err.message;
-    console.error(`[HYBRID] NLP parser lỗi: ${err.message}`);
+    errors.rule = errors.rule || err.message;
+    console.error(`[HYBRID] Bóc kỹ năng bằng từ điển lỗi: ${err.message}`);
   }
 
-  // parseByNlp tự nuốt lỗi và trả cờ failed, ghi nhận lại để tầng trên biết
-  if (nlpResult.failed && !errors.nlp) {
-    errors.nlp = 'Không gọi được dịch vụ NLP';
+  // Chạy NLP chỉ ở chế độ hybrid (parseByNlp tự nuốt lỗi, vẫn bọc thêm cho chắc)
+  let nlpResult = emptyNlpResult();
+  if (mode === 'hybrid') {
+    try {
+      nlpResult = await parseByNlp(rawText, ruleResult.sections);
+    } catch (err) {
+      errors.nlp = err.message;
+      console.error(`[HYBRID] NLP parser lỗi: ${err.message}`);
+    }
+
+    // parseByNlp tự nuốt lỗi và trả cờ failed, ghi nhận lại để tầng trên biết
+    if (nlpResult.failed && !errors.nlp) {
+      errors.nlp = 'Không gọi được dịch vụ NLP';
+    }
   }
 
-  const skills = dedupeSkills(
-    (nlpResult.skills || []).map((skill) => ({ ...skill, source: SOURCE_NLP }))
-  );
+  const skills = await mergeSkills(nlpResult.skills || [], ruleSkills, index);
 
   const experiences = (nlpResult.experiences || []).map((experience) => {
     const dates = resolveExperienceDates(experience);
@@ -209,6 +248,7 @@ async function parseCV(rawText) {
   });
 
   return {
+    mode,
     // Liên hệ: chỉ rule-based mới bóc được, NLP không trả các trường này
     email: ruleResult.email,
     phone: ruleResult.phone,
@@ -216,7 +256,9 @@ async function parseCV(rawText) {
     // Thông tin cá nhân: lấy từ NLP
     fullName: nlpResult.fullName,
     headline: nlpResult.headline,
+    // Kỹ năng: NLP + từ điển (hybrid) hoặc chỉ từ điển (rule)
     skills,
+    // Kinh nghiệm, học vấn: chỉ NLP bóc được, chế độ rule luôn rỗng
     experiences,
     educations,
     // Mốc thời gian tổng hợp của rule, dùng để đối chiếu số năm kinh nghiệm

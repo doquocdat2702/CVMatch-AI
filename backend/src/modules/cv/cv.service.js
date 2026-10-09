@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
+const env = require('../../config/env');
 const prisma = require('../../config/prisma');
 const { extractText } = require('../ai/text-extraction');
 const { parseCV } = require('../ai/cv-parser/hybrid.parser');
@@ -15,8 +16,6 @@ function createError(message, statusCode) {
   err.statusCode = statusCode;
   return err;
 }
-
-const EXTRACT_TIMEOUT_MS = 15 * 1000;
 
 // Hết thời gian thì reject; promise gốc vẫn chạy nốt ở nền nhưng kết quả bị bỏ qua
 function withTimeout(promise, ms, message) {
@@ -142,10 +141,10 @@ async function extractCvText(userId, cvId) {
   const absolutePath = path.resolve(process.cwd(), cv.filePath);
 
   try {
-    // File quá nặng hoặc cố tình làm treo parser: quá 15 giây thì đánh dấu FAILED
+    // File quá nặng hoặc cố tình làm treo parser: quá EXTRACT_TIMEOUT_MS (mặc định 15 giây) thì đánh dấu FAILED
     const rawText = await withTimeout(
       extractText(absolutePath, cv.fileType),
-      EXTRACT_TIMEOUT_MS,
+      env.EXTRACT_TIMEOUT_MS,
       'Quá thời gian xử lý file'
     );
 
@@ -172,6 +171,9 @@ async function extractCvText(userId, cvId) {
   }
 }
 
+// Kỹ năng do rule parser (từ điển bảng Skill) bóc ra
+const SOURCE_RULE = 'RULE';
+
 // Các cột dưới DB đang là NOT NULL, NLP không bóc được thì lưu chuỗi rỗng
 function textOrEmpty(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : '';
@@ -192,41 +194,60 @@ async function parseCvToProfile(userId, cvId) {
   }
 
   const profile = await getCandidateProfile(userId);
+  const mode = env.NLP_MODE;
+
+  // Nạp bảng Skill đúng một lần, dùng cho cả bóc kỹ năng bằng từ điển lẫn tra skillId
+  const skillIndex = await loadSkillIndex();
 
   // Gọi parser trước, xong mới mở transaction để không giữ kết nối DB trong lúc chờ LLM
-  const parsed = await parseCV(cv.rawText);
+  const parsed = await parseCV(cv.rawText, { mode, skillIndex });
 
-  // NLP hỏng mà không bóc được gì thì giữ nguyên dữ liệu cũ, tránh xóa trắng hồ sơ
-  const nothingParsed =
-    parsed.skills.length === 0 &&
-    parsed.experiences.length === 0 &&
-    parsed.educations.length === 0;
-
-  if (parsed.errors.nlp && nothingParsed) {
+  // Chế độ hybrid: NLP hỏng hoặc thiếu key thì báo 503 và giữ nguyên dữ liệu cũ,
+  // kể cả khi từ điển bóc được vài kỹ năng (không lưu kết quả nửa vời)
+  if (mode === 'hybrid' && parsed.errors.nlp) {
     throw createError(
       'Dịch vụ NLP đang không khả dụng, chưa bóc tách được CV. Dữ liệu cũ được giữ nguyên, vui lòng thử lại sau',
       503
     );
   }
 
-  // Chuẩn hóa tên kỹ năng và tra skillId trước, nạp bảng Skill đúng một lần
-  const skillIndex = await loadSkillIndex();
+  // Chuẩn hóa tên kỹ năng (T14); kỹ năng bóc bằng từ điển đã có sẵn skillId
   const normalizedSkills = [];
   for (const skill of parsed.skills) {
     const { canonical, matched } = normalizeSkillName(skill.rawName);
-    const skillId = await resolveSkillId(canonical, skillIndex);
+    const skillId =
+      skill.skillId !== null && skill.skillId !== undefined
+        ? skill.skillId
+        : await resolveSkillId(canonical, skillIndex);
     normalizedSkills.push({ ...skill, canonical, matchedDictionary: matched, skillId });
   }
 
   return prisma.$transaction(async (tx) => {
-    // 1. Chỉ xóa bản ghi chưa được người dùng xác nhận
+    // 1. Chỉ xóa bản ghi chưa được người dùng xác nhận.
+    // Chế độ rule chỉ thay kỹ năng do rule bóc (source RULE): giữ nguyên kỹ năng từ NLP,
+    // và không bóc được kinh nghiệm / học vấn nên giữ nguyên bản ghi cũ của hai loại này
     const where = { candidateProfileId: profile.id, isConfirmed: false };
-    await tx.candidateSkill.deleteMany({ where });
-    await tx.candidateExperience.deleteMany({ where });
-    await tx.candidateEducation.deleteMany({ where });
+    if (mode === 'hybrid') {
+      await tx.candidateSkill.deleteMany({ where });
+      await tx.candidateExperience.deleteMany({ where });
+      await tx.candidateEducation.deleteMany({ where });
+    } else {
+      await tx.candidateSkill.deleteMany({ where: { ...where, source: SOURCE_RULE } });
+    }
+
+    // Chế độ rule: kỹ năng đã có trong hồ sơ (NLP giữ lại, hoặc người dùng đã xác nhận) thì không ghi trùng
+    let skillsToCreate = normalizedSkills;
+    if (mode === 'rule') {
+      const kept = await tx.candidateSkill.findMany({
+        where: { candidateProfileId: profile.id, skillId: { not: null } },
+        select: { skillId: true },
+      });
+      const keptIds = new Set(kept.map((skill) => skill.skillId));
+      skillsToCreate = normalizedSkills.filter((skill) => skill.skillId === null || !keptIds.has(skill.skillId));
+    }
 
     // 2. Ghi bản ghi mới, luôn ở trạng thái chưa xác nhận
-    for (const skill of normalizedSkills) {
+    for (const skill of skillsToCreate) {
       await tx.candidateSkill.create({
         data: {
           candidateProfileId: profile.id,
@@ -299,6 +320,7 @@ async function parseCvToProfile(userId, cvId) {
 
     return {
       cvId: cv.id,
+      mode,
       profile: updatedProfile,
       contact: { email: parsed.email, phone: parsed.phone, urls: parsed.urls },
       totalYears: parsed.totalYears,

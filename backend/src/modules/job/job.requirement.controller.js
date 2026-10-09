@@ -4,7 +4,11 @@ const { success } = require('../../utils/response');
 async function parseJd(req, res, next) {
   try {
     const data = await requirementService.parseJobDescription(req.user, req.params.id);
-    return success(res, data, `Phân tích JD thành công, trích xuất được ${data.length} yêu cầu`);
+    let message = `Phân tích JD thành công, trích xuất được ${data.requirements.length} yêu cầu`;
+    if (data.mode === 'rule' && data.unresolvedCount > 0) {
+      message += `, ${data.unresolvedCount} yêu cầu rule chưa phân loại được nên tạm để PREFERRED`;
+    }
+    return success(res, data, message);
   } catch (err) {
     return next(err);
   }
