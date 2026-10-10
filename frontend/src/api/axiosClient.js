@@ -16,13 +16,25 @@ axiosClient.interceptors.request.use((config) => {
   return config
 })
 
-// Token hết hạn hoặc không hợp lệ -> xóa token và quay về trang đăng nhập
+// Route công khai: chưa đăng nhập vẫn xem được, gặp 401 thì ở yên tại chỗ
+const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-password']
+const PUBLIC_PATTERNS = [/^\/jobs\/[^/]+$/] // /jobs/:id
+
+function isPublicPath(pathname) {
+  // Bỏ dấu / cuối (trừ trang chủ) để /login/ cũng tính là /login
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname
+  return PUBLIC_PATHS.includes(path) || PUBLIC_PATTERNS.some((pattern) => pattern.test(path))
+}
+
+// Token hết hạn hoặc không hợp lệ -> luôn xóa phiên đã lưu.
+// Chỉ chuyển về /login khi đang ở route cần đăng nhập.
 axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('token')
-      if (window.location.pathname !== '/login') {
+      localStorage.removeItem('user')
+      if (!isPublicPath(window.location.pathname)) {
         window.location.href = '/login'
       }
     }
