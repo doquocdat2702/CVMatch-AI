@@ -1,0 +1,123 @@
+.intro {
+  margin: 0 0 var(--space-6);
+  color: var(--color-text-muted);
+}
+
+.section {
+  margin-bottom: var(--space-6);
+}
+
+/* ===== Vùng kéo thả ===== */
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  background-color: var(--color-bg);
+  border: var(--border-width) dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  transition:
+    background-color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease;
+}
+
+/* Đang kéo file vào: đổi sang Xanh mực để biết thả được */
+.dragOver {
+  background-color: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.dropTitle {
+  margin: 0;
+  font-weight: var(--weight-semibold);
+}
+
+.dropHint {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
+
+/* ===== Tiến trình phân tích ===== */
+
+.progress {
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  text-align: center;
+  background-color: var(--color-bg);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.progressTitle {
+  margin: 0;
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.progressNote {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+/* ===== Bảng ===== */
+
+.fileName {
+  overflow-wrap: anywhere;
+}
+
+.statusCell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.errorText {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-danger-text);
+}
+
+.rowActions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.modalText {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ===== Thông báo ===== */
+
+.alertSuccess,
+.alertError {
+  margin: var(--space-3) 0;
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+}
+
+.alertSuccess {
+  color: var(--color-success-text);
+  background-color: var(--color-success-bg);
+  border: var(--border-width) solid var(--color-success-border);
+}
+
+.alertError {
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger-border);
+}

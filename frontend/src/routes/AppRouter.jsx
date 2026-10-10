@@ -10,6 +10,8 @@ import ResetPassword from '../pages/auth/ResetPassword'
 import Forbidden from '../pages/errors/Forbidden'
 import NotFound from '../pages/errors/NotFound'
 import UnderConstruction from '../pages/common/UnderConstruction'
+import Profile from '../pages/candidate/Profile'
+import CVUpload from '../pages/candidate/CVUpload'
 import { ROLES } from '../utils/roles'
 
 // Các route đã đăng nhập: ProtectedRoute kiểm role -> MainLayout (Header + Sidebar) -> trang con.
@@ -34,8 +36,8 @@ function AppRouter() {
             <Route element={<MainLayout />}>
               {/* Việc làm gợi ý: trang của T30 */}
               <Route path="recommended-jobs" element={<UnderConstruction />} />
-              <Route path="cvs" element={<UnderConstruction />} />
-              <Route path="profile" element={<UnderConstruction />} />
+              <Route path="cvs" element={<CVUpload />} />
+              <Route path="profile" element={<Profile />} />
               <Route path="applications" element={<UnderConstruction />} />
             </Route>
           </Route>
