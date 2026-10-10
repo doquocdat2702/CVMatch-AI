@@ -179,16 +179,46 @@ function textOrEmpty(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : '';
 }
 
+// Lỗi đã định nghĩa (có statusCode, vd 503 NLP) ghi đúng lý do; lỗi bất ngờ (Prisma...) không ghi
+// chi tiết kỹ thuật vào CV vì errorMessage được trả thẳng cho ứng viên
+function parseFailureMessage(err) {
+  const reason = Number.isInteger(err.statusCode) ? err.message : 'Lỗi hệ thống, vui lòng thử lại sau';
+  return `Phân tích thất bại: ${reason}`;
+}
+
+// Parse lỗi thì CV chuyển FAILED kèm lý do; rawText và dữ liệu hồ sơ giữ nguyên
+async function markParseFailed(cvId, err) {
+  try {
+    await prisma.cV.update({
+      where: { id: cvId },
+      data: { status: 'FAILED', errorMessage: parseFailureMessage(err) },
+    });
+  } catch (updateErr) {
+    console.error(`[CV] Không ghi được trạng thái FAILED cho CV ${cvId}: ${updateErr.message}`);
+  }
+}
+
 // Bóc tách CV đã trích xuất text và ghi kết quả xuống database
 async function parseCvToProfile(userId, cvId) {
   const cv = await findOwnedCv(userId, cvId);
 
+  // Chưa extract xong: chỉ báo lỗi, không đổi trạng thái CV
   if (cv.status !== 'COMPLETED') {
     throw createError(
       'CV chưa trích xuất nội dung thành công, hãy gọi /extract trước khi bóc tách',
       400
     );
   }
+
+  try {
+    return await parseAndSave(userId, cv);
+  } catch (err) {
+    await markParseFailed(cv.id, err);
+    throw err;
+  }
+}
+
+async function parseAndSave(userId, cv) {
   if (!cv.rawText || !cv.rawText.trim()) {
     throw createError('CV không có nội dung text để bóc tách', 400);
   }
@@ -308,6 +338,13 @@ async function parseCvToProfile(userId, cvId) {
       Object.keys(profileData).length > 0
         ? await tx.candidateProfile.update({ where: { id: profile.id }, data: profileData })
         : profile;
+
+    // 4. Parse thành công: CV ở COMPLETED, xóa lỗi cũ, ghi thời điểm phân tích.
+    // Nằm trong cùng transaction nên chỉ ghi khi toàn bộ dữ liệu bóc tách đã lưu xong
+    await tx.cV.update({
+      where: { id: cv.id },
+      data: { status: 'COMPLETED', errorMessage: null, parsedAt: new Date() },
+    });
 
     const [skills, experiences, educations] = await Promise.all([
       tx.candidateSkill.findMany({
