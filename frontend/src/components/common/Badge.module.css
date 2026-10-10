@@ -1,0 +1,35 @@
+/* Nhãn chữ nhật có viền, giống nhãn đóng trên hồ sơ (không bo tròn kiểu viên thuốc) */
+.badge {
+  display: inline-block;
+  padding: 0 var(--space-2);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  border: var(--border-width) solid;
+  border-radius: var(--radius-sm);
+}
+
+.success {
+  color: var(--color-success-text);
+  background-color: var(--color-success-bg);
+  border-color: var(--color-success-border);
+}
+
+.warning {
+  color: var(--color-warning-text);
+  background-color: var(--color-warning-bg);
+  border-color: var(--color-warning-border);
+}
+
+.danger {
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-bg);
+  border-color: var(--color-danger-border);
+}
+
+.neutral {
+  color: var(--color-neutral-text);
+  background-color: var(--color-neutral-bg);
+  border-color: var(--color-neutral-border);
+}

@@ -1,0 +1,55 @@
+.wrapper {
+  width: 100%;
+  overflow-x: auto;
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+}
+
+.table th,
+.table td {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+/* Tiêu đề cột viết thường, đậm 600, không viết hoa toàn bộ */
+.table th {
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+}
+
+/* height của ô bảng hoạt động như chiều cao tối thiểu của hàng */
+.table td {
+  height: var(--table-row-min-height);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Cột số: căn phải, chữ số đều nhau để so sánh theo cột */
+.table .alignRight {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.table .alignCenter {
+  text-align: center;
+}
+
+.table .empty {
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--color-text-muted);
+}

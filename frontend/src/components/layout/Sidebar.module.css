@@ -1,0 +1,73 @@
+.sidebar {
+  flex-shrink: 0;
+  width: var(--sidebar-width);
+  padding: var(--space-4) 0;
+  background-color: var(--color-bg);
+  border-right: var(--border-width) solid var(--color-border);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.link {
+  display: block;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  text-decoration: none;
+  border-left: var(--border-accent-width) solid transparent;
+  transition: background-color var(--duration-fast) ease;
+}
+
+.link:hover {
+  background-color: var(--color-hover);
+}
+
+/* Viền focus vẽ vào trong để không đè lên vùng nội dung bên cạnh */
+.link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: calc(var(--focus-ring-offset) * -1);
+}
+
+/* Mục đang chọn: nền Xanh nhạt, chữ đậm, vạch trái Xanh mực (nhận ra được mà không cần phân biệt màu) */
+.active,
+.active:hover {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary-soft-text);
+  background-color: var(--color-primary-soft);
+  border-left-color: var(--color-primary);
+}
+
+/* Màn hình hẹp: sidebar thành hàng menu dưới header, tự xuống dòng, vạch đánh dấu chuyển xuống dưới */
+@media (max-width: 900px) {
+  .sidebar {
+    width: auto;
+    padding: var(--space-2) var(--space-4);
+    border-right: none;
+    border-bottom: var(--border-width) solid var(--color-border);
+  }
+
+  .list {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .link {
+    padding: var(--space-2) var(--space-3);
+    border-left: none;
+    border-bottom: var(--border-accent-width) solid transparent;
+  }
+
+  .active,
+  .active:hover {
+    border-bottom-color: var(--color-primary);
+  }
+}

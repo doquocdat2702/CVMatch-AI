@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { getErrorMessage } from '../../utils/apiError'
+import { APP_NAME } from '../../utils/appConfig'
 import { getRoleHome } from '../../utils/roles'
 import styles from './Auth.module.css'
 
@@ -49,67 +50,75 @@ function Login() {
   }
 
   return (
-    <main className={styles.page}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>Đăng nhập</h1>
-        <p className={styles.subtitle}>Dùng chung cho ứng viên, nhà tuyển dụng và quản trị viên.</p>
+    <main className={styles.loginPage}>
+      {/* Khối điểm nhấn: chỉ trang đăng nhập và trang việc làm công khai được có */}
+      <section className={styles.brandPanel}>
+        <p className={styles.brandName}>{APP_NAME}</p>
+        <p className={styles.brandText}>Phân tích CV và đối chiếu với yêu cầu của từng vị trí tuyển dụng.</p>
+      </section>
 
-        {notice && !error && <p className={styles.alertSuccess}>{notice}</p>}
-        {error && (
-          <p className={styles.alertError} role="alert">
-            {error}
-          </p>
-        )}
+      <div className={styles.formPanel}>
+        <div className={styles.formInner}>
+          <h1 className={styles.title}>Đăng nhập</h1>
+          <p className={styles.subtitle}>Dùng chung cho ứng viên, nhà tuyển dụng và quản trị viên.</p>
 
-        <form className={styles.form} onSubmit={handleSubmit} noValidate>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="login-email">
-              Email
-            </label>
-            <input
-              id="login-email"
-              className={styles.input}
-              type="email"
-              name="email"
-              autoComplete="email"
-              value={form.email}
-              onChange={handleChange}
-              disabled={submitting}
-            />
-          </div>
+          {notice && !error && <p className={styles.alertSuccess}>{notice}</p>}
+          {error && (
+            <p className={styles.alertError} role="alert">
+              {error}
+            </p>
+          )}
 
-          <div className={styles.field}>
-            <div className={styles.labelRow}>
-              <label className={styles.label} htmlFor="login-password">
-                Mật khẩu
+          <form className={styles.form} onSubmit={handleSubmit} noValidate>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="login-email">
+                Email
               </label>
-              <Link className={styles.smallLink} to="/forgot-password">
-                Quên mật khẩu?
-              </Link>
+              <input
+                id="login-email"
+                className={styles.input}
+                type="email"
+                name="email"
+                autoComplete="email"
+                value={form.email}
+                onChange={handleChange}
+                disabled={submitting}
+              />
             </div>
-            <input
-              id="login-password"
-              className={styles.input}
-              type="password"
-              name="password"
-              autoComplete="current-password"
-              value={form.password}
-              onChange={handleChange}
-              disabled={submitting}
-            />
-          </div>
 
-          <button className={styles.button} type="submit" disabled={submitting}>
-            {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
-          </button>
-        </form>
+            <div className={styles.field}>
+              <div className={styles.labelRow}>
+                <label className={styles.label} htmlFor="login-password">
+                  Mật khẩu
+                </label>
+                <Link className={styles.smallLink} to="/forgot-password">
+                  Quên mật khẩu?
+                </Link>
+              </div>
+              <input
+                id="login-password"
+                className={styles.input}
+                type="password"
+                name="password"
+                autoComplete="current-password"
+                value={form.password}
+                onChange={handleChange}
+                disabled={submitting}
+              />
+            </div>
 
-        <p className={styles.note}>
-          Chưa có tài khoản ứng viên?{' '}
-          <Link className={styles.link} to="/register">
-            Đăng ký
-          </Link>
-        </p>
+            <button className={styles.button} type="submit" disabled={submitting}>
+              {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+            </button>
+          </form>
+
+          <p className={styles.note}>
+            Chưa có tài khoản ứng viên?{' '}
+            <Link className={styles.link} to="/register">
+              Đăng ký
+            </Link>
+          </p>
+        </div>
       </div>
     </main>
   )

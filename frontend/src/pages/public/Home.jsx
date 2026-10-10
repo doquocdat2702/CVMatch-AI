@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { APP_NAME } from '../../utils/appConfig'
 import { ROLE_LABEL, getRoleHome } from '../../utils/roles'
 import styles from '../auth/Auth.module.css'
 
@@ -11,7 +12,7 @@ function Home() {
   return (
     <main className={styles.page}>
       <div className={styles.card}>
-        <h1 className={styles.title}>CV Matching System</h1>
+        <h1 className={styles.title}>{APP_NAME}</h1>
         <p className={styles.subtitle}>
           Phân tích CV và đối chiếu với yêu cầu của từng vị trí tuyển dụng, giúp kết nối ứng viên với công việc phù
           hợp.

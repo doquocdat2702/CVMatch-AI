@@ -1,170 +1,265 @@
 /*
-  Style TẠM cho các trang của T26 (auth, trang chủ tạm, 403, 404).
-  Chỉ lo bố cục và độ dễ đọc. Màu, font, cỡ chữ sẽ chuyển sang
-  biến của src/styles/variables.css khi chốt thiết kế ở T27.
+  Style cho các trang công khai của T26: đăng nhập, đăng ký, quên / đặt lại mật khẩu,
+  trang chủ tạm, 403, 404. Chỉ dùng biến trong src/styles/variables.css (docs/design.md).
 */
+
+/* ===== Trang dạng thẻ ở giữa (đăng ký, quên mật khẩu, 403, 404...) ===== */
 
 .page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px;
-  background-color: #f5f6f7;
+  padding: var(--space-5) var(--space-4);
+  background-color: var(--color-bg);
 }
 
 .card {
   width: 100%;
-  max-width: 400px;
-  padding: 32px 28px;
-  background-color: #ffffff;
-  border: 1px solid #dde1e5;
-  border-radius: 8px;
+  max-width: var(--auth-card-max);
+  padding: var(--space-6) var(--space-5);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
 }
 
+/* ===== Trang đăng nhập: khối điểm nhấn Xanh mực + form ===== */
+
+.loginPage {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+}
+
+.brandPanel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--space-8) var(--space-7);
+  color: var(--color-on-primary);
+  background-color: var(--color-primary);
+}
+
+.brandName {
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-serif);
+  font-size: var(--text-3xl);
+  line-height: var(--leading-3xl);
+  font-weight: var(--weight-semibold);
+}
+
+.brandText {
+  max-width: var(--auth-card-max);
+  margin: 0;
+  font-size: var(--text-lg);
+  line-height: var(--leading-lg);
+  color: var(--color-primary-soft);
+}
+
+.formPanel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-7) var(--space-4);
+  background-color: var(--color-surface);
+}
+
+.formInner {
+  width: 100%;
+  max-width: var(--auth-card-max);
+}
+
+/* Điện thoại, máy tính bảng dọc: khối Xanh mực thành dải phía trên form */
+@media (max-width: 900px) {
+  .loginPage {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+  }
+
+  .brandPanel {
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .brandName {
+    margin-bottom: var(--space-2);
+    font-size: var(--text-2xl);
+    line-height: var(--leading-2xl);
+  }
+
+  .brandText {
+    font-size: var(--text-md);
+    line-height: var(--leading-md);
+  }
+
+  .formPanel {
+    align-items: flex-start;
+    padding: var(--space-6) var(--space-4);
+  }
+}
+
+/* ===== Nội dung chung ===== */
+
+/* Cỡ chữ và font serif của h1 lấy từ index.css */
 .title {
-  margin: 0 0 8px;
-  font-size: 1.5rem;
-  line-height: 1.3;
+  margin: 0 0 var(--space-2);
 }
 
 .subtitle {
-  margin: 0 0 24px;
-  color: #52606d;
-  line-height: 1.5;
+  margin: 0 0 var(--space-5);
+  color: var(--color-text-muted);
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .labelRow {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .label {
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-semibold);
 }
 
 .input {
   width: 100%;
-  padding: 10px 12px;
-  font: inherit;
-  color: inherit;
-  background-color: #ffffff;
-  border: 1px solid #b8c0c8;
-  border-radius: 6px;
+  height: var(--control-height);
+  padding: 0 var(--space-3);
+  font-size: var(--text-md);
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
 }
 
-.input:focus {
-  outline: 2px solid #1f4e79;
-  outline-offset: 1px;
-  border-color: #1f4e79;
+.input:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.input:disabled {
+  color: var(--color-disabled-text);
+  background-color: var(--color-disabled-bg);
+  cursor: not-allowed;
 }
 
 .inputInvalid {
-  border-color: #b42318;
+  border-color: var(--color-danger-text);
 }
 
 .fieldError {
   margin: 0;
-  font-size: 0.8125rem;
-  color: #b42318;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-danger-text);
 }
 
+/* Nút dạng link (Link của react-router) và nút submit của form */
 .button {
-  display: inline-block;
-  padding: 10px 16px;
-  font: inherit;
-  font-weight: 600;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--control-height);
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
   text-decoration: none;
-  color: #ffffff;
-  background-color: #1f4e79;
-  border: 1px solid #1f4e79;
-  border-radius: 6px;
+  color: var(--color-on-primary);
+  background-color: var(--color-primary);
+  border: var(--border-width) solid var(--color-primary);
+  border-radius: var(--radius-sm);
   cursor: pointer;
+  transition: background-color var(--duration-fast) ease;
 }
 
 .button:hover {
-  background-color: #173b5c;
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
 }
 
 .button:disabled {
-  opacity: 0.6;
+  color: var(--color-disabled-text);
+  background-color: var(--color-disabled-bg);
+  border-color: var(--color-disabled-bg);
   cursor: not-allowed;
 }
 
 .buttonSecondary {
-  color: #1f4e79;
-  background-color: #ffffff;
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border-color: var(--color-border-strong);
 }
 
 .buttonSecondary:hover {
-  background-color: #eef3f8;
+  background-color: var(--color-hover);
+  border-color: var(--color-border-strong);
 }
 
 .button:focus-visible,
-.link:focus-visible {
-  outline: 2px solid #1f4e79;
-  outline-offset: 2px;
+.link:focus-visible,
+.smallLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .alertError,
 .alertSuccess {
-  margin: 0 0 16px;
-  padding: 10px 12px;
-  border-radius: 6px;
-  line-height: 1.5;
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  border-radius: var(--radius-sm);
 }
 
 .alertError {
-  color: #7a1a12;
-  background-color: #fdeceb;
-  border: 1px solid #f4c4c0;
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger-border);
 }
 
 .alertSuccess {
-  color: #1d5b33;
-  background-color: #eaf6ee;
-  border: 1px solid #bfe3cb;
+  color: var(--color-success-text);
+  background-color: var(--color-success-bg);
+  border: var(--border-width) solid var(--color-success-border);
 }
 
 .note {
-  margin: 20px 0 0;
-  font-size: 0.875rem;
-  color: #52606d;
-  line-height: 1.5;
+  margin: var(--space-5) 0 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
 }
 
 .muted {
-  color: #52606d;
+  color: var(--color-text-muted);
 }
 
 .link {
-  color: #1f4e79;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
 }
 
 .smallLink {
-  font-size: 0.8125rem;
-  color: #1f4e79;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-primary);
 }

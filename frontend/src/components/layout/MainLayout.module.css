@@ -1,0 +1,32 @@
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--color-surface);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+}
+
+/* min-width: 0 để bảng rộng cuộn trong khung của nó thay vì đẩy cả trang rộng ra */
+.content {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-6);
+}
+
+.inner {
+  max-width: var(--content-max);
+}
+
+@media (max-width: 900px) {
+  .body {
+    flex-direction: column;
+  }
+
+  .content {
+    padding: var(--space-4);
+  }
+}

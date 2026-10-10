@@ -1,10 +1,52 @@
+/* Style nền cho toàn app. Biến lấy từ src/styles/variables.css (import trước file này ở main.jsx) */
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  color: #1f2933;
-  background-color: #ffffff;
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+  color: var(--color-text);
+  background-color: var(--color-surface);
+}
+
+/* Tiêu đề trang dùng font serif như tiêu đề hồ sơ, trang chỉ cần dùng thẻ h1 */
+h1 {
+  margin: 0 0 var(--space-5);
+  font-family: var(--font-serif);
+  font-size: var(--text-2xl);
+  line-height: var(--leading-2xl);
+  font-weight: var(--weight-semibold);
+}
+
+h2 {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-lg);
+  line-height: var(--leading-lg);
+  font-weight: var(--weight-semibold);
+}
+
+a {
+  color: var(--color-primary);
+}
+
+/* Nút, ô nhập dùng chung font của trang thay vì font mặc định của trình duyệt */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
