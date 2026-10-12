@@ -7,3 +7,20 @@ export function formatDateTime(value) {
   const time = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
   return `${day} ${time}`
 }
+
+// Mốc thời gian kinh nghiệm / học vấn được lưu là ngày 1 của tháng lúc 00:00 UTC,
+// nên đọc theo UTC để không bị lệch tháng theo múi giờ
+
+// "2020-03-01T00:00:00.000Z" -> "03/2020"
+export function formatMonthYear(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+  return `${month}/${date.getUTCFullYear()}`
+}
+
+// "2020-03-01T00:00:00.000Z" -> "2020-03", giá trị cho ô <input type="month">
+export function toMonthInput(value) {
+  if (!value) return ''
+  return new Date(value).toISOString().slice(0, 7)
+}

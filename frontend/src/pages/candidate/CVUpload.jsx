@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { deleteCV, extractCV, getCVs, parseCV, uploadCV } from '../../api/cv.api'
 import Badge from '../../components/common/Badge'
 import Button from '../../components/common/Button'
@@ -168,7 +169,7 @@ function CVUpload() {
       step = 'parse'
       setProcessing({ cvId: cv.id, fileName: cv.fileName, step })
       await parseCV(cv.id)
-      setNotice({ type: 'success', text: `Đã phân tích xong CV "${cv.fileName}".` })
+      setNotice({ type: 'success', text: `Đã phân tích xong CV "${cv.fileName}".`, showResultLink: true })
     } catch (err) {
       const prefix = step === 'extract' ? 'Trích xuất nội dung thất bại' : 'Phân tích thất bại'
       setNotice({ type: 'error', text: `${prefix}: ${getErrorMessage(err)}` })
@@ -271,7 +272,12 @@ function CVUpload() {
     <>
       <h1>CV của tôi</h1>
       <p className={styles.intro}>
-        Tải CV lên rồi bấm "Phân tích CV" để hệ thống đọc kỹ năng, kinh nghiệm và học vấn vào hồ sơ của bạn.
+        Tải CV lên rồi bấm "Phân tích CV" để hệ thống đọc kỹ năng, kinh nghiệm và học vấn vào hồ sơ của bạn. Kiểm tra
+        và chỉnh sửa kết quả ở trang{' '}
+        <Link className={styles.link} to="/candidate/cvs/parsed">
+          Kết quả phân tích CV
+        </Link>
+        .
       </p>
 
       <section className={styles.section}>
@@ -318,6 +324,14 @@ function CVUpload() {
             role={notice.type === 'error' ? 'alert' : 'status'}
           >
             {notice.text}
+            {notice.showResultLink && (
+              <>
+                {' '}
+                <Link className={styles.link} to="/candidate/cvs/parsed">
+                  Xem kết quả phân tích
+                </Link>
+              </>
+            )}
           </p>
         )}
 

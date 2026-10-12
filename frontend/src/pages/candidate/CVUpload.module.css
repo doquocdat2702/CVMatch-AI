@@ -7,6 +7,16 @@
   margin-bottom: var(--space-6);
 }
 
+.link {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+
+.link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
 /* ===== Vùng kéo thả ===== */
 
 .dropzone {

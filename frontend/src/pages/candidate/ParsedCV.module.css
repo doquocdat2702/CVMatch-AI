@@ -1,0 +1,224 @@
+/* ===== Dòng nhắc đầu trang ===== */
+
+.reminder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-primary-soft-text);
+  background-color: var(--color-primary-soft);
+  border-radius: var(--radius-sm);
+}
+
+.reminderText {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+}
+
+.legend {
+  margin: 0 0 var(--space-6);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+/* ===== Mỗi nhóm ===== */
+
+.section {
+  margin-bottom: var(--space-7);
+}
+
+.sectionHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+/* Bỏ margin mặc định của h2 (index.css) để thẳng hàng với nút "Thêm thủ công" */
+.sectionHeader > h2 {
+  margin: 0;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+/* Một dòng: nội dung bên trái, nhãn và nút bên phải */
+.item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-3) var(--space-5);
+  padding: var(--space-4);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.description {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.empty {
+  margin: 0;
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+  color: var(--color-text-muted);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+/* ===== Bằng chứng trích từ CV ===== */
+
+.evidence {
+  margin-top: var(--space-1);
+}
+
+.evidenceToggle {
+  width: fit-content;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.evidenceToggle:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Câu trích: chữ nhỏ màu Chì, vạch trái như trích dẫn trong hồ sơ */
+.evidenceText {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  border-left: var(--border-accent-width) solid var(--color-border);
+}
+
+/* ===== Form trong Modal ===== */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.periodRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+/* Cặp tháng bắt đầu / kết thúc đứng cạnh nhau từ 768px (docs/design.md mục 8) */
+@media (min-width: 768px) {
+  .periodRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.modalText {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ===== Thông báo ===== */
+
+.alertSuccess,
+.alertError {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+}
+
+.alertSuccess {
+  color: var(--color-success-text);
+  background-color: var(--color-success-bg);
+  border: var(--border-width) solid var(--color-success-border);
+}
+
+.alertError {
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger-border);
+}
+
+/* Màn hình hẹp: nhãn và nút xuống dưới nội dung */
+@media (max-width: 900px) {
+  .item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .side {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .badges {
+    justify-content: flex-start;
+  }
+}
