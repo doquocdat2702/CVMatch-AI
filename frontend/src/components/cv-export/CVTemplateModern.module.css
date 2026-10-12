@@ -1,0 +1,111 @@
+/* Mẫu Hiện đại: tên và tiêu đề mục màu Xanh mực, hai cột ngăn bằng đường kẻ (không tô nền để in không tốn mực) */
+
+.cv {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text);
+  background-color: var(--color-surface);
+}
+
+.header {
+  padding-bottom: var(--space-4);
+  border-bottom: var(--border-accent-width) solid var(--color-primary);
+}
+
+/* h1, h2 trong CV đặt lại cỡ và lề, không dùng style chung của trang (index.css) */
+.name {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-3xl);
+  line-height: var(--leading-3xl);
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+
+.headline {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+  color: var(--color-text-muted);
+}
+
+/* Cột trái hẹp (liên hệ, kỹ năng), cột phải rộng (kinh nghiệm, học vấn).
+   Tỉ lệ 2:3 để email thông thường nằm gọn một dòng ở cột trái khi in A4 */
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: var(--space-5);
+  margin-top: var(--space-4);
+}
+
+.side {
+  padding-right: var(--space-5);
+  border-right: var(--border-width) solid var(--color-border);
+}
+
+.section + .section {
+  margin-top: var(--space-5);
+}
+
+.sectionTitle {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.contacts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.contactLabel {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+.contactValue {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.skills {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Một mục kinh nghiệm / học vấn không bị ngắt giữa hai trang khi in */
+.entry {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.entry + .entry {
+  margin-top: var(--space-3);
+}
+
+.entryTitle {
+  margin: 0;
+  font-weight: var(--weight-semibold);
+}
+
+.entrySub {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.description {
+  margin: var(--space-1) 0 0;
+  white-space: pre-line;
+}

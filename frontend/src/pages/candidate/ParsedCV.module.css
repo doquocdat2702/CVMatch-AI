@@ -1,3 +1,19 @@
+/* ===== Tiêu đề trang + nút Xuất CV ở góc phải ===== */
+
+.pageHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+/* Bỏ margin mặc định của h1 (index.css) để thẳng hàng với nút */
+.pageHeader > h1 {
+  margin: 0;
+}
+
 /* ===== Dòng nhắc đầu trang ===== */
 
 .reminder {

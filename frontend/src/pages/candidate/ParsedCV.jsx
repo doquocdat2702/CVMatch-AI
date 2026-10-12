@@ -17,6 +17,7 @@ import Input from '../../components/common/Input'
 import Loading from '../../components/common/Loading'
 import Modal from '../../components/common/Modal'
 import Textarea from '../../components/common/Textarea'
+import CVExportModal from '../../components/cv-export/CVExportModal'
 import { getErrorMessage } from '../../utils/apiError'
 import { formatMonthYear, toMonthInput } from '../../utils/format'
 import styles from './ParsedCV.module.css'
@@ -217,6 +218,9 @@ function ParsedCV() {
   const [fieldErrors, setFieldErrors] = useState({})
   const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
+
+  // Modal xuất CV (T29b)
+  const [exportOpen, setExportOpen] = useState(false)
 
   // Dòng đang gửi "Xác nhận": "skill-12", "experience-3"...
   const [confirmingKey, setConfirmingKey] = useState(null)
@@ -511,7 +515,12 @@ function ParsedCV() {
 
   return (
     <>
-      <h1>Kết quả phân tích CV</h1>
+      <div className={styles.pageHeader}>
+        <h1>Kết quả phân tích CV</h1>
+        <Button variant="secondary" onClick={() => setExportOpen(true)}>
+          Xuất CV
+        </Button>
+      </div>
       <div className={styles.reminder} role="note">
         <p className={styles.reminderText}>
           Dữ liệu dưới đây do hệ thống tự phân tích từ CV của bạn, có thể chưa chính xác. Vui lòng kiểm tra và chỉnh
@@ -581,6 +590,8 @@ function ParsedCV() {
           </p>
         )}
       </Modal>
+
+      {exportOpen && <CVExportModal onClose={() => setExportOpen(false)} />}
     </>
   )
 }

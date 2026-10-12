@@ -44,8 +44,10 @@
   --color-neutral-border: #d3dbe6;
 
   /* ===== Font ===== */
-  --font-sans: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  --font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  /* Font tự host (src/styles/fonts.css). Font dự phòng chỉ giữ loại đủ dấu tiếng Việt: bỏ Georgia vì thiếu
+     ký tự có dấu ("Học vấn" thành "Học vâ´n") */
+  --font-sans: 'Be Vietnam Pro', Arial, sans-serif;
+  --font-serif: 'Source Serif 4', 'Times New Roman', serif;
 
   --weight-regular: 400;
   --weight-medium: 500;
@@ -108,4 +110,9 @@
 
   /* ===== Lớp chồng ===== */
   --z-modal: 100;
+
+  /* ===== Trang in CV khổ A4 (khung xem trước dùng các biến này; @page phải ghi số trực tiếp) ===== */
+  --print-page-width: 210mm;
+  --print-page-height: 297mm;
+  --print-page-margin: 15mm;
 }

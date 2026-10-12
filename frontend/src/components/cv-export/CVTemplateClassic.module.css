@@ -1,0 +1,100 @@
+/* Mẫu Cổ điển: một cột, chỉ màu chữ Mực đen, tiêu đề mục gạch chân */
+
+.cv {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text);
+  background-color: var(--color-surface);
+}
+
+.header {
+  text-align: center;
+}
+
+/* h1, h2 trong CV đặt lại cỡ và lề, không dùng style chung của trang (index.css) */
+.name {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-3xl);
+  line-height: var(--leading-3xl);
+  font-weight: var(--weight-semibold);
+}
+
+.headline {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+}
+
+.contacts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-1) var(--space-4);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.contactLabel {
+  font-weight: var(--weight-semibold);
+}
+
+.section {
+  margin-top: var(--space-5);
+}
+
+/* Tiêu đề mục gạch chân bằng đường kẻ màu chữ, không đứng một mình ở cuối trang */
+.sectionTitle {
+  margin: 0 0 var(--space-3);
+  padding-bottom: var(--space-1);
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  line-height: var(--leading-lg);
+  font-weight: var(--weight-semibold);
+  border-bottom: var(--border-width) solid var(--color-text);
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.skills {
+  margin: 0;
+}
+
+/* Một mục kinh nghiệm / học vấn không bị ngắt giữa hai trang khi in */
+.entry {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.entry + .entry {
+  margin-top: var(--space-3);
+}
+
+.entryHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-4);
+}
+
+.entryTitle {
+  margin: 0;
+  font-weight: var(--weight-semibold);
+}
+
+.period {
+  flex-shrink: 0;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.entrySub {
+  margin: 0;
+}
+
+.description {
+  margin: var(--space-1) 0 0;
+  white-space: pre-line;
+}

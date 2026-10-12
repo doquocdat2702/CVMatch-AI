@@ -77,7 +77,8 @@ Chữ thường cần ≥ 4.5:1. Viền ô nhập và viền focus (thành phầ
 
 ## 3. Font
 
-Nạp 2 font từ Google Fonts trong `index.html` (cả hai có bộ chữ tiếng Việt):
+2 font tự host trong `public/fonts/` (file `.woff2`, bộ ký tự latin + vietnamese), khai báo `@font-face`
+trong `src/styles/fonts.css` với `font-display: swap`. Giấy phép SIL OFL 1.1 của 2 font nằm cùng thư mục.
 
 | Font | Độ đậm | Biến | Dùng cho |
 |---|---|---|---|
@@ -86,6 +87,13 @@ Nạp 2 font từ Google Fonts trong `index.html` (cả hai có bộ chữ tiế
 
 Be Vietnam Pro do người Việt thiết kế cho tiếng Việt, dấu chồng (ẩ, ỗ, ừ) rõ ở cỡ 12–14px trong bảng.
 Source Serif 4 tạo cảm giác "tiêu đề hồ sơ", không dùng cho đoạn văn hay bảng.
+
+Vì sao tự host thay vì nạp từ Google Fonts:
+- App và bản in CV chạy được khi không có mạng (máy demo, mạng nội bộ công ty chặn Google): font nằm cùng
+  server với app, không phụ thuộc dịch vụ ngoài.
+- Tránh vỡ dấu tiếng Việt: khi font không tải được, trình duyệt dùng font dự phòng. Georgia thiếu ký tự có dấu
+  nên "Học vấn" hiện thành "Học vâ´n". Vì vậy font dự phòng chỉ giữ loại đủ dấu tiếng Việt:
+  `--font-sans: 'Be Vietnam Pro', Arial, sans-serif` và `--font-serif: 'Source Serif 4', 'Times New Roman', serif`.
 
 ## 4. Thang cỡ chữ
 
@@ -147,6 +155,8 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
   (vạch giúp nhận ra mục đang chọn mà không cần phân biệt màu).
 - Dưới 900px: sidebar thành hàng menu nằm dưới header, tự xuống dòng; không cuộn ngang trang.
 - Media query không dùng được biến CSS, nên 2 mốc cố định là **900px** (bố cục) và **768px** (form 2 cột).
+- Tương tự, `@page` (bản in CV, T29b) ghi số trực tiếp: khổ A4, lề 15mm, khớp `--print-page-width` và
+  `--print-page-margin` trong variables.css.
 
 ### Menu theo role
 

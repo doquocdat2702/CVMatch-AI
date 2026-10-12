@@ -1,0 +1,165 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.warning,
+.alertError {
+  margin: 0;
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  border-radius: var(--radius-sm);
+}
+
+.warning {
+  color: var(--color-warning-text);
+  background-color: var(--color-warning-bg);
+  border: var(--border-width) solid var(--color-warning-border);
+}
+
+.alertError {
+  margin-bottom: var(--space-4);
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger-border);
+}
+
+/* ===== Chọn mẫu ===== */
+
+.choices {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.legend {
+  margin-bottom: var(--space-2);
+  padding: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+/* Cả thẻ là nhãn của nút radio: bấm vào hình xem trước cũng chọn được mẫu */
+.option {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) ease;
+}
+
+.option:hover {
+  border-color: var(--color-border-strong);
+}
+
+.optionSelected,
+.optionSelected:hover {
+  background-color: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+/* Dùng bàn phím chọn mẫu thì viền focus nằm trên cả thẻ */
+.option:has(:focus-visible) {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.optionName {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.radio {
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+/* Đã có viền focus trên cả thẻ, không vẽ thêm trên nút radio */
+.radio:focus-visible {
+  outline: none;
+}
+
+.optionDesc {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+/* Khung xem trước giữ đúng tỉ lệ trang A4 (210 x 297) */
+.thumbFrame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 210 / 297;
+  overflow: hidden;
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+/* Trang A4 kích thước thật, có lề in, thu nhỏ từ góc trên trái bằng transform (JS tính tỉ lệ) */
+.thumbPage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--print-page-width);
+  min-height: var(--print-page-height);
+  padding: var(--print-page-margin);
+  background-color: var(--color-surface);
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+.note {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+/* ===== Bản in ===== */
+
+/* Vùng in luôn ẩn trên màn hình */
+.printArea {
+  display: none;
+}
+
+/* Khổ A4, lề 15mm. Biến CSS không dùng được trong @page nên ghi số trực tiếp
+   (khớp --print-page-width / --print-page-margin trong variables.css) */
+@page {
+  size: A4;
+  margin: 15mm;
+}
+
+/* Chỉ khi modal Xuất CV đang mở (body có class cv-printing): ẩn mọi thứ trong body
+   (trang, header, sidebar, modal, nút, phần chọn mẫu), chỉ hiện vùng CV */
+@media print {
+  :global(body.cv-printing) {
+    overflow: visible !important;
+    background-color: var(--color-surface);
+  }
+
+  :global(body.cv-printing > *) {
+    display: none !important;
+  }
+
+  :global(body.cv-printing > .cv-print-area) {
+    display: block !important;
+  }
+}
