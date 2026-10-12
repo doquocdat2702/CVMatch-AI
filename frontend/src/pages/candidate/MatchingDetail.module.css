@@ -1,0 +1,113 @@
+.backLink {
+  display: inline-block;
+  margin-bottom: var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+}
+
+.backLink:focus-visible,
+.descriptionToggle:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Thông tin job bên trái, khung ứng tuyển bên phải; màn hình hẹp thì xếp dọc */
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.jobInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+/* h1 dùng style chung (index.css), chỉ bỏ lề dưới để sát dòng thông tin */
+.title {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.closed {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-danger-text);
+}
+
+.applyBox {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+.applyLabel,
+.applyMeta {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+.section {
+  margin-bottom: var(--space-6);
+}
+
+/* ===== Mô tả công việc (thu gọn sẵn) ===== */
+
+.description {
+  max-width: var(--content-max);
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.descriptionToggle {
+  width: fit-content;
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+.descriptionText {
+  margin: var(--space-3) 0 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* ===== Thông báo ===== */
+
+.alertSuccess,
+.alertError {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  border-radius: var(--radius-sm);
+}
+
+.alertSuccess {
+  color: var(--color-success-text);
+  background-color: var(--color-success-bg);
+  border: var(--border-width) solid var(--color-success-border);
+}
+
+.alertError {
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger-border);
+}

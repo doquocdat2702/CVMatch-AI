@@ -13,6 +13,8 @@ import UnderConstruction from '../pages/common/UnderConstruction'
 import Profile from '../pages/candidate/Profile'
 import CVUpload from '../pages/candidate/CVUpload'
 import ParsedCV from '../pages/candidate/ParsedCV'
+import RecommendedJobs from '../pages/candidate/RecommendedJobs'
+import MatchingDetail from '../pages/candidate/MatchingDetail'
 import { ROLES } from '../utils/roles'
 
 // Các route đã đăng nhập: ProtectedRoute kiểm role -> MainLayout (Header + Sidebar) -> trang con.
@@ -35,8 +37,9 @@ function AppRouter() {
             {/* /candidate tự chuyển tới trang chính của ứng viên: danh sách việc làm */}
             <Route index element={<Navigate to="/" replace />} />
             <Route element={<MainLayout />}>
-              {/* Việc làm gợi ý: trang của T30 */}
-              <Route path="recommended-jobs" element={<UnderConstruction />} />
+              <Route path="recommended-jobs" element={<RecommendedJobs />} />
+              {/* Chi tiết đối chiếu nằm dưới /recommended-jobs nên menu "Việc làm gợi ý" vẫn được đánh dấu */}
+              <Route path="recommended-jobs/:jobId" element={<MatchingDetail />} />
               <Route path="cvs" element={<CVUpload />} />
               {/* Kết quả phân tích nằm dưới /cvs nên menu "CV của tôi" vẫn được đánh dấu */}
               <Route path="cvs/parsed" element={<ParsedCV />} />

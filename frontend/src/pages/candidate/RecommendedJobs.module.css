@@ -1,0 +1,138 @@
+.intro {
+  margin: 0 0 var(--space-5);
+  color: var(--color-text-muted);
+}
+
+/* Lưới card: tự xuống hàng, mỗi card rộng tối thiểu nửa bề ngang form (320px) */
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(var(--form-max) / 2)), 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Card chỉ có viền, không đổ bóng (docs/design.md) */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+/* h2 trong card nhỏ hơn h2 chung của trang (index.css) */
+.jobTitle {
+  margin: 0;
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
+
+/* ===== Coverage ===== */
+
+.coverage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 var(--space-4);
+}
+
+.coverageText {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-semibold);
+}
+
+/* Thanh màu trung tính: nền Viền, phần đã có bằng chứng màu Chì */
+.track {
+  height: var(--space-2);
+  overflow: hidden;
+  background-color: var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.fill {
+  height: 100%;
+  background-color: var(--color-text-muted);
+}
+
+/* Note của API: chữ nhỏ màu xám, ngay dưới thanh */
+.note {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+/* Link dạng nút phụ (điều hướng nên dùng thẻ a, không dùng button) */
+.button {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  height: var(--control-height-sm);
+  margin-top: auto;
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  text-decoration: none;
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--duration-fast) ease;
+}
+
+.button:hover {
+  background-color: var(--color-hover);
+}
+
+.button:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* ===== Trạng thái rỗng / lỗi ===== */
+
+.guide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: var(--form-max);
+  padding: var(--space-5);
+  background-color: var(--color-bg);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.guideText {
+  margin: 0;
+}
+
+.empty {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.alertError {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger-border);
+  border-radius: var(--radius-sm);
+}

@@ -24,3 +24,8 @@ export function toMonthInput(value) {
   if (!value) return ''
   return new Date(value).toISOString().slice(0, 7)
 }
+
+// Số kiểu Việt Nam, tối đa 1 chữ số thập phân: 33.3 -> "33,3", 70 -> "70"
+export function formatNumber(value) {
+  return Number(value || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 })
+}

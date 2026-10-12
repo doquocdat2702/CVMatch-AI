@@ -123,8 +123,14 @@ async function matchJobWithCandidate(jobId, candidateProfileId) {
     };
   });
 
+  // location: trang "Việc làm gợi ý" hiện địa điểm trên từng card mà không phải gọi thêm GET /jobs/:id
   const result = {
-    job: { id: job.id, title: job.title, companyName: job.company ? job.company.name : null },
+    job: {
+      id: job.id,
+      title: job.title,
+      companyName: job.company ? job.company.name : null,
+      location: job.location,
+    },
     candidate: { id: candidate.id, fullName: candidate.fullName },
     matrix,
     ...calculateCoverage(matrix),
