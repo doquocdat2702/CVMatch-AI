@@ -29,3 +29,9 @@ export function toMonthInput(value) {
 export function formatNumber(value) {
   return Number(value || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 })
 }
+
+// Chỉ ngày: "2026-10-12T13:46:00.000Z" -> "12/10/2026"
+export function formatDate(value) {
+  if (!value) return ''
+  return new Date(value).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}

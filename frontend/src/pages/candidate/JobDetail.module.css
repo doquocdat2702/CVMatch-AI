@@ -1,0 +1,93 @@
+.backLink {
+  display: inline-block;
+  margin-bottom: var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-5);
+}
+
+/* h1 dùng style chung (index.css), chỉ bỏ lề dưới để sát dòng thông tin */
+.title {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.company {
+  margin: 0;
+  font-weight: var(--weight-medium);
+}
+
+.meta {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.closed {
+  margin-top: var(--space-1);
+}
+
+/* Ứng tuyển và Xem đối chiếu đứng cạnh nhau, căn theo mép trên */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+/* Link dạng nút phụ cao bằng nút Ứng tuyển */
+.secondaryButton {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-height);
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  text-decoration: none;
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--duration-fast) ease;
+}
+
+.secondaryButton:hover {
+  background-color: var(--color-hover);
+}
+
+.backLink:focus-visible,
+.secondaryButton:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.section {
+  max-width: var(--content-max);
+}
+
+/* Toàn bộ nội dung JD, giữ nguyên xuống dòng như HR nhập */
+.description {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.alertError {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger-border);
+  border-radius: var(--radius-sm);
+}

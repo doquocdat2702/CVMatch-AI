@@ -1,0 +1,121 @@
+.intro {
+  margin: 0 0 var(--space-5);
+  color: var(--color-text-muted);
+}
+
+/* Lưới card: 1 cột điện thoại, 2 cột từ 768px, 3 cột từ 1200px (docs/design.md mục 6) */
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Card chỉ có viền, không đổ bóng (docs/design.md) */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+/* h2 trong card nhỏ hơn h2 chung của trang (index.css) */
+.jobTitle {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+  overflow-wrap: anywhere;
+}
+
+.company {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+}
+
+.meta {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
+
+/* Chân card đẩy xuống đáy (margin-top: auto) để nút của các card cùng hàng thẳng nhau */
+.footer {
+  margin-top: auto;
+  padding-top: var(--space-3);
+}
+
+/* Link dạng nút phụ */
+.button {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  text-decoration: none;
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--duration-fast) ease;
+}
+
+.button:hover {
+  background-color: var(--color-hover);
+}
+
+.button:focus-visible,
+.link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.pagination {
+  margin-top: var(--space-5);
+}
+
+.empty {
+  margin: 0;
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--color-text-muted);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.link {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+
+.alertError {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger-border);
+  border-radius: var(--radius-sm);
+}

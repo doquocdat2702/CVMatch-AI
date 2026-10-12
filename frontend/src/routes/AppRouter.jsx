@@ -2,7 +2,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from '../context/AuthContext'
 import ProtectedRoute from './ProtectedRoute'
 import MainLayout from '../components/layout/MainLayout'
-import Home from '../pages/public/Home'
+import PublicLayout from '../components/layout/PublicLayout'
+import { useAuth } from '../hooks/useAuth'
+import JobBoard from '../pages/candidate/JobBoard'
+import JobDetail from '../pages/candidate/JobDetail'
 import Login from '../pages/auth/Login'
 import Register from '../pages/auth/Register'
 import ForgotPassword from '../pages/auth/ForgotPassword'
@@ -17,6 +20,13 @@ import RecommendedJobs from '../pages/candidate/RecommendedJobs'
 import MatchingDetail from '../pages/candidate/MatchingDetail'
 import { ROLES } from '../utils/roles'
 
+// Bảng tin "/" và chi tiết "/jobs/:id" là trang công khai: chưa đăng nhập dùng PublicLayout
+// (header gọn, không Sidebar), đã đăng nhập dùng MainLayout (Header + Sidebar theo role)
+function PublicPagesLayout() {
+  const { isAuthenticated } = useAuth()
+  return isAuthenticated ? <MainLayout /> : <PublicLayout />
+}
+
 // Các route đã đăng nhập: ProtectedRoute kiểm role -> MainLayout (Header + Sidebar) -> trang con.
 // Mục menu chưa có trang dùng tạm UnderConstruction, các task sau thay bằng trang thật.
 function AppRouter() {
@@ -24,8 +34,11 @@ function AppRouter() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Công khai: chưa đăng nhập vẫn vào được */}
-          <Route path="/" element={<Home />} />
+          {/* Công khai: chưa đăng nhập vẫn vào được. "/" là trang chủ (bảng tin việc làm) */}
+          <Route element={<PublicPagesLayout />}>
+            <Route path="/" element={<JobBoard />} />
+            <Route path="/jobs/:id" element={<JobDetail />} />
+          </Route>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />

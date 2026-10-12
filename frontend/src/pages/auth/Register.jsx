@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { register } from '../../api/auth.api'
 import { useAuth } from '../../hooks/useAuth'
 import { getErrorMessage } from '../../utils/apiError'
@@ -33,6 +33,9 @@ function validate(form) {
 function Register() {
   const { isAuthenticated, role, loading } = useAuth()
   const navigate = useNavigate()
+  // Trang cần quay lại sau khi đăng nhập (vd job vừa bấm Ứng tuyển), chỉ chuyển tiếp cho trang Đăng nhập
+  const location = useLocation()
+  const from = location.state ? location.state.from : undefined
 
   const [form, setForm] = useState(EMPTY_FORM)
   const [fieldErrors, setFieldErrors] = useState({})
@@ -68,7 +71,7 @@ function Register() {
         fullName: form.fullName.trim(),
       })
       // API đăng ký không trả token, chuyển sang đăng nhập kèm thông báo
-      navigate('/login', { state: { notice: 'Đăng ký thành công, vui lòng đăng nhập' } })
+      navigate('/login', { state: { notice: 'Đăng ký thành công, vui lòng đăng nhập', from } })
     } catch (err) {
       setError(getErrorMessage(err, 'Đăng ký thất bại, vui lòng thử lại'))
     } finally {
@@ -152,7 +155,7 @@ function Register() {
 
         <p className={styles.note}>
           Đã có tài khoản?{' '}
-          <Link className={styles.link} to="/login">
+          <Link className={styles.link} to="/login" state={from ? { from } : undefined}>
             Đăng nhập
           </Link>
         </p>

@@ -155,6 +155,7 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
   (vạch giúp nhận ra mục đang chọn mà không cần phân biệt màu).
 - Dưới 900px: sidebar thành hàng menu nằm dưới header, tự xuống dòng; không cuộn ngang trang.
 - Media query không dùng được biến CSS, nên 2 mốc cố định là **900px** (bố cục) và **768px** (form 2 cột).
+  Riêng lưới card bảng tin việc làm (T31): 1 cột, 2 cột từ **768px**, 3 cột từ **1200px** (bằng `--content-max`).
 - Tương tự, `@page` (bản in CV, T29b) ghi số trực tiếp: khổ A4, lề 15mm, khớp `--print-page-width` và
   `--print-page-margin` trong variables.css.
 
@@ -167,7 +168,8 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
 | Quản trị viên | Tài khoản `/admin/users`, Tạo Recruiter `/admin/recruiters/new`, Phân quyền `/admin/roles` |
 
 - Mục "Việc làm" của ứng viên trỏ về `/`. Không có `/candidate/jobs`.
-  Từ T31, `/` và `/jobs/:id` dùng `PublicLayout` khi chưa đăng nhập, `MainLayout` khi là ứng viên.
+  Từ T31, `/` (bảng tin việc làm, trang chủ công khai) và `/jobs/:id` dùng `PublicLayout` khi chưa đăng nhập
+  (header gọn: tên hệ thống, Đăng nhập, Đăng ký; không Sidebar), `MainLayout` khi đã đăng nhập.
 - `/recruiter/dashboard` và `/admin/dashboard` đã chừa route, làm ở T35c.
 - Trang chính của role: `/candidate` → `/`, `/recruiter` → `/recruiter/jobs`, `/admin` → `/admin/users`.
   Đến T35c đổi recruiter và admin sang trang dashboard.

@@ -1,0 +1,99 @@
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--color-surface);
+}
+
+/* Cùng chiều cao và viền với Header của MainLayout để hai khung trông thống nhất */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  height: var(--header-height);
+  padding: 0 var(--space-5);
+  background-color: var(--color-surface);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.appName {
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Link dạng nút cỡ nhỏ: Đăng nhập là nút phụ, Đăng ký là nút chính */
+.primary,
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  text-decoration: none;
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--duration-fast) ease;
+}
+
+.primary {
+  color: var(--color-on-primary);
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.primary:hover {
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.secondary {
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border-color: var(--color-border-strong);
+}
+
+.secondary:hover {
+  background-color: var(--color-hover);
+}
+
+.appName:focus-visible,
+.primary:focus-visible,
+.secondary:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.content {
+  flex: 1;
+  padding: var(--space-6);
+}
+
+/* Không có sidebar nên căn giữa vùng nội dung */
+.inner {
+  max-width: var(--content-max);
+  margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+  .header {
+    padding: 0 var(--space-4);
+  }
+
+  .content {
+    padding: var(--space-4);
+  }
+}

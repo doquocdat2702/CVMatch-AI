@@ -6,6 +6,12 @@ import { APP_NAME } from '../../utils/appConfig'
 import { getRoleHome } from '../../utils/roles'
 import styles from './Auth.module.css'
 
+// Chỉ nhận đường dẫn nội bộ ("/jobs/5"), không nhận "//site-khac.com" hay URL đầy đủ,
+// để trang đăng nhập không bị lợi dụng chuyển hướng ra ngoài
+function isInternalPath(path) {
+  return typeof path === 'string' && path.startsWith('/') && !path.startsWith('//')
+}
+
 // Đăng nhập dùng chung cho Admin, Recruiter và Candidate
 function Login() {
   const { login, isAuthenticated, role, loading } = useAuth()
@@ -13,6 +19,13 @@ function Login() {
   const location = useLocation()
   // Thông báo do trang Đăng ký hoặc Đặt lại mật khẩu gửi sang
   const notice = location.state ? location.state.notice : ''
+  // Trang gửi sang (vd bấm "Ứng tuyển" khi chưa đăng nhập): đăng nhập xong quay lại đúng trang đó
+  const from = location.state && isInternalPath(location.state.from) ? location.state.from : ''
+
+  // Có trang cần quay lại thì về đó, không thì về trang chính của role
+  function redirectPath(userRole) {
+    return from || getRoleHome(userRole)
+  }
 
   const [form, setForm] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
@@ -20,7 +33,7 @@ function Login() {
 
   // Đã đăng nhập thì không cần ở trang này nữa
   if (!loading && isAuthenticated) {
-    return <Navigate to={getRoleHome(role)} replace />
+    return <Navigate to={redirectPath(role)} replace />
   }
 
   function handleChange(event) {
@@ -41,7 +54,7 @@ function Login() {
     setSubmitting(true)
     try {
       const user = await login(email, form.password)
-      navigate(getRoleHome(user.role), { replace: true })
+      navigate(redirectPath(user.role), { replace: true })
     } catch (err) {
       setError(getErrorMessage(err, 'Đăng nhập thất bại, vui lòng thử lại'))
     } finally {
@@ -114,7 +127,8 @@ function Login() {
 
           <p className={styles.note}>
             Chưa có tài khoản ứng viên?{' '}
-            <Link className={styles.link} to="/register">
+            {/* Chuyển tiếp trang cần quay lại để ứng viên mới đăng ký xong cũng về đúng job */}
+            <Link className={styles.link} to="/register" state={from ? { from } : undefined}>
               Đăng ký
             </Link>
           </p>
