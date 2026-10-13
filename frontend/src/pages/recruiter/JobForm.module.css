@@ -1,0 +1,193 @@
+.backLink {
+  display: inline-block;
+  margin-bottom: var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.pageTitle {
+  margin: 0;
+}
+
+/* Form bên trái, gợi ý viết JD bên phải từ 1200px (cùng mốc với lưới bảng tin); hẹp hơn thì xếp dọc */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+@media (min-width: 1200px) {
+  .layout {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+/* Link dạng nút phụ, cao bằng nút chính bên cạnh */
+.secondaryLink {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-height);
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  text-decoration: none;
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.secondaryLink:hover {
+  background-color: var(--color-hover);
+}
+
+.backLink:focus-visible,
+.secondaryLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* ===== Gợi ý viết JD ===== */
+
+.tips {
+  padding: var(--space-4) var(--space-5);
+  background-color: var(--color-bg);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.tipsTitle {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+}
+
+.tipsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding-left: var(--space-5);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+}
+
+.tipsLabel {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-semibold);
+}
+
+/* JD mẫu: giữ nguyên xuống dòng, dùng font giao diện (không dùng font mono) */
+.example {
+  margin: 0;
+  padding: var(--space-3);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  white-space: pre-wrap;
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+/* ===== Yêu cầu đã phân tích ===== */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-7);
+}
+
+.sectionHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.sectionHeader > h2 {
+  margin: 0;
+}
+
+.requirementCell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.requirementName {
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.muted {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.modalText {
+  margin: 0;
+}
+
+/* ===== Thông báo ===== */
+
+.alertSuccess,
+.alertError,
+.alertWarning {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+}
+
+.alertSuccess {
+  color: var(--color-success-text);
+  background-color: var(--color-success-bg);
+  border: var(--border-width) solid var(--color-success-border);
+}
+
+.alertError {
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger-border);
+}
+
+.alertWarning {
+  color: var(--color-warning-text);
+  background-color: var(--color-warning-bg);
+  border: var(--border-width) solid var(--color-warning-border);
+}

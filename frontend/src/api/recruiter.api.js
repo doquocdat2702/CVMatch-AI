@@ -1,0 +1,15 @@
+import axiosClient from './axiosClient'
+
+// Mọi API trả về dạng { success, message, data }, các hàm dưới đây trả về response.data
+
+// Hồ sơ nhà tuyển dụng đang đăng nhập, kèm công ty: data = { id, fullName, phone, position, companyId, company }
+export async function getMyRecruiterProfile() {
+  const response = await axiosClient.get('/recruiters/me')
+  return response.data
+}
+
+// { fullName, phone, position }: fullName bắt buộc; công ty do quản trị viên gán, không sửa ở đây
+export async function updateMyRecruiterProfile(payload) {
+  const response = await axiosClient.put('/recruiters/me', payload)
+  return response.data
+}

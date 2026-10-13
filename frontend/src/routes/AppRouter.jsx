@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { AuthProvider } from '../context/AuthContext'
 import ProtectedRoute from './ProtectedRoute'
 import MainLayout from '../components/layout/MainLayout'
@@ -19,6 +19,10 @@ import ParsedCV from '../pages/candidate/ParsedCV'
 import RecommendedJobs from '../pages/candidate/RecommendedJobs'
 import MatchingDetail from '../pages/candidate/MatchingDetail'
 import MyApplications from '../pages/candidate/MyApplications'
+import RecruiterProfile from '../pages/recruiter/Profile'
+import Company from '../pages/recruiter/Company'
+import JobList from '../pages/recruiter/JobList'
+import JobForm from '../pages/recruiter/JobForm'
 import { ROLES } from '../utils/roles'
 
 // Bảng tin "/" và chi tiết "/jobs/:id" là trang công khai: chưa đăng nhập dùng PublicLayout
@@ -26,6 +30,13 @@ import { ROLES } from '../utils/roles'
 function PublicPagesLayout() {
   const { isAuthenticated } = useAuth()
   return isAuthenticated ? <MainLayout /> : <PublicLayout />
+}
+
+// Sửa tin: key theo mã tin để chuyển từ tin này sang tin khác (hoặc từ "tạo mới" sang "sửa")
+// luôn là một lần mount mới, không giữ state của tin trước
+function EditJobRoute() {
+  const { id } = useParams()
+  return <JobForm key={id} jobId={id} />
 }
 
 // Các route đã đăng nhập: ProtectedRoute kiểm role -> MainLayout (Header + Sidebar) -> trang con.
@@ -69,9 +80,11 @@ function AppRouter() {
             <Route element={<MainLayout />}>
               {/* Trang tổng quan làm ở T35c, hiện chỉ chừa route */}
               <Route path="dashboard" element={<UnderConstruction />} />
-              <Route path="profile" element={<UnderConstruction />} />
-              <Route path="company" element={<UnderConstruction />} />
-              <Route path="jobs" element={<UnderConstruction />} />
+              <Route path="profile" element={<RecruiterProfile />} />
+              <Route path="company" element={<Company />} />
+              <Route path="jobs" element={<JobList />} />
+              <Route path="jobs/new" element={<JobForm />} />
+              <Route path="jobs/:id/edit" element={<EditJobRoute />} />
               <Route path="applications" element={<UnderConstruction />} />
             </Route>
           </Route>

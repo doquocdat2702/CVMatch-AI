@@ -11,6 +11,8 @@ const STATUS_TONE = {
   NOT_FOUND: 'danger',
   FAILED: 'danger',
   REJECTED: 'danger',
+  // Trạng thái tin tuyển dụng (T33): OPEN xanh lá; CLOSED không có trong bảng nên xám
+  OPEN: 'success',
 }
 
 // status quyết định màu; chữ hiển thị là children (vd "Có bằng chứng"), không truyền thì hiện chính status.
