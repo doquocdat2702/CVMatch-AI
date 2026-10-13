@@ -21,6 +21,11 @@
   box-shadow: var(--shadow-modal);
 }
 
+/* Modal rộng cho nội dung dạng bảng */
+.wide {
+  max-width: var(--modal-max-wide);
+}
+
 /* Focus được đặt vào khung modal khi mở, không cần viền focus cho khung */
 .dialog:focus {
   outline: none;

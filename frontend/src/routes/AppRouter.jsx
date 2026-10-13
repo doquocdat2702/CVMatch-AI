@@ -18,6 +18,7 @@ import CVUpload from '../pages/candidate/CVUpload'
 import ParsedCV from '../pages/candidate/ParsedCV'
 import RecommendedJobs from '../pages/candidate/RecommendedJobs'
 import MatchingDetail from '../pages/candidate/MatchingDetail'
+import MyApplications from '../pages/candidate/MyApplications'
 import { ROLES } from '../utils/roles'
 
 // Bảng tin "/" và chi tiết "/jobs/:id" là trang công khai: chưa đăng nhập dùng PublicLayout
@@ -57,7 +58,7 @@ function AppRouter() {
               {/* Kết quả phân tích nằm dưới /cvs nên menu "CV của tôi" vẫn được đánh dấu */}
               <Route path="cvs/parsed" element={<ParsedCV />} />
               <Route path="profile" element={<Profile />} />
-              <Route path="applications" element={<UnderConstruction />} />
+              <Route path="applications" element={<MyApplications />} />
             </Route>
           </Route>
 

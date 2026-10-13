@@ -1,0 +1,136 @@
+/* Ô lọc chỉ rộng nửa bề ngang form, không kéo hết trang */
+.filter {
+  max-width: calc(var(--form-max) / 2);
+  margin-bottom: var(--space-4);
+}
+
+.jobLink {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  overflow-wrap: anywhere;
+}
+
+.rowActions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+
+/* Link cùng kiểu với nút ghost cỡ nhỏ trong bảng */
+.actionLink {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-height-sm);
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.actionLink:hover {
+  text-decoration: underline;
+}
+
+/* Link ở chân modal, cao bằng nút Đóng bên cạnh */
+.footerLink {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-height);
+  margin-right: auto;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+}
+
+.jobLink:focus-visible,
+.actionLink:focus-visible,
+.footerLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+/* Câu nhắc coverage của API: chữ nhỏ màu xám dưới bảng */
+.note {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+/* ===== Modal ma trận ===== */
+
+.matrixBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.coverageSummary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.coverageSummary > p {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+}
+
+.coverageNow {
+  font-weight: var(--weight-semibold);
+}
+
+.modalText {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ===== Trạng thái rỗng / thông báo ===== */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.emptyText {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.alertSuccess,
+.alertError {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+}
+
+.alertSuccess {
+  color: var(--color-success-text);
+  background-color: var(--color-success-bg);
+  border: var(--border-width) solid var(--color-success-border);
+}
+
+.alertError {
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger-border);
+}

@@ -100,6 +100,7 @@
   --content-max: 1200px;
   --form-max: 640px;
   --modal-max: 520px;
+  --modal-max-wide: 880px; /* modal chứa bảng, vd ma trận đối chiếu */
   --auth-card-max: 400px;
 
   /* ===== Chuyển động ===== */

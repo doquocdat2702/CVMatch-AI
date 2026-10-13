@@ -5,7 +5,8 @@ import styles from './Modal.module.css'
 
 // open: hiện / ẩn. onClose: gọi khi bấm Esc, nút "Đóng" hoặc bấm ra lớp phủ.
 // footer: các nút hành động ở chân modal (vd Hủy, Lưu).
-function Modal({ open, onClose, title, children, footer }) {
+// wide: modal rộng hơn cho nội dung dạng bảng (vd ma trận đối chiếu), mặc định tắt.
+function Modal({ open, onClose, title, children, footer, wide = false }) {
   const titleId = useId()
   const dialogRef = useRef(null)
   // Giữ onClose mới nhất trong ref để effect bên dưới chỉ chạy lại khi open đổi.
@@ -49,7 +50,7 @@ function Modal({ open, onClose, title, children, footer }) {
     <div className={styles.overlay} onMouseDown={handleOverlayMouseDown}>
       <div
         ref={dialogRef}
-        className={styles.dialog}
+        className={wide ? `${styles.dialog} ${styles.wide}` : styles.dialog}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
