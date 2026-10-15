@@ -164,19 +164,16 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
 | Role | Mục menu → đường dẫn |
 |---|---|
 | Ứng viên | Việc làm `/`, Việc làm gợi ý `/candidate/recommended-jobs` (T30), CV của tôi `/candidate/cvs`, Hồ sơ `/candidate/profile`, Đơn ứng tuyển `/candidate/applications` |
-| Nhà tuyển dụng | Hồ sơ `/recruiter/profile`, Công ty `/recruiter/company`, Tin tuyển dụng `/recruiter/jobs`, Ứng viên gợi ý `/recruiter/recommended-candidates` (T34), Đơn ứng tuyển `/recruiter/applications` |
-| Quản trị viên | Tài khoản `/admin/users`, Tạo Recruiter `/admin/recruiters/new`, Phân quyền `/admin/roles`, Hồ sơ `/admin/profile` (T35) |
+| Nhà tuyển dụng | Tổng quan `/recruiter/dashboard` (T35c), Hồ sơ `/recruiter/profile`, Công ty `/recruiter/company`, Tin tuyển dụng `/recruiter/jobs`, Ứng viên gợi ý `/recruiter/recommended-candidates` (T34), Đơn ứng tuyển `/recruiter/applications` |
+| Quản trị viên | Tổng quan `/admin/dashboard` (T35c), Tài khoản `/admin/users`, Tạo Recruiter `/admin/recruiters/new`, Phân quyền `/admin/roles`, Hồ sơ `/admin/profile` (T35) |
 
 - Mục "Việc làm" của ứng viên trỏ về `/`. Không có `/candidate/jobs`.
   Từ T31, `/` (bảng tin việc làm, trang chủ công khai) và `/jobs/:id` dùng `PublicLayout` khi chưa đăng nhập
   (header gọn: tên hệ thống, Đăng nhập, Đăng ký; không Sidebar), `MainLayout` khi đã đăng nhập.
-- `/recruiter/dashboard` và `/admin/dashboard` đã chừa route, làm ở T35c.
 - Trang chỉnh yêu cầu của tin `/recruiter/jobs/:id/requirements` (T34) mở từ trang sửa tin, không có mục menu riêng;
   nằm dưới `/recruiter/jobs` nên mục "Tin tuyển dụng" vẫn sáng.
-- Trang chính của role: `/candidate` → `/`, `/recruiter` → `/recruiter/jobs`, `/admin` → `/admin/users`.
-  Đến T35c đổi recruiter và admin sang trang dashboard.
-- Route chưa có trang hiển thị "Chức năng đang được xây dựng" bên trong layout. Từ T35 chỉ còn 2 route
-  dashboard dùng trang tạm này; T35c thay bằng trang thật và xóa trang tạm.
+- Trang chính của role (đăng nhập xong vào đây): `/candidate` → `/`, `/recruiter` → `/recruiter/dashboard`,
+  `/admin` → `/admin/dashboard` (T35c). Không còn trang tạm "Chức năng đang được xây dựng".
 - Trạng thái tài khoản (T35) dùng Badge: Đang hoạt động (`ACTIVE`, xanh lá), Đã khóa (`LOCKED`, đỏ).
 
 ### Trang đăng nhập (khối điểm nhấn)
@@ -200,6 +197,10 @@ Trên điện thoại, khối Xanh mực thành dải phía trên form. Tên h�
 - Hàng dữ liệu: 14px, cao tối thiểu 44px, chỉ kẻ ngang, không tô sọc.
 - Cột số căn phải, dùng chữ số đều (`tabular-nums`); cột thao tác căn phải, nút cỡ nhỏ.
 - Rỗng: một hàng gộp mọi cột, chữ Chì căn giữa "Chưa có dữ liệu".
+- Cột chữ chính (tên vị trí, tiêu đề tin, email, tên file, yêu cầu) đặt độ rộng tối thiểu
+  `calc(var(--sidebar-width) * 0.85)` trên khung nội dung của ô (thẻ khối, không đặt lên thẻ `<a>`):
+  nội dung có `overflow-wrap: anywhere` làm bảng tự thu cột còn vài chữ cái, màn hình 375px sẽ bẻ chữ thành
+  từng mẩu. Có độ rộng tối thiểu thì bảng cuộn ngang trong khung thay vì bẻ chữ (T35, sửa đủ ở T35c).
 
 ## 8. Form (`Input`, `Select`, `Textarea`)
 
@@ -234,6 +235,13 @@ Trên điện thoại, khối Xanh mực thành dải phía trên form. Tên h�
 - `Loading`: vòng xoay CSS kèm chữ "Đang tải...".
 - `Pagination`: "Trước", số trang, "Sau"; trang hiện tại nền Xanh nhạt; ẩn khi chỉ có 1 trang.
 - `Badge`: 12px đậm 600, bo 4px, có viền; màu theo prop `status` (mục 2).
+- `StatCard` (T35c, `components/dashboard/`): ô chỉ có viền, nhãn 14px Chì, con số `--text-xl` đậm 600 chữ số đều,
+  dòng phụ 12px. Chưa có dữ liệu để tính thì hiện "Chưa có dữ liệu" thay cho con số.
+- `BarChart` (T35c): cột dọc vẽ bằng div + CSS module, không thư viện biểu đồ. Một chuỗi số liệu nên một màu
+  (Xanh mực, hover Xanh mực đậm), không thang đỏ - xanh. Thanh rộng tối đa 24px, bo 4px đầu trên, vuông ở đáy,
+  khe 2px giữa các thanh. Trục dọc 3 vạch (0, giữa, đỉnh), đường đáy Viền đậm, đường kẻ Viền; có nhãn trục.
+  Rê chuột lên cả cột hiện chú thích nền Mực đen chữ trắng. Từ 12 cột trở xuống ghi số trên đỉnh cột.
+  Có bảng số liệu ẩn cho trình đọc màn hình. Tổng bằng 0 thì hiện "Chưa có dữ liệu". Vùng vẽ cao `--space-8` × 3.
 - `NotificationBell` (T35b, chỉ ứng viên và nhà tuyển dụng): nút chuông 32px trên Header, cạnh email.
   Chuông là icon chức năng duy nhất của hệ thống, vẽ bằng SVG nét `currentColor` ngay trong code (không thư viện icon).
   Số chưa đọc: ô Đỏ (`--color-danger-text`) chữ trắng 12px, bo 4px, trên 9 hiện "9+", bằng 0 thì ẩn.

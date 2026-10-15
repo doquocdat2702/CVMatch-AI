@@ -1,0 +1,52 @@
+.intro {
+  margin: 0 0 var(--space-5);
+  color: var(--color-text-muted);
+}
+
+/* Mỗi nhóm ô số liệu có tiêu đề riêng, cách nhóm sau một khoảng trắng (không dùng card) */
+.group {
+  margin-bottom: var(--space-6);
+}
+
+/* Hàng ô số liệu: tự xuống dòng theo bề ngang */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--sidebar-width) * 0.85)), 1fr));
+  gap: var(--space-4);
+}
+
+/* Biểu đồ: 1 cột, 2 cột từ 1200px (cùng mốc với lưới bảng tin) */
+.charts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+}
+
+@media (min-width: 1200px) {
+  .charts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.chartSection {
+  min-width: 0;
+}
+
+.sub {
+  margin: calc(var(--space-2) * -1) 0 var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
+
+.alertError {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger-border);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+}

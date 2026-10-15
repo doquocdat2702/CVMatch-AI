@@ -4,6 +4,12 @@
   margin-bottom: var(--space-4);
 }
 
+/* Cột Vị trí có độ rộng tối thiểu để màn hình hẹp không bẻ tên thành từng mẩu chữ:
+   bảng tự cuộn ngang trong khung (Table). Cùng cách với bảng tài khoản (T35) */
+.jobCell {
+  min-width: calc(var(--sidebar-width) * 0.85);
+}
+
 .jobLink {
   font-weight: var(--weight-semibold);
   color: var(--color-primary);

@@ -10,6 +10,12 @@
   gap: var(--space-1);
 }
 
+/* Cột Yêu cầu có độ rộng tối thiểu để màn hình hẹp không bẻ chữ thành từng mẩu:
+   bảng tự cuộn ngang trong khung (Table). Cùng cách với bảng tài khoản (T35) */
+.requirementCell {
+  min-width: calc(var(--sidebar-width) * 0.85);
+}
+
 .requirementText,
 .evidenceText {
   white-space: pre-line;

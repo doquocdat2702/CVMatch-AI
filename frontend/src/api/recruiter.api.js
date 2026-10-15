@@ -13,3 +13,12 @@ export async function updateMyRecruiterProfile(payload) {
   const response = await axiosClient.put('/recruiters/me', payload)
   return response.data
 }
+
+// Trang Tổng quan của nhà tuyển dụng: scope 'mine' (tin của tôi, mặc định) | 'all' (toàn công ty).
+// data: { scope, summary: { openJobs, totalApplications, newApplicationsLast7Days },
+//         applicationsByStatus: [{ status, count }], applicationsByDay: [{ date: 'YYYY-MM-DD', count }] (30 ngày),
+//         coverageDistribution: [{ range: '0-20', count }], note }
+export async function getRecruiterDashboard(scope) {
+  const response = await axiosClient.get('/recruiters/dashboard', { params: { scope } })
+  return response.data
+}

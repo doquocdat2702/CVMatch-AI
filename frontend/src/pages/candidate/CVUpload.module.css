@@ -78,7 +78,11 @@
 
 /* ===== Bảng ===== */
 
+/* Có độ rộng tối thiểu (display: block để min-width có tác dụng) để màn hình hẹp không bẻ tên file
+   thành từng mẩu chữ: bảng tự cuộn ngang trong khung (Table). Cùng cách với bảng tài khoản (T35) */
 .fileName {
+  display: block;
+  min-width: calc(var(--sidebar-width) * 0.85);
   overflow-wrap: anywhere;
 }
 

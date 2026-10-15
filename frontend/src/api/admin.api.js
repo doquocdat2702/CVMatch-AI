@@ -47,3 +47,12 @@ export async function getCompany() {
   const response = await axiosClient.get('/admin/company')
   return response.data
 }
+
+// Trang Tổng quan của quản trị viên.
+// data: { usersByRole: [{ role, count }], lockedUsers, jobs: { total, open },
+//         applications: { total, byStatus: [{ status, count }] }, newUsersByMonth: [{ month: 'YYYY-MM', count }] (6 tháng),
+//         cvByStatus: [{ status, count }], cvSuccessRate: COMPLETED / (COMPLETED + FAILED), từ 0 đến 1 }
+export async function getAdminDashboard() {
+  const response = await axiosClient.get('/admin/dashboard')
+  return response.data
+}

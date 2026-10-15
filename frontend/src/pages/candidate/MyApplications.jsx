@@ -179,9 +179,12 @@ function MyApplications() {
       key: 'job',
       title: 'Vị trí',
       render: (application) => (
-        <Link className={styles.jobLink} to={`/jobs/${application.job.id}`}>
-          {application.job.title}
-        </Link>
+        // Khung có độ rộng tối thiểu: màn hình hẹp không bẻ tên vị trí thành từng mẩu chữ
+        <div className={styles.jobCell}>
+          <Link className={styles.jobLink} to={`/jobs/${application.job.id}`}>
+            {application.job.title}
+          </Link>
+        </div>
       ),
     },
     { key: 'company', title: 'Công ty', render: (application) => application.job.companyName },

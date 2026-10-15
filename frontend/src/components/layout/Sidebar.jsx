@@ -16,6 +16,7 @@ const MENU_BY_ROLE = {
     { to: '/candidate/applications', label: 'Đơn ứng tuyển' },
   ],
   [ROLES.RECRUITER]: [
+    { to: '/recruiter/dashboard', label: 'Tổng quan' },
     { to: '/recruiter/profile', label: 'Hồ sơ' },
     { to: '/recruiter/company', label: 'Công ty' },
     { to: '/recruiter/jobs', label: 'Tin tuyển dụng' },
@@ -23,6 +24,7 @@ const MENU_BY_ROLE = {
     { to: '/recruiter/applications', label: 'Đơn ứng tuyển' },
   ],
   [ROLES.ADMIN]: [
+    { to: '/admin/dashboard', label: 'Tổng quan' },
     { to: '/admin/users', label: 'Tài khoản' },
     { to: '/admin/recruiters/new', label: 'Tạo Recruiter' },
     { to: '/admin/roles', label: 'Phân quyền' },

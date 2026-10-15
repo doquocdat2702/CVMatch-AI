@@ -1,0 +1,131 @@
+/* Tiêu đề trang + nút chọn phạm vi ở góc phải */
+.pageHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+/* Bỏ margin mặc định của h1 (index.css) để thẳng hàng với nút */
+.pageHeader > h1 {
+  margin: 0;
+}
+
+.intro {
+  margin: 0 0 var(--space-5);
+  color: var(--color-text-muted);
+}
+
+/* Nút chọn phạm vi: 2 nút dính nhau, nút đang chọn nền Xanh nhạt chữ đậm */
+.scope {
+  display: inline-flex;
+}
+
+.scopeButton {
+  height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+  font: inherit;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border-strong);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease;
+}
+
+.scopeButton:first-child {
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+/* Hai nút chung một đường viền ở giữa */
+.scopeButton + .scopeButton {
+  margin-left: calc(var(--border-width) * -1);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.scopeButton:hover {
+  background-color: var(--color-hover);
+}
+
+.scopeActive,
+.scopeActive:hover {
+  position: relative;
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary-soft-text);
+  background-color: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.scopeButton:focus-visible {
+  position: relative;
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Hàng ô số liệu: tự xuống dòng theo bề ngang */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--sidebar-width) * 0.85)), 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+/* Biểu đồ: 1 cột, 2 cột từ 1200px (cùng mốc với lưới bảng tin); biểu đồ 30 ngày luôn rộng hết hàng */
+.charts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+}
+
+@media (min-width: 1200px) {
+  .charts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wide {
+    grid-column: 1 / -1;
+  }
+}
+
+.chartSection {
+  min-width: 0;
+}
+
+.sub {
+  margin: calc(var(--space-2) * -1) 0 var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
+
+/* Ghi chú bắt buộc dưới biểu đồ coverage */
+.caption {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+}
+
+.note {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+.alertError {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger-border);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+}

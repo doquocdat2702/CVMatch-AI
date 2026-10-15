@@ -12,7 +12,6 @@ import ForgotPassword from '../pages/auth/ForgotPassword'
 import ResetPassword from '../pages/auth/ResetPassword'
 import Forbidden from '../pages/errors/Forbidden'
 import NotFound from '../pages/errors/NotFound'
-import UnderConstruction from '../pages/common/UnderConstruction'
 import Profile from '../pages/candidate/Profile'
 import CVUpload from '../pages/candidate/CVUpload'
 import ParsedCV from '../pages/candidate/ParsedCV'
@@ -26,6 +25,8 @@ import JobForm from '../pages/recruiter/JobForm'
 import ParsedJD from '../pages/recruiter/ParsedJD'
 import RecommendedCandidates from '../pages/recruiter/RecommendedCandidates'
 import Applications from '../pages/recruiter/Applications'
+import RecruiterDashboard from '../pages/recruiter/Dashboard'
+import AdminDashboard from '../pages/admin/Dashboard'
 import AccountList from '../pages/admin/AccountList'
 import CreateRecruiter from '../pages/admin/CreateRecruiter'
 import RoleManagement from '../pages/admin/RoleManagement'
@@ -53,7 +54,6 @@ function RequirementsRoute() {
 }
 
 // Các route đã đăng nhập: ProtectedRoute kiểm role -> MainLayout (Header + Sidebar) -> trang con.
-// UnderConstruction chỉ còn giữ chỗ cho 2 trang Tổng quan, T35c thay bằng trang thật.
 function AppRouter() {
   return (
     <BrowserRouter>
@@ -88,11 +88,10 @@ function AppRouter() {
 
           {/* Nhà tuyển dụng */}
           <Route path="/recruiter" element={<ProtectedRoute allowedRoles={[ROLES.RECRUITER]} />}>
-            {/* /recruiter tự chuyển tới Tin tuyển dụng. Đến T35c đổi sang /recruiter/dashboard */}
-            <Route index element={<Navigate to="/recruiter/jobs" replace />} />
+            {/* /recruiter (trang chính sau khi đăng nhập) tự chuyển tới Tổng quan */}
+            <Route index element={<Navigate to="/recruiter/dashboard" replace />} />
             <Route element={<MainLayout />}>
-              {/* Trang tổng quan làm ở T35c, hiện chỉ chừa route */}
-              <Route path="dashboard" element={<UnderConstruction />} />
+              <Route path="dashboard" element={<RecruiterDashboard />} />
               <Route path="profile" element={<RecruiterProfile />} />
               <Route path="company" element={<Company />} />
               <Route path="jobs" element={<JobList />} />
@@ -107,11 +106,10 @@ function AppRouter() {
 
           {/* Quản trị viên */}
           <Route path="/admin" element={<ProtectedRoute allowedRoles={[ROLES.ADMIN]} />}>
-            {/* /admin tự chuyển tới Tài khoản. Đến T35c đổi sang /admin/dashboard */}
-            <Route index element={<Navigate to="/admin/users" replace />} />
+            {/* /admin (trang chính sau khi đăng nhập) tự chuyển tới Tổng quan */}
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route element={<MainLayout />}>
-              {/* Trang tổng quan làm ở T35c, hiện chỉ chừa route */}
-              <Route path="dashboard" element={<UnderConstruction />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="users" element={<AccountList />} />
               <Route path="recruiters/new" element={<CreateRecruiter />} />
               <Route path="roles" element={<RoleManagement />} />

@@ -40,6 +40,12 @@
   border-color: var(--color-primary-hover);
 }
 
+/* Cột Tiêu đề có độ rộng tối thiểu để màn hình hẹp không bẻ tiêu đề thành từng mẩu chữ:
+   bảng tự cuộn ngang trong khung (Table). Cùng cách với bảng tài khoản (T35) */
+.titleCell {
+  min-width: calc(var(--sidebar-width) * 0.85);
+}
+
 .titleLink {
   font-weight: var(--weight-semibold);
   color: var(--color-primary);

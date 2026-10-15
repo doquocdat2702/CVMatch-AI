@@ -21,3 +21,11 @@ export const REQUIREMENT_TYPE_LABEL = {
   PREFERRED: 'Ưu tiên',
   OPTIONAL: 'Không bắt buộc',
 }
+
+// CvStatus: cùng chữ với trang CV của tôi (CVUpload)
+export const CV_STATUS_LABEL = {
+  UPLOADED: 'Chưa phân tích',
+  PROCESSING: 'Đang xử lý',
+  COMPLETED: 'Đã phân tích',
+  FAILED: 'Lỗi',
+}

@@ -1,0 +1,205 @@
+/* Cắt phần tràn theo chiều ngang (nhãn trục ở mép) để không đẩy trang rộng ra trên điện thoại;
+   chiều dọc vẫn hiện để chú thích của cột cao nhất không bị cắt */
+.chart {
+  margin: 0;
+  overflow-x: clip;
+}
+
+/* Lưới: cột 1 là trục dọc, cột 2 là vùng vẽ + trục ngang */
+.grid {
+  display: grid;
+  grid-template-columns: var(--space-6) minmax(0, 1fr);
+  column-gap: var(--space-2);
+}
+
+.yLabel {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+/* Trục dọc và vùng vẽ cùng chừa khoảng trống phía trên cho số trên đỉnh cột cao nhất */
+.yAxis,
+.area {
+  position: relative;
+  height: calc(var(--space-8) * 3);
+  margin-top: var(--space-5);
+}
+
+.yTick {
+  position: absolute;
+  right: 0;
+  transform: translateY(50%);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Đường đáy rõ, đường kẻ ngang mờ (trục và lưới lùi về sau, cột là chính) */
+.area {
+  border-bottom: var(--border-width) solid var(--color-border-strong);
+}
+
+.gridline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--border-width);
+  background-color: var(--color-border);
+}
+
+.columns {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+/* Mỗi cột chiếm đều bề ngang; padding 1px mỗi bên tạo khe 2px giữa các thanh khi cột hẹp */
+.column {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 0;
+  padding: 0 var(--border-width);
+}
+
+/* Cột đang rê chuột nổi lên trên cột bên cạnh để chú thích không bị che */
+.column:hover {
+  z-index: 1;
+}
+
+/* Thanh tối đa 24px, bo 4px ở đầu trên, vuông ở đáy */
+.bar {
+  display: block;
+  width: 100%;
+  max-width: var(--space-5);
+  background-color: var(--color-primary);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  transition: background-color var(--duration-fast) ease;
+}
+
+/* Giá trị nhỏ vẫn thấy được một vạch */
+.barFilled {
+  min-height: calc(var(--border-width) * 2);
+}
+
+.column:hover .bar {
+  background-color: var(--color-primary-hover);
+}
+
+/* Số trên đỉnh cột: chữ màu mực, không dùng màu của cột */
+.value {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin-bottom: var(--space-1);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--color-text);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Chú thích khi rê chuột: nền mực đen chữ trắng, nằm ngay trên đỉnh cột */
+.tooltip {
+  position: absolute;
+  left: 50%;
+  display: none;
+  margin-bottom: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-surface);
+  background-color: var(--color-text);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.tipStart {
+  left: 0;
+  transform: none;
+}
+
+.tipEnd {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.column:hover .tooltip {
+  display: block;
+}
+
+.xAxis {
+  display: flex;
+  grid-column: 2;
+  margin-top: var(--space-2);
+}
+
+/* Nhãn căn giữa dưới cột; flex + justify-content: center để nhãn dài hơn cột tràn đều hai bên.
+   Nhãn nhiều chữ (vd "Chưa phân tích") được xuống dòng ở khoảng trắng */
+.xTick {
+  display: flex;
+  flex: 1 1 0;
+  justify-content: center;
+  min-width: 0;
+  padding: 0 var(--border-width);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.xTickStart {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.xTickEnd {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.xLabel {
+  grid-column: 2;
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.empty {
+  margin: 0;
+  padding: var(--space-6) var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  text-align: center;
+  color: var(--color-text-muted);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+/* Bảng số liệu chỉ dành cho trình đọc màn hình */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

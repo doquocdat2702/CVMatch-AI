@@ -14,7 +14,7 @@ const EVIDENCE_SOURCE_LABEL = {
 function RequirementCell({ row }) {
   const { requirement } = row
   return (
-    <div className={styles.cell}>
+    <div className={`${styles.cell} ${styles.requirementCell}`}>
       <span className={styles.requirementText}>{requirement.rawText}</span>
       <span className={styles.meta}>
         <Badge status={row.type}>{REQUIREMENT_TYPE_LABEL[row.type] || row.type}</Badge>

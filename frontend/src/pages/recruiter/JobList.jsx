@@ -107,10 +107,13 @@ function JobList() {
       key: 'title',
       title: 'Tiêu đề',
       render: (job) => (
-        // Xem tin như ứng viên thấy
-        <Link className={styles.titleLink} to={`/jobs/${job.id}`}>
-          {job.title}
-        </Link>
+        // Khung có độ rộng tối thiểu: màn hình hẹp không bẻ tiêu đề thành từng mẩu chữ.
+        // Link xem tin như ứng viên thấy
+        <div className={styles.titleCell}>
+          <Link className={styles.titleLink} to={`/jobs/${job.id}`}>
+            {job.title}
+          </Link>
+        </div>
       ),
     },
     {

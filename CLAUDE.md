@@ -117,19 +117,22 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   Đơn ứng tuyển (`/candidate/applications`). Đăng nhập xong vào `/`.
 - HR: `/recruiter/dashboard`, `/recruiter/profile`, `/recruiter/company`, `/recruiter/jobs` (+ `/new`, `/:id/edit`, `/:id/requirements`),
   `/recruiter/recommended-candidates`, `/recruiter/applications`.
-  Đăng nhập xong vào `/recruiter/jobs` (sau T35c đổi sang dashboard).
+  Đăng nhập xong vào `/recruiter/dashboard` (từ T35c).
 - Admin: `/admin/dashboard`, `/admin/users`, `/admin/recruiters/new`, `/admin/roles`, `/admin/profile` (T35, đã duyệt).
-  Đăng nhập xong vào `/admin/users` (sau T35c đổi sang dashboard).
+  Đăng nhập xong vào `/admin/dashboard` (từ T35c).
 
 ### Component dùng chung đã có
 - 9 component common (T27): Button, Input, Select, Textarea, Table, Modal (có prop `wide`), Loading, Pagination, Badge.
 - Layout: Header, Sidebar, MainLayout, PublicLayout, NotificationBell (T35b, trong Header, chỉ CANDIDATE/RECRUITER).
 - `ChangePasswordForm` (dùng ở trang Hồ sơ của cả 3 role), `RequirementEvidenceMatrix` (props thuần, HR dùng lại),
-  `ApplyAction`, `components/cv-export/` (buildCVData + 2 mẫu CV Cổ điển / Hiện đại).
-- utils: format.js (formatDateTime, formatDate, formatMonthYear, formatNumber, formatRelativeTime), labels.js, apiError.js, roles.js, validation.js.
+  `ApplyAction`, `components/cv-export/` (buildCVData + 2 mẫu CV Cổ điển / Hiện đại),
+  `components/dashboard/` (T35c: StatCard, BarChart vẽ bằng div + CSS).
+- utils: format.js (formatDateTime, formatDate, formatMonthYear, formatNumber, formatRelativeTime),
+  labels.js (có CV_STATUS_LABEL từ T35c), apiError.js, roles.js, validation.js.
 - api: auth, candidate, cv, job, matching, application (đã có getJobApplications, updateApplicationStatus cho HR),
   admin (T35: getUsers, updateUserStatus, updateUserRole, resetUserPassword, deleteUser, createRecruiter, getCompany),
-  notification (T35b: getNotifications, getUnreadCount, markAsRead, markAllAsRead).
+  notification (T35b: getNotifications, getUnreadCount, markAsRead, markAllAsRead),
+  getRecruiterDashboard (recruiter.api, T35c), getAdminDashboard (admin.api, T35c).
 
 ## 6. Tiến độ (48 task)
 
@@ -138,9 +141,8 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 | 1–8 Backend | T01–T25, T22b | Xong |
 | 8b Gia cố & thống kê | G1–G6 | Xong |
 | Kiểm thử backend | smoke / timeout / nlp-fail / real-mail | Xong |
-| 9 Frontend | T26, T27, T28, T29, T29b, T30, T31, T32, T33, T34, T35, T35b | Xong |
-| 9 Frontend | **T35c** | **Tiếp theo: T35c** |
-| 10 Đánh giá | T36–T38 | Chưa làm |
+| 9 Frontend | T26, T27, T28, T29, T29b, T30, T31, T32, T33, T34, T35, T35b, T35c | Xong |
+| 10 Đánh giá | **T36**–T38 | **Tiếp theo: T36** |
 
 ### Lưu ý cho các task còn lại
 - **T33**: Profile HR đặt `<ChangePasswordForm />`; trang Công ty sửa công ty duy nhất; JobList dùng GET /jobs/my,
@@ -167,8 +169,14 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   -> /recruiter/applications?jobId=; đơn đã rút (applicationId null) -> /recruiter/applications.
   APPLICATION_STATUS_CHANGED -> /candidate/applications. Không sửa backend.
   variables.css thêm `--popover-width`, `--z-dropdown`.
-- **T35c**: 2 trang Tổng quan, đổi trang đăng nhập mặc định của HR/Admin sang dashboard.
-  Thay xong thì xóa `pages/common/UnderConstruction.*` (trang tạm cuối cùng).
+- **T35c (đã xong)**: 2 trang Tổng quan dùng API G6. HR có nút "Job của tôi / Toàn công ty" (?scope=all trên URL),
+  3 StatCard, BarChart đơn theo trạng thái, theo ngày (30 cột), phân bố coverage (kèm câu
+  "Coverage là mức đáp ứng yêu cầu, không phải điểm năng lực." và note của API). Admin: StatCard theo role,
+  bị khóa, tin, đơn, tỷ lệ xử lý CV thành công (chưa có CV xử lý xong thì "Chưa có dữ liệu");
+  BarChart người dùng mới theo tháng, CV theo trạng thái. Không tự làm mới số liệu.
+  "Tổng quan" đứng đầu menu HR và Admin; /recruiter và /admin chuyển tới dashboard. Đã xóa UnderConstruction.
+  Cùng commit: sửa bảng bị bẻ chữ ở 375px (MyApplications, CVUpload, JobList, bảng yêu cầu ở JobForm,
+  RequirementEvidenceMatrix) bằng độ rộng tối thiểu cột chữ chính, như bảng admin T35.
 - **T36–T38**: so sánh rule vs hybrid trên cùng bộ dữ liệu. Trước bảo vệ cần bộ **dữ liệu demo thật**
   (job đa ngành, JD đầy đủ, CV mẫu phân tích hybrid để ma trận có đủ xanh/vàng/đỏ).
 
