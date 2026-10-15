@@ -164,13 +164,15 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
 | Role | Mục menu → đường dẫn |
 |---|---|
 | Ứng viên | Việc làm `/`, Việc làm gợi ý `/candidate/recommended-jobs` (T30), CV của tôi `/candidate/cvs`, Hồ sơ `/candidate/profile`, Đơn ứng tuyển `/candidate/applications` |
-| Nhà tuyển dụng | Hồ sơ `/recruiter/profile`, Công ty `/recruiter/company`, Tin tuyển dụng `/recruiter/jobs`, Đơn ứng tuyển `/recruiter/applications` |
+| Nhà tuyển dụng | Hồ sơ `/recruiter/profile`, Công ty `/recruiter/company`, Tin tuyển dụng `/recruiter/jobs`, Ứng viên gợi ý `/recruiter/recommended-candidates` (T34), Đơn ứng tuyển `/recruiter/applications` |
 | Quản trị viên | Tài khoản `/admin/users`, Tạo Recruiter `/admin/recruiters/new`, Phân quyền `/admin/roles` |
 
 - Mục "Việc làm" của ứng viên trỏ về `/`. Không có `/candidate/jobs`.
   Từ T31, `/` (bảng tin việc làm, trang chủ công khai) và `/jobs/:id` dùng `PublicLayout` khi chưa đăng nhập
   (header gọn: tên hệ thống, Đăng nhập, Đăng ký; không Sidebar), `MainLayout` khi đã đăng nhập.
 - `/recruiter/dashboard` và `/admin/dashboard` đã chừa route, làm ở T35c.
+- Trang chỉnh yêu cầu của tin `/recruiter/jobs/:id/requirements` (T34) mở từ trang sửa tin, không có mục menu riêng;
+  nằm dưới `/recruiter/jobs` nên mục "Tin tuyển dụng" vẫn sáng.
 - Trang chính của role: `/candidate` → `/`, `/recruiter` → `/recruiter/jobs`, `/admin` → `/admin/users`.
   Đến T35c đổi recruiter và admin sang trang dashboard.
 - Mục menu chưa có trang hiển thị "Chức năng đang được xây dựng" bên trong layout.

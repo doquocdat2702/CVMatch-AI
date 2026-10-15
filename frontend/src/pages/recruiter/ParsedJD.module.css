@@ -1,0 +1,113 @@
+.backLink {
+  display: inline-block;
+  margin-bottom: var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+}
+
+.backLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Tiêu đề bên trái, 2 nút thao tác bên phải; màn hình hẹp thì xuống dòng */
+.pageHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.title {
+  margin: 0;
+}
+
+.jobTitle {
+  margin: var(--space-1) 0 0;
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.intro {
+  margin: 0 0 var(--space-5);
+  color: var(--color-text-muted);
+}
+
+.rawText {
+  overflow-wrap: anywhere;
+}
+
+.nameCell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.name {
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.muted {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+/* Dropdown loại trong bảng: đủ rộng cho chữ "Không bắt buộc", không kéo giãn cột */
+.typeSelect {
+  min-width: calc(var(--sidebar-width) * 0.75);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.modalText {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ===== Thông báo ===== */
+
+.alertSuccess,
+.alertWarning,
+.alertError {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+}
+
+.alertSuccess {
+  color: var(--color-success-text);
+  background-color: var(--color-success-bg);
+  border: var(--border-width) solid var(--color-success-border);
+}
+
+.alertWarning {
+  color: var(--color-warning-text);
+  background-color: var(--color-warning-bg);
+  border: var(--border-width) solid var(--color-warning-border);
+}
+
+.alertError {
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger-border);
+}

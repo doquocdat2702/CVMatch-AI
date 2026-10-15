@@ -290,9 +290,15 @@ function JobForm({ jobId }) {
         <section className={styles.section} aria-labelledby="requirements-title">
           <div className={styles.sectionHeader}>
             <h2 id="requirements-title">Yêu cầu đã phân tích từ JD</h2>
-            <Button variant="secondary" onClick={handleParse} loading={parsing} disabled={jdDirty}>
-              {parsing ? 'Đang phân tích...' : requirements.length > 0 ? 'Phân tích lại JD' : 'Phân tích JD'}
-            </Button>
+            <div className={styles.sectionActions}>
+              {/* Bảng dưới chỉ đọc; đổi loại, thêm, xóa yêu cầu ở trang riêng (T34) */}
+              <Link className={styles.secondaryLink} to={`/recruiter/jobs/${jobId}/requirements`}>
+                Chỉnh sửa yêu cầu
+              </Link>
+              <Button variant="secondary" onClick={handleParse} loading={parsing} disabled={jdDirty}>
+                {parsing ? 'Đang phân tích...' : requirements.length > 0 ? 'Phân tích lại JD' : 'Phân tích JD'}
+              </Button>
+            </div>
           </div>
 
           {jdDirty && <p className={styles.muted}>Lưu thay đổi JD trước khi phân tích.</p>}

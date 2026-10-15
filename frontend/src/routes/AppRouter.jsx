@@ -23,6 +23,9 @@ import RecruiterProfile from '../pages/recruiter/Profile'
 import Company from '../pages/recruiter/Company'
 import JobList from '../pages/recruiter/JobList'
 import JobForm from '../pages/recruiter/JobForm'
+import ParsedJD from '../pages/recruiter/ParsedJD'
+import RecommendedCandidates from '../pages/recruiter/RecommendedCandidates'
+import Applications from '../pages/recruiter/Applications'
 import { ROLES } from '../utils/roles'
 
 // Bảng tin "/" và chi tiết "/jobs/:id" là trang công khai: chưa đăng nhập dùng PublicLayout
@@ -37,6 +40,12 @@ function PublicPagesLayout() {
 function EditJobRoute() {
   const { id } = useParams()
   return <JobForm key={id} jobId={id} />
+}
+
+// Yêu cầu của tin: key theo mã tin, giống EditJobRoute
+function RequirementsRoute() {
+  const { id } = useParams()
+  return <ParsedJD key={id} jobId={id} />
 }
 
 // Các route đã đăng nhập: ProtectedRoute kiểm role -> MainLayout (Header + Sidebar) -> trang con.
@@ -85,7 +94,10 @@ function AppRouter() {
               <Route path="jobs" element={<JobList />} />
               <Route path="jobs/new" element={<JobForm />} />
               <Route path="jobs/:id/edit" element={<EditJobRoute />} />
-              <Route path="applications" element={<UnderConstruction />} />
+              {/* Nằm dưới /jobs nên menu "Tin tuyển dụng" vẫn được đánh dấu */}
+              <Route path="jobs/:id/requirements" element={<RequirementsRoute />} />
+              <Route path="recommended-candidates" element={<RecommendedCandidates />} />
+              <Route path="applications" element={<Applications />} />
             </Route>
           </Route>
 

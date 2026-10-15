@@ -1,0 +1,95 @@
+.intro {
+  margin: 0 0 var(--space-5);
+  color: var(--color-text-muted);
+}
+
+/* 2 ô lọc cạnh nhau: ô chọn tin rộng hơn ô trạng thái */
+.filters {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-4);
+  max-width: var(--form-max);
+  margin-bottom: var(--space-4);
+}
+
+/* Màn hình hẹp: mỗi ô lọc một dòng (breakpoint form theo design.md) */
+@media (max-width: 768px) {
+  .filters {
+    grid-template-columns: 1fr;
+  }
+}
+
+.name {
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+/* Dropdown đổi trạng thái trong bảng: đủ rộng cho chữ dài nhất, không kéo giãn cột */
+.statusSelect {
+  min-width: calc(var(--sidebar-width) * 0.85);
+}
+
+.link {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+}
+
+.link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+/* Câu nhắc coverage của API: chữ nhỏ màu xám dưới bảng */
+.note {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+.modalText {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.emptyText {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.alertSuccess,
+.alertError {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+}
+
+.alertSuccess {
+  color: var(--color-success-text);
+  background-color: var(--color-success-bg);
+  border: var(--border-width) solid var(--color-success-border);
+}
+
+.alertError {
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger-border);
+}

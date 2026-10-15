@@ -19,6 +19,7 @@ const MENU_BY_ROLE = {
     { to: '/recruiter/profile', label: 'Hồ sơ' },
     { to: '/recruiter/company', label: 'Công ty' },
     { to: '/recruiter/jobs', label: 'Tin tuyển dụng' },
+    { to: '/recruiter/recommended-candidates', label: 'Ứng viên gợi ý' },
     { to: '/recruiter/applications', label: 'Đơn ứng tuyển' },
   ],
   [ROLES.ADMIN]: [
