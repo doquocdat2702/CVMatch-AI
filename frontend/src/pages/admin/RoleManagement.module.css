@@ -1,0 +1,114 @@
+.intro {
+  margin: 0 0 var(--space-5);
+  color: var(--color-text-muted);
+}
+
+/* Bộ lọc: vai trò, ô tìm email, nút Tìm trên một hàng; nút thẳng đáy với ô nhập */
+.filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+  align-items: end;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.filterActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Màn hình hẹp: mỗi ô lọc một dòng (breakpoint form theo design.md) */
+@media (max-width: 768px) {
+  .filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Ô tài khoản: email đậm, họ tên màu Chì bên dưới. Có độ rộng tối thiểu để màn hình hẹp
+   không bẻ email thành từng mẩu ký tự: bảng tự cuộn ngang trong khung (Table) */
+.account {
+  display: flex;
+  flex-direction: column;
+  min-width: calc(var(--sidebar-width) * 0.85);
+}
+
+.email {
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.roleCell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Ô chọn vai trò trong bảng: đủ rộng cho chữ dài nhất, cùng cỡ với ô đổi trạng thái đơn (T34) */
+.roleSelect {
+  min-width: calc(var(--sidebar-width) * 0.85);
+}
+
+.pagination {
+  margin-top: var(--space-4);
+}
+
+.emptyText {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.modalText {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Hệ quả của việc đổi vai trò: chữ nhỏ màu Chì */
+.consequences {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding-left: var(--space-5);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
+
+.alertSuccess,
+.alertError {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+}
+
+/* Trong hộp xác nhận, khoảng cách đã do gap lo */
+.modalBody .alertError {
+  margin: 0;
+}
+
+.alertSuccess {
+  color: var(--color-success-text);
+  background-color: var(--color-success-bg);
+  border: var(--border-width) solid var(--color-success-border);
+}
+
+.alertError {
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger-border);
+}

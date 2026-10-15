@@ -26,6 +26,7 @@ const MENU_BY_ROLE = {
     { to: '/admin/users', label: 'Tài khoản' },
     { to: '/admin/recruiters/new', label: 'Tạo Recruiter' },
     { to: '/admin/roles', label: 'Phân quyền' },
+    { to: '/admin/profile', label: 'Hồ sơ' },
   ],
 }
 

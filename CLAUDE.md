@@ -47,6 +47,7 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 ### 4.1 Một công ty
 - Schema giữ nguyên (vẫn có Company, companyId). Seed tạo đúng 1 Company từ COMPANY_NAME.
 - Tạo recruiter không nhận companyId/companyName, tự gán công ty duy nhất. Đã bỏ GET /admin/companies.
+  Admin đọc tên công ty (chỉ đọc) qua GET /admin/company (thêm ở T35, đã duyệt).
 - HR sửa thông tin công ty qua PUT /companies/me.
 
 ### 4.2 Phân quyền
@@ -117,7 +118,7 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 - HR: `/recruiter/dashboard`, `/recruiter/profile`, `/recruiter/company`, `/recruiter/jobs` (+ `/new`, `/:id/edit`, `/:id/requirements`),
   `/recruiter/recommended-candidates`, `/recruiter/applications`.
   Đăng nhập xong vào `/recruiter/jobs` (sau T35c đổi sang dashboard).
-- Admin: `/admin/dashboard`, `/admin/users`, `/admin/recruiters/new`, `/admin/roles`.
+- Admin: `/admin/dashboard`, `/admin/users`, `/admin/recruiters/new`, `/admin/roles`, `/admin/profile` (T35, đã duyệt).
   Đăng nhập xong vào `/admin/users` (sau T35c đổi sang dashboard).
 
 ### Component dùng chung đã có
@@ -126,7 +127,8 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 - `ChangePasswordForm` (dùng ở trang Hồ sơ của cả 3 role), `RequirementEvidenceMatrix` (props thuần, HR dùng lại),
   `ApplyAction`, `components/cv-export/` (buildCVData + 2 mẫu CV Cổ điển / Hiện đại).
 - utils: format.js (formatDateTime, formatDate, formatMonthYear, formatNumber), labels.js, apiError.js, roles.js, validation.js.
-- api: auth, candidate, cv, job, matching, application (đã có getJobApplications, updateApplicationStatus cho HR).
+- api: auth, candidate, cv, job, matching, application (đã có getJobApplications, updateApplicationStatus cho HR),
+  admin (T35: getUsers, updateUserStatus, updateUserRole, resetUserPassword, deleteUser, createRecruiter, getCompany).
 
 ## 6. Tiến độ (48 task)
 
@@ -135,8 +137,8 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 | 1–8 Backend | T01–T25, T22b | Xong |
 | 8b Gia cố & thống kê | G1–G6 | Xong |
 | Kiểm thử backend | smoke / timeout / nlp-fail / real-mail | Xong |
-| 9 Frontend | T26, T27, T28, T29, T29b, T30, T31, T32, T33, T34 | Xong |
-| 9 Frontend | **T35** (3 trang admin), T35b, T35c | **Tiếp theo: T35** |
+| 9 Frontend | T26, T27, T28, T29, T29b, T30, T31, T32, T33, T34, T35 | Xong |
+| 9 Frontend | **T35b**, T35c | **Tiếp theo: T35b** |
 | 10 Đánh giá | T36–T38 | Chưa làm |
 
 ### Lưu ý cho các task còn lại
@@ -151,7 +153,15 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   lựa chọn tin + bộ lọc giữ trên URL (?jobId=&status=); chuyển đơn sang Đã chấp nhận/Đã từ chối có hộp xác nhận.
 - **T35**: CreateRecruiter không chọn công ty (hiện tên công ty chỉ đọc); AccountList có nút "Đặt lại mật khẩu"
   (ẩn với chính admin đang đăng nhập); Hồ sơ admin có ChangePasswordForm.
+- **T35 (đã xong)**: chủ dự án duyệt thêm GET /admin/company (tên công ty chỉ đọc ở trang Tạo Recruiter) và
+  trang Hồ sơ admin `/admin/profile` (email, vai trò, ChangePasswordForm; menu "Hồ sơ" cuối menu admin).
+  Tài khoản và Phân quyền: lọc vai trò + tìm email + trang giữ trên URL (?role=&email=&page=), 10 dòng/trang.
+  Dòng của chính admin ẩn mọi thao tác. Khóa và xóa có hộp xác nhận, mở khóa chạy ngay.
+  Xóa bị 400 (đã có tin/đơn): hộp hiện nguyên câu API, nút Xóa đổi thành "Khóa tài khoản thay vì xóa".
+  Đổi vai trò chỉ giữa RECRUITER và CANDIDATE, chọn trong bảng rồi xác nhận mới lưu.
+  Badge có thêm ACTIVE (xanh lá) và LOCKED (đỏ). UnderConstruction chỉ còn cho 2 route dashboard.
 - **T35c**: 2 trang Tổng quan, đổi trang đăng nhập mặc định của HR/Admin sang dashboard.
+  Thay xong thì xóa `pages/common/UnderConstruction.*` (trang tạm cuối cùng).
 - **T36–T38**: so sánh rule vs hybrid trên cùng bộ dữ liệu. Trước bảo vệ cần bộ **dữ liệu demo thật**
   (job đa ngành, JD đầy đủ, CV mẫu phân tích hybrid để ma trận có đủ xanh/vàng/đỏ).
 

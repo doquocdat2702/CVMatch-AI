@@ -1,0 +1,42 @@
+.intro {
+  margin: 0 0 var(--space-6);
+  color: var(--color-text-muted);
+}
+
+/* Nhãn nhỏ màu Chì, giá trị bên dưới (giống trang Hồ sơ của nhà tuyển dụng) */
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: var(--form-max);
+  margin: 0;
+}
+
+.term {
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.value {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Ghi chú dưới mục Đổi mật khẩu */
+.note {
+  max-width: var(--form-max);
+  margin: var(--space-4) 0 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+/* Giữ font giao diện (design.md chỉ dùng 2 font), đậm để tách lệnh khỏi câu */
+.code {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}

@@ -28,6 +28,15 @@ async function createRecruiter(req, res, next) {
   }
 }
 
+async function getCompany(req, res, next) {
+  try {
+    const data = await adminService.getCompany();
+    return success(res, data, 'Lấy thông tin công ty thành công');
+  } catch (err) {
+    return next(err);
+  }
+}
+
 async function updateStatus(req, res, next) {
   try {
     const data = await adminService.updateUserStatus(req.user.userId, req.params.id, req.body || {});
@@ -78,6 +87,7 @@ module.exports = {
   listUsers,
   getUser,
   createRecruiter,
+  getCompany,
   updateStatus,
   updateRole,
   deleteUser,

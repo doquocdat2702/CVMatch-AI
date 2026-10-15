@@ -232,6 +232,12 @@ async function createRecruiter(body) {
   }
 }
 
+// Công ty mà Recruiter mới sẽ được gán (chỉ đọc). Sửa công ty là việc của HR qua PUT /companies/me
+async function getCompany() {
+  const company = await getSingleCompany();
+  return { id: company.id, name: company.name };
+}
+
 // ===== Khóa / mở khóa, đổi role, xóa =====
 
 async function updateUserStatus(adminId, userId, { isActive } = {}) {
@@ -460,6 +466,7 @@ module.exports = {
   listUsers,
   getUserDetail,
   createRecruiter,
+  getCompany,
   updateUserStatus,
   updateUserRole,
   deleteUser,

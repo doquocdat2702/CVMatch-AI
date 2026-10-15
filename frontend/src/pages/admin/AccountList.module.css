@@ -1,0 +1,169 @@
+/* Tiêu đề trang + link "Tạo tài khoản Recruiter" ở góc phải */
+.pageHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+/* Bỏ margin mặc định của h1 (index.css) để thẳng hàng với link */
+.pageHeader > h1 {
+  margin: 0;
+}
+
+.intro {
+  margin: 0 0 var(--space-5);
+  color: var(--color-text-muted);
+}
+
+/* Link dạng nút chính */
+.primaryLink {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-height);
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-on-primary);
+  text-decoration: none;
+  background-color: var(--color-primary);
+  border: var(--border-width) solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--duration-fast) ease;
+}
+
+.primaryLink:hover {
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.primaryLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Bộ lọc: vai trò, ô tìm email, nút Tìm trên một hàng; nút thẳng đáy với ô nhập */
+.filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+  align-items: end;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.filterActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Màn hình hẹp: mỗi ô lọc một dòng (breakpoint form theo design.md) */
+@media (max-width: 768px) {
+  .filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.summary {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
+
+/* Ô tài khoản: email đậm, họ tên màu Chì bên dưới. Có độ rộng tối thiểu để màn hình hẹp
+   không bẻ email thành từng mẩu ký tự: bảng tự cuộn ngang trong khung (Table) */
+.account {
+  display: flex;
+  flex-direction: column;
+  min-width: calc(var(--sidebar-width) * 0.85);
+}
+
+.email {
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+/* 3 nút luôn trên một dòng; bảng hẹp thì khung bảng tự cuộn ngang (Table) */
+.rowActions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+
+/* Câu nhắc dưới bảng */
+.note {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+.pagination {
+  margin-top: var(--space-4);
+}
+
+.emptyText {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.modalText {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Lỗi trong hộp xác nhận nằm dưới đoạn mô tả (2 class để thắng margin chung của .alertError) */
+.alertError.modalAlert {
+  margin: var(--space-4) 0 0;
+}
+
+/* Ghi chú dưới câu lỗi khi tài khoản không xóa được nhưng đã khóa sẵn */
+.modalHint {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
+
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Trong form của modal, khoảng cách đã do gap lo */
+.modalForm .alertError {
+  margin: 0;
+}
+
+.alertSuccess,
+.alertError {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+}
+
+.alertSuccess {
+  color: var(--color-success-text);
+  background-color: var(--color-success-bg);
+  border: var(--border-width) solid var(--color-success-border);
+}
+
+.alertError {
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger-border);
+}

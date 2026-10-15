@@ -22,4 +22,7 @@ router.delete('/users/:id', adminController.deleteUser);
 // tự gán vào công ty duy nhất của hệ thống
 router.post('/recruiters', adminController.createRecruiter);
 
+// Công ty duy nhất của hệ thống (chỉ đọc), để trang tạo Recruiter hiện tên công ty sẽ được gán
+router.get('/company', adminController.getCompany);
+
 module.exports = router;

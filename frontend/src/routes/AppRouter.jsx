@@ -26,6 +26,10 @@ import JobForm from '../pages/recruiter/JobForm'
 import ParsedJD from '../pages/recruiter/ParsedJD'
 import RecommendedCandidates from '../pages/recruiter/RecommendedCandidates'
 import Applications from '../pages/recruiter/Applications'
+import AccountList from '../pages/admin/AccountList'
+import CreateRecruiter from '../pages/admin/CreateRecruiter'
+import RoleManagement from '../pages/admin/RoleManagement'
+import AdminProfile from '../pages/admin/Profile'
 import { ROLES } from '../utils/roles'
 
 // Bảng tin "/" và chi tiết "/jobs/:id" là trang công khai: chưa đăng nhập dùng PublicLayout
@@ -49,7 +53,7 @@ function RequirementsRoute() {
 }
 
 // Các route đã đăng nhập: ProtectedRoute kiểm role -> MainLayout (Header + Sidebar) -> trang con.
-// Mục menu chưa có trang dùng tạm UnderConstruction, các task sau thay bằng trang thật.
+// UnderConstruction chỉ còn giữ chỗ cho 2 trang Tổng quan, T35c thay bằng trang thật.
 function AppRouter() {
   return (
     <BrowserRouter>
@@ -108,9 +112,10 @@ function AppRouter() {
             <Route element={<MainLayout />}>
               {/* Trang tổng quan làm ở T35c, hiện chỉ chừa route */}
               <Route path="dashboard" element={<UnderConstruction />} />
-              <Route path="users" element={<UnderConstruction />} />
-              <Route path="recruiters/new" element={<UnderConstruction />} />
-              <Route path="roles" element={<UnderConstruction />} />
+              <Route path="users" element={<AccountList />} />
+              <Route path="recruiters/new" element={<CreateRecruiter />} />
+              <Route path="roles" element={<RoleManagement />} />
+              <Route path="profile" element={<AdminProfile />} />
             </Route>
           </Route>
 

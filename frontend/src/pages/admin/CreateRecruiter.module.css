@@ -1,0 +1,102 @@
+.intro {
+  max-width: var(--form-max);
+  margin: 0 0 var(--space-6);
+  color: var(--color-text-muted);
+}
+
+/* Trường chỉ đọc (công ty): nhãn nhỏ màu Chì, giá trị bên dưới, giống trang Hồ sơ */
+.details {
+  max-width: var(--form-max);
+  margin: 0 0 var(--space-5);
+}
+
+.term {
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.value {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.readonlyNote {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.errorText {
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-danger-text);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: var(--form-max);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.alertSuccess,
+.alertError {
+  max-width: var(--form-max);
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+}
+
+/* Trong form, khoảng cách đã do gap lo */
+.form .alertError {
+  margin: 0;
+}
+
+.alertSuccess {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--color-success-text);
+  background-color: var(--color-success-bg);
+  border: var(--border-width) solid var(--color-success-border);
+}
+
+.alertError {
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger-border);
+}
+
+.alertText {
+  margin: 0;
+}
+
+/* Link trên nền xanh lá nhạt: dùng màu chữ của thông báo, gạch chân để nhận ra là link */
+.link {
+  align-self: flex-start;
+  font-weight: var(--weight-semibold);
+  color: var(--color-success-text);
+}
+
+.link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
