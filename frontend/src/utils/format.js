@@ -35,3 +35,23 @@ export function formatDate(value) {
   if (!value) return ''
   return new Date(value).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
+
+// Thời gian tương đối cho thông báo: "vừa xong", "5 phút trước", "3 giờ trước", "hôm qua", "4 ngày trước";
+// từ 7 ngày trở lên thì hiện ngày (12/10/2026). Giờ và ngày so theo lịch máy người dùng:
+// đã qua nửa đêm là "hôm qua" dù mới cách vài giờ.
+export function formatRelativeTime(value, now = new Date()) {
+  if (!value) return ''
+  const date = new Date(value)
+  // Giờ máy chủ có thể nhanh hơn máy người dùng vài giây, số âm cũng tính là "vừa xong"
+  const minutes = Math.floor((now - date) / 60000)
+  if (minutes < 1) return 'vừa xong'
+  if (minutes < 60) return `${minutes} phút trước`
+
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const days = Math.round((startOfToday - startOfDay) / 86400000)
+  if (days <= 0) return `${Math.floor(minutes / 60)} giờ trước`
+  if (days === 1) return 'hôm qua'
+  if (days < 7) return `${days} ngày trước`
+  return formatDate(value)
+}

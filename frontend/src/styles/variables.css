@@ -102,6 +102,7 @@
   --modal-max: 520px;
   --modal-max-wide: 880px; /* modal chứa bảng, vd ma trận đối chiếu */
   --auth-card-max: 400px;
+  --popover-width: 360px; /* dropdown thông báo trên Header (T35b) */
 
   /* ===== Chuyển động ===== */
   --duration-fast: 120ms;
@@ -110,6 +111,7 @@
   --spinner-stroke: 2px;
 
   /* ===== Lớp chồng ===== */
+  --z-dropdown: 50; /* dropdown thông báo (T35b): trên nội dung, dưới modal */
   --z-modal: 100;
 
   /* ===== Trang in CV khổ A4 (khung xem trước dùng các biến này; @page phải ghi số trực tiếp) ===== */

@@ -123,12 +123,13 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 
 ### Component dùng chung đã có
 - 9 component common (T27): Button, Input, Select, Textarea, Table, Modal (có prop `wide`), Loading, Pagination, Badge.
-- Layout: Header, Sidebar, MainLayout, PublicLayout.
+- Layout: Header, Sidebar, MainLayout, PublicLayout, NotificationBell (T35b, trong Header, chỉ CANDIDATE/RECRUITER).
 - `ChangePasswordForm` (dùng ở trang Hồ sơ của cả 3 role), `RequirementEvidenceMatrix` (props thuần, HR dùng lại),
   `ApplyAction`, `components/cv-export/` (buildCVData + 2 mẫu CV Cổ điển / Hiện đại).
-- utils: format.js (formatDateTime, formatDate, formatMonthYear, formatNumber), labels.js, apiError.js, roles.js, validation.js.
+- utils: format.js (formatDateTime, formatDate, formatMonthYear, formatNumber, formatRelativeTime), labels.js, apiError.js, roles.js, validation.js.
 - api: auth, candidate, cv, job, matching, application (đã có getJobApplications, updateApplicationStatus cho HR),
-  admin (T35: getUsers, updateUserStatus, updateUserRole, resetUserPassword, deleteUser, createRecruiter, getCompany).
+  admin (T35: getUsers, updateUserStatus, updateUserRole, resetUserPassword, deleteUser, createRecruiter, getCompany),
+  notification (T35b: getNotifications, getUnreadCount, markAsRead, markAllAsRead).
 
 ## 6. Tiến độ (48 task)
 
@@ -137,8 +138,8 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 | 1–8 Backend | T01–T25, T22b | Xong |
 | 8b Gia cố & thống kê | G1–G6 | Xong |
 | Kiểm thử backend | smoke / timeout / nlp-fail / real-mail | Xong |
-| 9 Frontend | T26, T27, T28, T29, T29b, T30, T31, T32, T33, T34, T35 | Xong |
-| 9 Frontend | **T35b**, T35c | **Tiếp theo: T35b** |
+| 9 Frontend | T26, T27, T28, T29, T29b, T30, T31, T32, T33, T34, T35, T35b | Xong |
+| 9 Frontend | **T35c** | **Tiếp theo: T35c** |
 | 10 Đánh giá | T36–T38 | Chưa làm |
 
 ### Lưu ý cho các task còn lại
@@ -160,6 +161,12 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   Xóa bị 400 (đã có tin/đơn): hộp hiện nguyên câu API, nút Xóa đổi thành "Khóa tài khoản thay vì xóa".
   Đổi vai trò chỉ giữa RECRUITER và CANDIDATE, chọn trong bảng rồi xác nhận mới lưu.
   Badge có thêm ACTIVE (xanh lá) và LOCKED (đỏ). UnderConstruction chỉ còn cho 2 route dashboard.
+- **T35b (đã xong)**: chuông thông báo trong Header (ứng viên, HR; admin không có). Hỏi số chưa đọc khi mount
+  và mỗi 30 giây (setInterval, dọn khi unmount), không socket. Dropdown 10 thông báo mới nhất, tải lại mỗi lần mở.
+  NEW_APPLICATION: thông báo chỉ có applicationId nên gọi GET /applications/:id (API có sẵn) lấy job.id
+  -> /recruiter/applications?jobId=; đơn đã rút (applicationId null) -> /recruiter/applications.
+  APPLICATION_STATUS_CHANGED -> /candidate/applications. Không sửa backend.
+  variables.css thêm `--popover-width`, `--z-dropdown`.
 - **T35c**: 2 trang Tổng quan, đổi trang đăng nhập mặc định của HR/Admin sang dashboard.
   Thay xong thì xóa `pages/common/UnderConstruction.*` (trang tạm cuối cùng).
 - **T36–T38**: so sánh rule vs hybrid trên cùng bộ dữ liệu. Trước bảo vệ cần bộ **dữ liệu demo thật**

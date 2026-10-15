@@ -234,6 +234,12 @@ Trên điện thoại, khối Xanh mực thành dải phía trên form. Tên h�
 - `Loading`: vòng xoay CSS kèm chữ "Đang tải...".
 - `Pagination`: "Trước", số trang, "Sau"; trang hiện tại nền Xanh nhạt; ẩn khi chỉ có 1 trang.
 - `Badge`: 12px đậm 600, bo 4px, có viền; màu theo prop `status` (mục 2).
+- `NotificationBell` (T35b, chỉ ứng viên và nhà tuyển dụng): nút chuông 32px trên Header, cạnh email.
+  Chuông là icon chức năng duy nhất của hệ thống, vẽ bằng SVG nét `currentColor` ngay trong code (không thư viện icon).
+  Số chưa đọc: ô Đỏ (`--color-danger-text`) chữ trắng 12px, bo 4px, trên 9 hiện "9+", bằng 0 thì ẩn.
+  Dropdown rộng `--popover-width` 360px, lớp `--z-dropdown`, chỉ có viền Viền đậm, không đổ bóng (bóng chỉ dành cho modal);
+  dưới 900px bám theo màn hình ngay dưới Header. Thông báo chưa đọc: nền Xanh nhạt + chữ đậm.
+  Đóng bằng bấm ra ngoài hoặc Esc.
 
 ## 11. Nguyên tắc riêng của hệ thống
 
