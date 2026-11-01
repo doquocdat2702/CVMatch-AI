@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { getMyProfile, updateMyProfile } from '../../api/candidate.api'
 import Button from '../../components/common/Button'
-import ChangePasswordForm from '../../components/common/ChangePasswordForm'
 import Input from '../../components/common/Input'
 import Loading from '../../components/common/Loading'
+import { useAuth } from '../../hooks/useAuth'
 import { getErrorMessage } from '../../utils/apiError'
 import styles from './Profile.module.css'
 
@@ -33,6 +33,8 @@ function pickFields(profile) {
 }
 
 function Profile() {
+  // Họ tên trên nút tài khoản (AccountMenu) lấy từ AuthContext: lưu xong thì cập nhật để nút đổi tên ngay
+  const { setProfileName } = useAuth()
   const [profile, setProfile] = useState(EMPTY_FORM)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -110,6 +112,7 @@ function Profile() {
         headline: form.headline.trim(),
       })
       setProfile(pickFields(result.data))
+      setProfileName((result.data.fullName || '').trim())
       setEditing(false)
       setSaved(true)
     } catch (err) {
@@ -197,8 +200,6 @@ function Profile() {
           <Button onClick={startEdit}>Sửa hồ sơ</Button>
         </>
       )}
-
-      <ChangePasswordForm />
     </>
   )
 }

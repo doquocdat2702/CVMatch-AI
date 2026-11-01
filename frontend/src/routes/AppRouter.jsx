@@ -2,10 +2,15 @@ import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-
 import { AuthProvider } from '../context/AuthContext'
 import ProtectedRoute from './ProtectedRoute'
 import MainLayout from '../components/layout/MainLayout'
-import PublicLayout from '../components/layout/PublicLayout'
+import SiteLayout from '../components/layout/SiteLayout'
 import { useAuth } from '../hooks/useAuth'
 import JobBoard from '../pages/candidate/JobBoard'
 import JobDetail from '../pages/candidate/JobDetail'
+import About from '../pages/public/About'
+import Contact from '../pages/public/Contact'
+import Privacy from '../pages/public/Privacy'
+import Terms from '../pages/public/Terms'
+import ChangePassword from '../pages/common/ChangePassword'
 import Login from '../pages/auth/Login'
 import Register from '../pages/auth/Register'
 import ForgotPassword from '../pages/auth/ForgotPassword'
@@ -15,7 +20,6 @@ import NotFound from '../pages/errors/NotFound'
 import Profile from '../pages/candidate/Profile'
 import CVUpload from '../pages/candidate/CVUpload'
 import ParsedCV from '../pages/candidate/ParsedCV'
-import RecommendedJobs from '../pages/candidate/RecommendedJobs'
 import MatchingDetail from '../pages/candidate/MatchingDetail'
 import MyApplications from '../pages/candidate/MyApplications'
 import RecruiterProfile from '../pages/recruiter/Profile'
@@ -33,11 +37,11 @@ import RoleManagement from '../pages/admin/RoleManagement'
 import AdminProfile from '../pages/admin/Profile'
 import { ROLES } from '../utils/roles'
 
-// Bảng tin "/" và chi tiết "/jobs/:id" là trang công khai: chưa đăng nhập dùng PublicLayout
-// (header gọn, không Sidebar), đã đăng nhập dùng MainLayout (Header + Sidebar theo role)
+// Trang công khai ("/", "/jobs/:id", "/about", "/contact", "/privacy", "/terms"): khách và ứng viên dùng SiteLayout
+// (menu ngang, không Sidebar), nhà tuyển dụng và quản trị viên giữ MainLayout (Header + Sidebar theo role)
 function PublicPagesLayout() {
-  const { isAuthenticated } = useAuth()
-  return isAuthenticated ? <MainLayout /> : <PublicLayout />
+  const { isAuthenticated, role } = useAuth()
+  return isAuthenticated && role !== ROLES.CANDIDATE ? <MainLayout /> : <SiteLayout />
 }
 
 // Sửa tin: key theo mã tin để chuyển từ tin này sang tin khác (hoặc từ "tạo mới" sang "sửa")
@@ -53,16 +57,22 @@ function RequirementsRoute() {
   return <ParsedJD key={id} jobId={id} />
 }
 
-// Các route đã đăng nhập: ProtectedRoute kiểm role -> MainLayout (Header + Sidebar) -> trang con.
+// Các route đã đăng nhập: ProtectedRoute kiểm role -> layout (SiteLayout cho ứng viên,
+// MainLayout cho nhà tuyển dụng và quản trị viên) -> trang con.
 function AppRouter() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Công khai: chưa đăng nhập vẫn vào được. "/" là trang chủ (bảng tin việc làm) */}
+          {/* Công khai (kể cả Chính sách bảo mật, Điều khoản): chưa đăng nhập vẫn vào được. "/" là trang chủ (bảng tin việc làm,
+              ứng viên có thêm tab "Gợi ý theo CV của bạn" ở /?view=recommended) */}
           <Route element={<PublicPagesLayout />}>
             <Route path="/" element={<JobBoard />} />
             <Route path="/jobs/:id" element={<JobDetail />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
           </Route>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
@@ -70,19 +80,21 @@ function AppRouter() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/403" element={<Forbidden />} />
 
-          {/* Ứng viên. Mục "Việc làm" dùng trang chung "/" */}
+          {/* Ứng viên. Mục "Việc làm" dùng trang chung "/", các trang riêng mở từ AccountMenu */}
           <Route path="/candidate" element={<ProtectedRoute allowedRoles={[ROLES.CANDIDATE]} />}>
             {/* /candidate tự chuyển tới trang chính của ứng viên: danh sách việc làm */}
             <Route index element={<Navigate to="/" replace />} />
-            <Route element={<MainLayout />}>
-              <Route path="recommended-jobs" element={<RecommendedJobs />} />
-              {/* Chi tiết đối chiếu nằm dưới /recommended-jobs nên menu "Việc làm gợi ý" vẫn được đánh dấu */}
+            {/* Danh sách gợi ý đã thành tab trong trang Việc làm: link cũ chuyển sang tab đó */}
+            <Route path="recommended-jobs" element={<Navigate to="/?view=recommended" replace />} />
+            <Route element={<SiteLayout />}>
+              {/* Chi tiết đối chiếu giữ đường dẫn cũ; nằm dưới /recommended-jobs/ nên mục "Việc làm" vẫn sáng */}
               <Route path="recommended-jobs/:jobId" element={<MatchingDetail />} />
               <Route path="cvs" element={<CVUpload />} />
-              {/* Kết quả phân tích nằm dưới /cvs nên menu "CV của tôi" vẫn được đánh dấu */}
+              {/* Kết quả phân tích nằm dưới /cvs nên mục "CV của tôi" trong AccountMenu vẫn được đánh dấu */}
               <Route path="cvs/parsed" element={<ParsedCV />} />
               <Route path="profile" element={<Profile />} />
               <Route path="applications" element={<MyApplications />} />
+              <Route path="change-password" element={<ChangePassword />} />
             </Route>
           </Route>
 
@@ -93,6 +105,7 @@ function AppRouter() {
             <Route element={<MainLayout />}>
               <Route path="dashboard" element={<RecruiterDashboard />} />
               <Route path="profile" element={<RecruiterProfile />} />
+              <Route path="change-password" element={<ChangePassword />} />
               <Route path="company" element={<Company />} />
               <Route path="jobs" element={<JobList />} />
               <Route path="jobs/new" element={<JobForm />} />
@@ -114,6 +127,7 @@ function AppRouter() {
               <Route path="recruiters/new" element={<CreateRecruiter />} />
               <Route path="roles" element={<RoleManagement />} />
               <Route path="profile" element={<AdminProfile />} />
+              <Route path="change-password" element={<ChangePassword />} />
             </Route>
           </Route>
 

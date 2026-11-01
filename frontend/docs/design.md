@@ -112,7 +112,7 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
 - Dòng của tiêu đề không thấp hơn 1.3 để dấu tiếng Việt không bị cắt.
 - Độ đậm: `--weight-regular` 400 chữ thường, `--weight-medium` 500 menu và nút,
   `--weight-semibold` 600 tiêu đề, nhãn, tiêu đề cột.
-- Không viết hoa toàn bộ cho nhãn hay tiêu đề cột.
+- Không viết hoa toàn bộ cho nhãn hay tiêu đề cột. Ngoại lệ đã duyệt (T35e): tên công ty và thanh dưới của footer.
 - `h1` và `h2` đã có style chung trong `index.css`: trang chỉ cần dùng thẻ, không tự đặt cỡ chữ.
 
 ## 5. Khoảng cách, bo góc, bóng
@@ -129,7 +129,8 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
 - Lề vùng nội dung: `--space-6` trên máy tính, `--space-4` trên điện thoại.
 - Bo góc: `--radius-sm` 4px cho nút, ô nhập, badge, pagination; `--radius-md` 8px cho khung bảng và modal.
   Không dùng kiểu bo tròn viên thuốc.
-- Bóng: chỉ modal có bóng (`--shadow-modal`). Không bọc nội dung trong card đổ bóng.
+- Bóng: chỉ modal có bóng (`--shadow-modal`). Không bọc nội dung trong card đổ bóng
+  (dropdown thông báo, menu tài khoản, footer cũng chỉ có viền).
 
 ## 6. Bố cục
 
@@ -148,8 +149,9 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
 └────────────────┴───────────────────────────────────────────────┘
 ```
 
-- `MainLayout` = `Header` + `Sidebar` + vùng nội dung. Nội dung căn trái, rộng tối đa
-  `--content-max` 1200px; form rộng tối đa `--form-max` 640px.
+- `MainLayout` = `Header` + `Sidebar` + vùng nội dung, **chỉ cho nhà tuyển dụng và quản trị viên** (từ T35d).
+  Header bắt đầu bằng Logo (T35e) thay cho tên hệ thống dạng chữ; nút Đăng xuất về `/` (bố cục khách).
+  Nội dung căn trái, rộng tối đa `--content-max` 1200px; form rộng tối đa `--form-max` 640px.
 - Phân tách các phần bằng tiêu đề và khoảng trắng, không bằng card.
 - Menu đang chọn: nền Xanh nhạt, chữ `#0A4FA0` đậm 600, vạch trái 3px Xanh mực
   (vạch giúp nhận ra mục đang chọn mà không cần phân biệt màu).
@@ -159,17 +161,89 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
 - Tương tự, `@page` (bản in CV, T29b) ghi số trực tiếp: khổ A4, lề 15mm, khớp `--print-page-width` và
   `--print-page-margin` trong variables.css.
 
+### SiteLayout: khách và ứng viên (T35d, T35e)
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│ [T] Tuyển dụng DMatch  Việc làm  Giới thiệu  Liên hệ  [chuông] (Á) Ánh ▾ │  khách: Đăng nhập [Đăng ký]
+│                        ━━━━━━━━                                    │  gạch chân 2px đè viền header
+├────────────────────────────────────────────────────────────────────┤
+│            Việc làm (serif 24)                                      │
+│            Tất cả (24)    Gợi ý theo CV của bạn (6)                 │  tab chỉ ứng viên thấy
+│            ━━━━━━━━━━                                               │
+│            nội dung căn giữa, rộng tối đa --content-max  (flex: 1)  │
+├────────────────────────────────────────────────────────────────────┤
+│ [T] Tuyển dụng DMatch                                     Việc làm  │  SiteFooter (T35e)
+│ CÔNG TY CỔ PHẦN ...                                     Giới thiệu  │
+│ (vị trí) địa chỉ  (đt) số điện thoại  (thư) email          Liên hệ  │
+│ website · Theo dõi chúng tôi Facebook YouTube    Đăng ký ứng tuyển  │
+│ ──────────────────────────────────────────────────────────────────  │
+│ © 2026 CÔNG TY ... | CHÍNH SÁCH BẢO MẬT | ĐIỀU KHOẢN SỬ DỤNG        │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+- `SiteLayout` thay `PublicLayout` (đã xóa ở T35e) cho khách và thay `MainLayout` cho ứng viên: menu ngang,
+  không Sidebar. Thanh header rộng bằng vùng nội dung cộng lề hai bên (`--content-max` + 2 × `--space-6`) nên Logo
+  thẳng mép trái nội dung. Không thêm biến độ rộng mới (dùng `--content-max` có sẵn).
+- Khung cột `min-height: 100vh`, vùng nội dung `flex: 1`: trang ít nội dung thì footer vẫn sát đáy màn hình.
+- Lưới 3 cột `1fr auto 1fr`: Logo | menu chính đúng giữa | bên phải.
+- Menu chính: chữ 14px đậm 500, mục khác màu Chì, mục đang ở chữ Mực đen + gạch chân 2px Xanh mực
+  (`calc(var(--border-width) * 2)`, không thêm biến) đè lên viền dưới của header. Dùng `NavLink` (tự gắn `aria-current="page"`).
+  "Việc làm" vẫn gạch chân ở `/jobs/:id` và `/candidate/recommended-jobs/:jobId` (thuộc mục này), nhưng
+  `aria-current` chỉ gắn ở đúng `/`.
+- Bên phải: khách có "Đăng nhập" (link chữ Xanh mực) + "Đăng ký" (link dạng nút chính cỡ nhỏ), cả hai gửi kèm
+  trang đang xem để đăng nhập xong quay lại. Ứng viên có `NotificationBell` + `AccountMenu`.
+- Dưới 900px (T35e, thay nút "Menu" và panel dọc của T35d): header 2 hàng.
+  Hàng 1 cao `--header-height`: Logo bên trái; bên phải chuông + AccountMenu (ứng viên) hoặc "Đăng nhập" + "Đăng ký"
+  (khách). Hàng 2 cao `--control-height`: Việc làm / Giới thiệu / Liên hệ nằm ngang, căn trái theo Logo, giữ gạch
+  chân 2px đè viền dưới header. Nút tài khoản chỉ còn ô chữ cái + dấu ▾; dưới 768px Logo chỉ còn ô chữ.
+- Đăng xuất (AccountMenu, Header của MainLayout) về trang chủ `/` ở bố cục khách, không mang theo trang cũ.
+- Trang đăng nhập, đăng ký, quên / đặt lại mật khẩu giữ bố cục riêng, không dùng SiteLayout.
+  Trang đăng nhập có Logo ở đầu cột form (T35e), khối Xanh mực giữ tên hệ thống cỡ lớn.
+
+### Footer của SiteLayout (`SiteFooter`, T35e)
+
+- Chỉ có ở SiteLayout (khách, ứng viên); HR / Admin dùng MainLayout nên không có footer.
+- Nền Giấy, viền trên Viền, không đổ bóng. Rộng và lề bằng thanh header.
+- Máy tính 2 cột. Trái: Logo; tên công ty viết hoa (`text-transform`, 14px đậm 600, Mực đen); địa chỉ, điện thoại
+  (`tel:` bỏ khoảng trắng), email (`mailto:`) mỗi dòng có icon 16px; website công ty (tab mới); "Theo dõi chúng tôi"
+  + link chữ Facebook / YouTube (tab mới, `rel="noopener noreferrer"`). Phải: `<nav aria-label="Liên kết chân trang">`
+  căn phải, chữ 14px đậm 600, mỗi link một dòng: Việc làm, Giới thiệu, Liên hệ + "Đăng ký ứng tuyển" (khách)
+  hoặc "CV của tôi" (ứng viên).
+- Thanh dưới, ngăn bằng đường kẻ Viền: "© năm TÊN CÔNG TY | CHÍNH SÁCH BẢO MẬT | ĐIỀU KHOẢN SỬ DỤNG",
+  chữ 12px viết hoa màu Chì, dấu "|" màu Viền đậm (chỉ trang trí, `aria-hidden`). Link cao tối thiểu 24px.
+- Chữ Mực đen / Chì; link hover Xanh mực + gạch chân.
+- Dữ liệu: `GET /company/public` (dùng chung kết quả với trang Giới thiệu, giữ trong bộ nhớ phiên ở company.api.js)
+  và biến `VITE_CONTACT_*`, `VITE_FACEBOOK_URL`, `VITE_YOUTUBE_URL`. API lỗi thì dùng `VITE_APP_NAME` thay tên công ty,
+  vẫn hiện Logo, link, thanh dưới. Trường / biến trống thì ẩn dòng đó; Facebook và YouTube cùng trống thì ẩn cả dòng.
+- Dưới 900px: 2 cột xếp dọc, cột link căn trái; thanh dưới mỗi mục một dòng, bỏ dấu "|".
+- Không bản đồ, không iframe, không logo mạng xã hội.
+
+### Trang văn bản: Chính sách bảo mật `/privacy`, Điều khoản sử dụng `/terms` (T35e)
+
+- Công khai, theo quy tắc layout như `/about`. Rộng tối đa `--form-max`, phân mục bằng h2 + đoạn văn / danh sách,
+  không card. Cuối trang "Cập nhật lần cuối: dd/mm/yyyy" (hằng số trong code, đường kẻ Viền phía trên).
+
+### Trang Đổi mật khẩu (T35e)
+
+- `/candidate/change-password`, `/recruiter/change-password`, `/admin/change-password`, mỗi route chỉ cho đúng role,
+  trong layout của role. Trang chỉ có h1 "Đổi mật khẩu" + `ChangePasswordForm` (form không còn h2 và đường kẻ riêng).
+  Trang Hồ sơ của cả 3 role không còn form mật khẩu.
+
 ### Menu theo role
 
 | Role | Mục menu → đường dẫn |
 |---|---|
-| Ứng viên | Việc làm `/`, Việc làm gợi ý `/candidate/recommended-jobs` (T30), CV của tôi `/candidate/cvs`, Hồ sơ `/candidate/profile`, Đơn ứng tuyển `/candidate/applications` |
-| Nhà tuyển dụng | Tổng quan `/recruiter/dashboard` (T35c), Hồ sơ `/recruiter/profile`, Công ty `/recruiter/company`, Tin tuyển dụng `/recruiter/jobs`, Ứng viên gợi ý `/recruiter/recommended-candidates` (T34), Đơn ứng tuyển `/recruiter/applications` |
-| Quản trị viên | Tổng quan `/admin/dashboard` (T35c), Tài khoản `/admin/users`, Tạo Recruiter `/admin/recruiters/new`, Phân quyền `/admin/roles`, Hồ sơ `/admin/profile` (T35) |
+| Khách, ứng viên (menu ngang, T35d) | Việc làm `/`, Giới thiệu `/about`, Liên hệ `/contact`. Ứng viên thêm AccountMenu: Hồ sơ `/candidate/profile`, CV của tôi `/candidate/cvs`, Đơn ứng tuyển `/candidate/applications`, Đổi mật khẩu `/candidate/change-password` (T35e), Đăng xuất |
+| Nhà tuyển dụng | Tổng quan `/recruiter/dashboard` (T35c), Hồ sơ `/recruiter/profile`, Đổi mật khẩu `/recruiter/change-password` (T35e), Công ty `/recruiter/company`, Tin tuyển dụng `/recruiter/jobs`, Ứng viên gợi ý `/recruiter/recommended-candidates` (T34), Đơn ứng tuyển `/recruiter/applications` |
+| Quản trị viên | Tổng quan `/admin/dashboard` (T35c), Tài khoản `/admin/users`, Tạo Recruiter `/admin/recruiters/new`, Phân quyền `/admin/roles`, Hồ sơ `/admin/profile` (T35), Đổi mật khẩu `/admin/change-password` (T35e) |
 
-- Mục "Việc làm" của ứng viên trỏ về `/`. Không có `/candidate/jobs`.
-  Từ T31, `/` (bảng tin việc làm, trang chủ công khai) và `/jobs/:id` dùng `PublicLayout` khi chưa đăng nhập
-  (header gọn: tên hệ thống, Đăng nhập, Đăng ký; không Sidebar), `MainLayout` khi đã đăng nhập.
+- Mục "Việc làm" trỏ về `/`. Không có `/candidate/jobs`.
+  `/`, `/jobs/:id`, `/about`, `/contact`, `/privacy`, `/terms` dùng `SiteLayout` cho khách và ứng viên, `MainLayout`
+  cho nhà tuyển dụng và quản trị viên (giao diện HR / Admin giữ nguyên như trước T35d, chỉ thêm Logo và mục Đổi mật khẩu).
+- Từ T35d "Việc làm gợi ý" không còn là mục menu mà là tab "Gợi ý theo CV của bạn" trong trang Việc làm
+  (`/?view=recommended`). `/candidate/recommended-jobs` chuyển thẳng tới tab này; chi tiết đối chiếu giữ
+  `/candidate/recommended-jobs/:jobId`, nút quay lại về `/?view=recommended`.
 - Trang chỉnh yêu cầu của tin `/recruiter/jobs/:id/requirements` (T34) mở từ trang sửa tin, không có mục menu riêng;
   nằm dưới `/recruiter/jobs` nên mục "Tin tuyển dụng" vẫn sáng.
 - Trang chính của role (đăng nhập xong vào đây): `/candidate` → `/`, `/recruiter` → `/recruiter/dashboard`,
@@ -180,14 +254,15 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
 
 ```
 ┌────────────────────────┬──────────────────────────┐
-│ nền Xanh mực           │  Đăng nhập               │
+│ nền Xanh mực           │  [T] Tuyển dụng DMatch   │  Logo (T35e)
+│                        │  Đăng nhập               │
 │ Tuyển dụng DMatch      │  [Email             ]    │
 │ serif 36, chữ trắng    │  [Mật khẩu          ]    │
 │ một câu giới thiệu     │  [    Đăng nhập     ]    │
 └────────────────────────┴──────────────────────────┘
 ```
 
-Trên điện thoại, khối Xanh mực thành dải phía trên form. Tên hệ thống lấy từ `VITE_APP_NAME`
+Trên điện thoại, khối Xanh mực thành dải phía trên form; Logo ở đầu cột form chỉ còn ô chữ dưới 768px. Tên hệ thống lấy từ `VITE_APP_NAME`
 (mặc định "Tuyển dụng DMatch").
 
 ## 7. Bảng (`Table`)
@@ -243,16 +318,46 @@ Trên điện thoại, khối Xanh mực thành dải phía trên form. Tên h�
   Rê chuột lên cả cột hiện chú thích nền Mực đen chữ trắng. Từ 12 cột trở xuống ghi số trên đỉnh cột.
   Có bảng số liệu ẩn cho trình đọc màn hình. Tổng bằng 0 thì hiện "Chưa có dữ liệu". Vùng vẽ cao `--space-8` × 3.
 - `NotificationBell` (T35b, chỉ ứng viên và nhà tuyển dụng): nút chuông 32px trên Header, cạnh email.
-  Chuông là icon chức năng duy nhất của hệ thống, vẽ bằng SVG nét `currentColor` ngay trong code (không thư viện icon).
+  Chuông vẽ bằng SVG nét `currentColor` ngay trong code (không thư viện icon). Ngoài chuông, icon chức năng chỉ có
+  3 icon của footer (T35e, xem dưới).
   Số chưa đọc: ô Đỏ (`--color-danger-text`) chữ trắng 12px, bo 4px, trên 9 hiện "9+", bằng 0 thì ẩn.
   Dropdown rộng `--popover-width` 360px, lớp `--z-dropdown`, chỉ có viền Viền đậm, không đổ bóng (bóng chỉ dành cho modal);
   dưới 900px bám theo màn hình ngay dưới Header. Thông báo chưa đọc: nền Xanh nhạt + chữ đậm.
-  Đóng bằng bấm ra ngoài hoặc Esc.
+  Đóng bằng bấm ra ngoài hoặc Esc. Từ T35d chuông của ứng viên nằm trên SiteLayout, logic giữ nguyên.
+- `AccountMenu` (T35d, `components/layout/`, chỉ ứng viên): nút cao 32px gồm ô tròn 24px chữ cái đầu của tên
+  (nền Xanh nhạt, chữ `#0A4FA0`, 12px đậm 600; ô tròn là ngoại lệ duy nhất của quy tắc "không bo tròn"),
+  tên rút gọn (chữ cuối của họ tên, vd "Nguyễn Thị Ánh" → "Ánh"; chưa có họ tên thì lấy phần trước @ của email;
+  dài thì cắt "...") và dấu ▾ vẽ bằng tam giác viền CSS. Không ảnh đại diện, không thư viện icon.
+  Họ tên lấy từ `GET /candidates/me` (phiên đăng nhập chỉ có id, email, role) và giữ ở AuthContext (`profileName`):
+  trang Hồ sơ lưu xong cập nhật ngay, nút đổi tên không cần tải lại.
+  Panel rộng `--sidebar-width`, nền Giấy, viền Viền (`#DDE4EE`), bo 8px, không đổ bóng; phần đầu họ tên (14px đậm)
+  + email (12px Chì), dưới là Hồ sơ, CV của tôi, Đơn ứng tuyển, Đổi mật khẩu, đường kẻ, Đăng xuất. Trang đang mở có nền Xanh nhạt
+  như Sidebar. `aria-haspopup="menu"`, `aria-expanded`; danh sách `role="menu"`, mục `role="menuitem"`.
+  Đi bằng Tab hoặc mũi tên lên / xuống (Home / End); mũi tên xuống trên nút thì mở và vào mục đầu.
+  Đóng khi bấm ra ngoài, Esc (trả focus về nút), Tab ra khỏi menu hoặc đổi route.
+- Tab trong trang (T35d, trang Việc làm của ứng viên): chữ 14px đậm 500 trên một đường kẻ Viền, không dạng nút,
+  không khung. Tab khác màu Chì; tab đang chọn chữ Mực đen + gạch chân 2px Xanh mực đè lên đường kẻ (giống menu chính).
+  `role="tablist"` / `"tab"` / `"tabpanel"`, `aria-selected`; chỉ tab đang chọn nằm trong thứ tự Tab, mũi tên trái / phải,
+  Home / End để chuyển. Tab đang chọn lưu trên URL. Số trong ngoặc chỉ hiện khi đã có dữ liệu thật
+  (không "(0)" giả, không vòng xoay trong tab). Màn hình hẹp thì cả cụm tab xuống dòng, chữ trong tab không bẻ.
+- Card gợi ý việc làm (tab Gợi ý): cả card bấm được (link "Xem chi tiết đối chiếu" phủ kín card bằng `::after`,
+  tên tin nằm ẩn trong link cho trình đọc màn hình); rê chuột thì viền card thành Viền đậm.
+- `Logo` (T35e, `components/layout/`): ô vuông `--logo-mark-size` 28px nền Xanh mực, chữ cái đầu của `VITE_APP_NAME`
+  màu trắng (5.69:1), font tiêu đề, bo `--radius-sm`; bên cạnh là tên hệ thống font tiêu đề 18px đậm 600, Mực đen.
+  Cả khối là link: khách / ứng viên về `/`, HR về `/recruiter/dashboard`, Admin về `/admin/dashboard`;
+  `aria-label="<tên> - Trang chủ"`, ô chữ `aria-hidden`. Không nền, không viền; hover chỉ đổi tên sang Xanh mực.
+  Dưới 768px chỉ còn ô chữ (tên vẫn trong `aria-label`); tên dài thì cắt "...". Dùng ở SiteLayout, Header của
+  MainLayout, footer và trang đăng nhập.
+  `public/favicon.svg`: SVG viết tay cùng kiểu (ô Xanh mực + chữ "D" trắng theo `VITE_APP_NAME=DMatch`, font hệ thống dự phòng); đổi
+  `VITE_APP_NAME` thì sửa tay chữ trong file.
+- Icon footer (`FooterIcons.jsx`, T35e, **icon chức năng ở footer — ngoại lệ đã duyệt**): vị trí, điện thoại, phong bì;
+  SVG viết tay, 16px, chỉ nét 2px màu Chì (6.44:1), `aria-hidden="true"`; nhãn cho trình đọc màn hình nằm ở dòng chữ.
+  Không thư viện icon, không logo Facebook / YouTube (chỉ link chữ).
 
 ## 11. Nguyên tắc riêng của hệ thống
 
 - Coverage hiển thị dạng "7/10 yêu cầu có bằng chứng". Không dùng vòng tròn điểm hay thang màu
   kiểu chấm điểm: coverage chỉ là chỉ số đối chiếu, không phải điểm năng lực.
 - AI chỉ hỗ trợ: kết quả phân tích luôn đi kèm bằng chứng, không trình bày như quyết định.
-- Không dùng: gradient, emoji, icon, mũi tên "→" trong nút, nhãn viết hoa phía trên tiêu đề,
-  card đổ bóng cho từng phần.
+- Không dùng: gradient, emoji, icon (trừ chuông thông báo và 3 icon footer), mũi tên "→" trong nút,
+  nhãn viết hoa phía trên tiêu đề, card đổ bóng cho từng phần.

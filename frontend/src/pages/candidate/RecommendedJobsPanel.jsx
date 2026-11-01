@@ -1,11 +1,8 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getRecommendedJobs } from '../../api/matching.api'
 import Button from '../../components/common/Button'
 import Loading from '../../components/common/Loading'
-import { getErrorMessage } from '../../utils/apiError'
 import { formatNumber } from '../../utils/format'
-import styles from './RecommendedJobs.module.css'
+import styles from './RecommendedJobsPanel.module.css'
 
 // Thanh coverage màu trung tính, không dùng thang đỏ - xanh: coverage chỉ là tỉ lệ yêu cầu
 // có bằng chứng trong hồ sơ, không phải điểm năng lực (docs/design.md mục 11).
@@ -25,64 +22,50 @@ function CoverageBar({ supported, total, coverage, note }) {
   )
 }
 
-function RecommendedJobs() {
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [reloadKey, setReloadKey] = useState(0)
-
-  useEffect(() => {
-    let ignore = false
-    // Một request duy nhất: mỗi item đã có job { id, title, companyName, location }
-    getRecommendedJobs()
-      .then((result) => {
-        if (!ignore) setData(result.data)
-      })
-      .catch((err) => {
-        if (!ignore) setError(getErrorMessage(err, 'Không tải được việc làm gợi ý'))
-      })
-      .finally(() => {
-        if (!ignore) setLoading(false)
-      })
-    return () => {
-      ignore = true
-    }
-  }, [reloadKey])
-
-  function handleRetry() {
-    setError('')
-    setLoading(true)
-    setReloadKey((key) => key + 1)
+// Nội dung tab "Gợi ý theo CV của bạn" trong trang Việc làm (T35d, trước là trang /candidate/recommended-jobs).
+// JobBoard gọi API GET /matching/recommended-jobs (để tab hiện được số tin) rồi truyền kết quả xuống:
+//   data: { items, note, message? } | null, loading, error, onRetry
+function RecommendedJobsPanel({ data, loading, error, onRetry }) {
+  if (loading || (!error && !data)) {
+    return <Loading text="Đang đối chiếu hồ sơ với các tin tuyển dụng..." />
   }
 
-  let content
-  if (loading) {
-    content = <Loading text="Đang đối chiếu hồ sơ với các tin tuyển dụng..." />
-  } else if (error) {
-    content = (
+  if (error) {
+    return (
       <>
         <p className={styles.alertError} role="alert">
           {error}
         </p>
-        <Button variant="secondary" onClick={handleRetry}>
+        <Button variant="secondary" onClick={onRetry}>
           Thử lại
         </Button>
       </>
     )
-  } else if (data.items.length === 0 && data.message) {
+  }
+
+  if (data.items.length === 0 && data.message) {
     // Hồ sơ chưa có dữ liệu phân tích từ CV: hướng dẫn sang trang CV
-    content = (
+    return (
       <div className={styles.guide}>
-        <p className={styles.guideText}>{data.message}</p>
+        <p className={styles.guideText}>
+          Bạn chưa có CV đã phân tích. Tải CV lên để xem tin có yêu cầu khớp với hồ sơ.
+        </p>
         <Link className={styles.button} to="/candidate/cvs">
-          Đến trang CV của tôi
+          Đến CV của tôi
         </Link>
       </div>
     )
-  } else if (data.items.length === 0) {
-    content = <p className={styles.empty}>Hiện chưa có tin tuyển dụng đang mở nào đã được phân tích yêu cầu.</p>
-  } else {
-    content = (
+  }
+
+  if (data.items.length === 0) {
+    return <p className={styles.empty}>Hiện chưa có tin tuyển dụng đang mở nào đã được phân tích yêu cầu.</p>
+  }
+
+  return (
+    <>
+      <p className={styles.intro}>
+        Các tin đang mở, xếp theo tỉ lệ yêu cầu của tin có bằng chứng trong hồ sơ của bạn (nhiều nhất 10 tin).
+      </p>
       <ul className={styles.list}>
         {data.items.map((item) => (
           <li key={item.job.id} className={styles.card}>
@@ -90,24 +73,16 @@ function RecommendedJobs() {
             {item.job.companyName && <p className={styles.meta}>{item.job.companyName}</p>}
             {item.job.location && <p className={styles.meta}>{item.job.location}</p>}
             <CoverageBar supported={item.supported} total={item.total} coverage={item.coverage} note={item.note} />
+            {/* Link phủ cả card: bấm chỗ nào trong card cũng mở chi tiết đối chiếu.
+                Tên tin nằm trong link (ẩn) để trình đọc màn hình phân biệt các link với nhau */}
             <Link className={styles.button} to={`/candidate/recommended-jobs/${item.job.id}`}>
-              Xem chi tiết đối chiếu
+              Xem chi tiết đối chiếu<span className={styles.srOnly}>: {item.job.title}</span>
             </Link>
           </li>
         ))}
       </ul>
-    )
-  }
-
-  return (
-    <>
-      <h1>Việc làm gợi ý</h1>
-      <p className={styles.intro}>
-        Các tin đang mở, xếp theo tỉ lệ yêu cầu của tin có bằng chứng trong hồ sơ của bạn (nhiều nhất 10 tin).
-      </p>
-      {content}
     </>
   )
 }
 
-export default RecommendedJobs
+export default RecommendedJobsPanel

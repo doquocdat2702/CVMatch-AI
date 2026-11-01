@@ -45,10 +45,28 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 ## 4. Các quyết định đã chốt
 
 ### 4.1 Một công ty
-- Schema giữ nguyên (vẫn có Company, companyId). Seed tạo đúng 1 Company từ COMPANY_NAME.
+- Schema giữ nguyên (vẫn có Company, companyId; `RecruiterProfile.companyId` NOT NULL + khóa ngoại).
+- **Công ty cố định theo `COMPANY_NAME` (G7).** Biến bắt buộc trong `.env` (kiểm ở env.js cùng JWT_SECRET, NLP_MODE):
+  thiếu, rỗng hoặc dài hơn 255 ký tự thì server không khởi động.
+- Mỗi lần server khởi động (sau khi kết nối DB, trước khi listen) chạy `ensureSingleCompany` (company.service.js),
+  idempotent, trong một transaction: bảng Company rỗng -> tạo; đúng 1 công ty khác tên -> đổi tên theo COMPANY_NAME
+  (id và trường khác giữ nguyên); > 1 công ty -> không sửa gì, chỉ cảnh báo kèm số lượng. Có đúng 1 công ty thì gán
+  HR chưa có công ty hợp lệ (companyId null hoặc trỏ công ty đã mất) vào công ty đó, bằng SQL có tham số
+  (schema NOT NULL nên Prisma không lọc được null; DB đúng schema thì gán 0 dòng). Log một dòng
+  "Công ty: <tên> | Đã gán N HR chưa có công ty". Không kết nối được DB thì server dừng, không listen.
+  Đổi tên công ty = sửa COMPANY_NAME rồi khởi động lại server.
 - Tạo recruiter không nhận companyId/companyName, tự gán công ty duy nhất. Đã bỏ GET /admin/companies.
   Admin đọc tên công ty (chỉ đọc) qua GET /admin/company (thêm ở T35, đã duyệt).
-- HR sửa thông tin công ty qua PUT /companies/me.
+- HR sửa thông tin công ty qua PUT /companies/me, **trừ tên** (G7: trường name bị bỏ qua; chỉ gửi name thì 400
+  "Không có thông tin nào để cập nhật"). Trang /recruiter/company hiện tên chỉ đọc kèm "Tên công ty được cấu hình
+  bởi hệ thống"; Hồ sơ HR chỉ hiện tên công ty (ghi chú "Do quản trị viên gán" chỉ còn khi chưa được gán).
+- Seed (`npm run seed`, G7): kiểm COMPANY_NAME, ADMIN_EMAIL, ADMIN_PASSWORD ngay đầu, thiếu thì dừng trước khi ghi.
+  Thứ tự roles -> company (dùng chung ensureSingleCompany) -> admin -> skills. Admin theo ADMIN_EMAIL đã có thì
+  **bỏ qua, không đổi mật khẩu / role / isActive** ("Admin đã tồn tại, bỏ qua"); chỉ tạo khi chưa có.
+  Skill vẫn upsert (đặt lại aliases của skill có trong seed). Không bước nào xóa dữ liệu.
+- Khách xem công ty duy nhất qua GET /api/company/public (T35d, đã duyệt trong task): không cần đăng nhập,
+  chỉ trả name, description, address, website (không trả id). Dùng cho trang Giới thiệu và Liên hệ.
+  (GET /companies/:id công khai có từ trước nhưng cần biết mã công ty, khách không có cách lấy khi chưa có tin nào mở.)
 
 ### 4.2 Phân quyền
 - HR: **xem chung, sửa riêng.** Mọi HR xem được mọi job và đơn; chỉ người đăng job mới được sửa/đóng/xóa job,
@@ -105,26 +123,45 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 - Font tự host trong `public/fonts/` (Be Vietnam Pro cho giao diện, Source Serif 4 cho tiêu đề), có giấy phép OFL.
   Không gọi Google Fonts. Font dự phòng: Arial, Times New Roman (không dùng Georgia vì vỡ dấu).
 - Không emoji, không gradient, không card đổ bóng tràn lan, không icon trang trí. index.html `lang="vi"`.
+  Icon chức năng chỉ có chuông thông báo (T35b) và 3 icon footer vị trí / điện thoại / phong bì (T35e, ngoại lệ đã duyệt),
+  đều là SVG viết tay. Tên công ty và thanh dưới của footer viết hoa (ngoại lệ đã duyệt).
 - Coverage luôn hiển thị dạng **"x/y yêu cầu có bằng chứng (z%)"** + thanh màu trung tính, không thang đỏ-xanh,
   không nhãn "phù hợp/không phù hợp". Note của API luôn hiện ngay dưới.
-- Tên hệ thống lấy từ `VITE_APP_NAME`.
+- Tên hệ thống lấy từ `VITE_APP_NAME`, khai báo trong **`frontend/.env`** (Vite chỉ đọc .env của thư mục frontend;
+  đặt ở backend/.env không có tác dụng). Thiếu biến thì dùng tên mặc định "Tuyển dụng DMatch". Đổi tên thì sửa tay
+  chữ cái trong `frontend/public/favicon.svg` (hiện là "D" cho "DMatch").
 
 ### Route
-- Công khai: `/` (bảng tin việc làm), `/jobs/:id`, `/login`, `/register`, `/forgot-password`, `/reset-password`.
-  `/` và `/jobs/:id` dùng PublicLayout khi chưa đăng nhập, MainLayout khi đã đăng nhập.
-- Ứng viên: Việc làm (`/`), Việc làm gợi ý (`/candidate/recommended-jobs`, chi tiết `/:jobId`),
-  CV của tôi (`/candidate/cvs`, kết quả phân tích `/candidate/cvs/parsed`), Hồ sơ (`/candidate/profile`),
-  Đơn ứng tuyển (`/candidate/applications`). Đăng nhập xong vào `/`.
-- HR: `/recruiter/dashboard`, `/recruiter/profile`, `/recruiter/company`, `/recruiter/jobs` (+ `/new`, `/:id/edit`, `/:id/requirements`),
-  `/recruiter/recommended-candidates`, `/recruiter/applications`.
+- Công khai: `/` (bảng tin việc làm), `/jobs/:id`, `/about` (Giới thiệu), `/contact` (Liên hệ),
+  `/privacy` (Chính sách bảo mật, T35e), `/terms` (Điều khoản sử dụng, T35e), `/login`, `/register`,
+  `/forgot-password`, `/reset-password`. Các trang này nằm trong PUBLIC_PATHS của axiosClient.
+  `/`, `/jobs/:id`, `/about`, `/contact`, `/privacy`, `/terms` dùng SiteLayout (có footer) cho khách và ứng viên,
+  MainLayout (không footer) cho HR và Admin.
+- Ứng viên (SiteLayout, menu ngang Việc làm / Giới thiệu / Liên hệ, từ T35d):
+  Việc làm (`/`, tab "Gợi ý theo CV của bạn" ở `/?view=recommended`; `/candidate/recommended-jobs` chuyển tới tab này,
+  chi tiết đối chiếu giữ `/candidate/recommended-jobs/:jobId`). Trong AccountMenu: Hồ sơ (`/candidate/profile`),
+  CV của tôi (`/candidate/cvs`, kết quả phân tích `/candidate/cvs/parsed`), Đơn ứng tuyển (`/candidate/applications`),
+  Đổi mật khẩu (`/candidate/change-password`, T35e). Không còn mục menu "Việc làm gợi ý". Đăng nhập xong vào `/`.
+- HR: `/recruiter/dashboard`, `/recruiter/profile`, `/recruiter/change-password` (T35e), `/recruiter/company`,
+  `/recruiter/jobs` (+ `/new`, `/:id/edit`, `/:id/requirements`), `/recruiter/recommended-candidates`, `/recruiter/applications`.
   Đăng nhập xong vào `/recruiter/dashboard` (từ T35c).
-- Admin: `/admin/dashboard`, `/admin/users`, `/admin/recruiters/new`, `/admin/roles`, `/admin/profile` (T35, đã duyệt).
-  Đăng nhập xong vào `/admin/dashboard` (từ T35c).
+- Admin: `/admin/dashboard`, `/admin/users`, `/admin/recruiters/new`, `/admin/roles`, `/admin/profile` (T35, đã duyệt),
+  `/admin/change-password` (T35e). Đăng nhập xong vào `/admin/dashboard` (từ T35c).
+- Đổi mật khẩu (T35e): 3 route trên, mỗi route chỉ cho đúng role (sai role -> /403), dùng chung trang
+  `pages/common/ChangePassword` (h1 + ChangePasswordForm). Trang Hồ sơ của cả 3 role không còn form mật khẩu.
+- Đăng xuất (T35e, cả 3 role): xóa phiên rồi về `/` (bố cục khách), không mang theo trang cũ. `logout()` và
+  `navigate('/')` đặt trong cùng `startTransition` (BrowserRouter của React Router 7 đổi route trong transition;
+  nếu xóa phiên render trước, ProtectedRoute đẩy về /login). Hành vi axiosClient khi gặp 401 giữ nguyên.
 
 ### Component dùng chung đã có
 - 9 component common (T27): Button, Input, Select, Textarea, Table, Modal (có prop `wide`), Loading, Pagination, Badge.
-- Layout: Header, Sidebar, MainLayout, PublicLayout, NotificationBell (T35b, trong Header, chỉ CANDIDATE/RECRUITER).
-- `ChangePasswordForm` (dùng ở trang Hồ sơ của cả 3 role), `RequirementEvidenceMatrix` (props thuần, HR dùng lại),
+- Layout: Header (Logo + chuông + email + Đăng xuất), Sidebar (từ T35d chỉ HR/Admin), MainLayout (chỉ HR/Admin),
+  NotificationBell (T35b, trong Header của HR và SiteLayout của ứng viên),
+  SiteLayout (T35d, khách + ứng viên: menu ngang; dưới 900px header 2 hàng từ T35e; có SiteFooter),
+  AccountMenu (T35d, chỉ ứng viên; họ tên lấy từ `profileName` trong AuthContext, T35e),
+  Logo (T35e: ô chữ 28px + tên, link về trang chủ theo role), SiteFooter + FooterIcons (T35e, chỉ SiteLayout).
+  Đã xóa PublicLayout (T35e).
+- `ChangePasswordForm` (từ T35e chỉ dùng ở trang Đổi mật khẩu riêng), `RequirementEvidenceMatrix` (props thuần, HR dùng lại),
   `ApplyAction`, `components/cv-export/` (buildCVData + 2 mẫu CV Cổ điển / Hiện đại),
   `components/dashboard/` (T35c: StatCard, BarChart vẽ bằng div + CSS).
 - utils: format.js (formatDateTime, formatDate, formatMonthYear, formatNumber, formatRelativeTime),
@@ -132,16 +169,22 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 - api: auth, candidate, cv, job, matching, application (đã có getJobApplications, updateApplicationStatus cho HR),
   admin (T35: getUsers, updateUserStatus, updateUserRole, resetUserPassword, deleteUser, createRecruiter, getCompany),
   notification (T35b: getNotifications, getUnreadCount, markAsRead, markAllAsRead),
-  getRecruiterDashboard (recruiter.api, T35c), getAdminDashboard (admin.api, T35c).
+  getRecruiterDashboard (recruiter.api, T35c), getAdminDashboard (admin.api, T35c),
+  getPublicCompany (company.api, T35d; từ T35e giữ kết quả trong bộ nhớ phiên, lỗi thì bỏ để gọi lại,
+  updateMyCompany xóa bản lưu).
+- hooks: useAuth (thêm profileName, setProfileName ở T35e), usePublicCompany (T35e: footer, /privacy, /terms).
+- appConfig.js: APP_NAME, CONTACT_EMAIL, CONTACT_PHONE (T35d), FACEBOOK_URL, YOUTUBE_URL (T35e), lấy từ
+  VITE_CONTACT_EMAIL / VITE_CONTACT_PHONE / VITE_FACEBOOK_URL / VITE_YOUTUBE_URL, khai báo trong .env.example.
+- variables.css: thêm `--logo-mark-size: 28px` (T35e).
 
-## 6. Tiến độ (48 task)
+## 6. Tiến độ (50 task)
 
 | Giai đoạn | Task | Trạng thái |
 |---|---|---|
 | 1–8 Backend | T01–T25, T22b | Xong |
-| 8b Gia cố & thống kê | G1–G6 | Xong |
+| 8b Gia cố & thống kê | G1–G6, G7 (công ty cố định theo COMPANY_NAME, seed an toàn) | Xong |
 | Kiểm thử backend | smoke / timeout / nlp-fail / real-mail | Xong |
-| 9 Frontend | T26, T27, T28, T29, T29b, T30, T31, T32, T33, T34, T35, T35b, T35c | Xong |
+| 9 Frontend | T26, T27, T28, T29, T29b, T30, T31, T32, T33, T34, T35, T35b, T35c, T35d, T35e | Xong |
 | 10 Đánh giá | **T36**–T38 | **Tiếp theo: T36** |
 
 ### Lưu ý cho các task còn lại
@@ -177,6 +220,22 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   "Tổng quan" đứng đầu menu HR và Admin; /recruiter và /admin chuyển tới dashboard. Đã xóa UnderConstruction.
   Cùng commit: sửa bảng bị bẻ chữ ở 375px (MyApplications, CVUpload, JobList, bảng yêu cầu ở JobForm,
   RequirementEvidenceMatrix) bằng độ rộng tối thiểu cột chữ chính, như bảng admin T35.
+- **T35d (đã xong)**: ngoại lệ bố cục đã duyệt cho khách và ứng viên. SiteLayout: tên hệ thống | Việc làm, Giới thiệu,
+  Liên hệ (gạch chân 2px Xanh mực, NavLink) | khách: Đăng nhập + Đăng ký, ứng viên: chuông + AccountMenu.
+  Dùng `--content-max` có sẵn, không thêm biến. AccountMenu: chữ cái đầu trong ô tròn + tên rút gọn (chữ cuối họ tên,
+  lấy từ GET /candidates/me) + ▾ vẽ bằng CSS; đóng khi bấm ngoài / Esc / Tab ra ngoài / đổi route.
+  Trang `/`: ứng viên thấy tab Tất cả / Gợi ý theo CV của bạn (role tablist, `?view=recommended`, giữ `?page`),
+  gọi API gợi ý ngay khi vào trang để tab có số; khách, HR, Admin không thấy tab (bỏ qua `?view`).
+  Trang RecommendedJobs đổi thành `RecommendedJobsPanel` (nhận data qua props), card bấm được cả khối.
+  Chưa có dữ liệu phân tích: "Bạn chưa có CV đã phân tích..." + link "Đến CV của tôi".
+  `/about`, `/contact` công khai (thêm vào PUBLIC_PATHS của axiosClient); Liên hệ không có form, không gửi mail.
+  Dưới 900px: nút "Menu" mở panel dọc; khách giữ "Đăng nhập" trên header, "Đăng ký" vào panel.
+- **T35e (đã xong, 2 lượt, 1 commit)**: Logo (Header HR/Admin, SiteLayout, footer, trang đăng nhập) + favicon.svg viết tay;
+  SiteLayout dưới 900px bỏ nút "Menu", header 2 hàng; trang Đổi mật khẩu riêng cho 3 role; đăng xuất về `/`;
+  lưu Hồ sơ ứng viên cập nhật tên trên AccountMenu ngay; footer SiteLayout (Logo, tên công ty viết hoa, địa chỉ,
+  điện thoại, email, website, Facebook / YouTube dạng link chữ, cột link, thanh dưới © + Chính sách bảo mật + Điều khoản);
+  3 icon footer là ngoại lệ đã duyệt; trang `/privacy`, `/terms` nội dung tĩnh (câu cần chủ dự án duyệt đánh dấu
+  `{/* CẦN CHỦ DỰ ÁN DUYỆT */}` trong JSX). API gợi ý việc làm không gọi Gemini (chỉ matcher đọc DB).
 - **T36–T38**: so sánh rule vs hybrid trên cùng bộ dữ liệu. Trước bảo vệ cần bộ **dữ liệu demo thật**
   (job đa ngành, JD đầy đủ, CV mẫu phân tích hybrid để ma trận có đủ xanh/vàng/đỏ).
 
@@ -192,6 +251,10 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 - Các file test (`backend/scripts/lib/`, `smoke-test.js`, `test-*.js` trừ `test-extract.js`) nằm trong .gitignore,
   chỉ lưu trên máy. Sao lưu thư mục `backend/scripts` ra ngoài sau mỗi lần sửa.
 - Nhánh "admin cuối cùng" là lớp bảo vệ dự phòng, không kích hoạt được qua API.
+- `.env.test` nên khai báo `COMPANY_NAME` (như `.env.test.example`). Thiếu thì dotenv trong env.js nạp bù từ `.env`
+  và server test đổi tên công ty trong DB test thành tên công ty thật.
+- `npm run dev` (nodemon, dùng `.env` = cvmatch) tự khởi động lại khi file trong `backend/` đổi, và mỗi lần khởi động
+  đều chạy `ensureSingleCompany` trên cvmatch. Khi AI sửa code backend lúc khởi động, chủ dự án dừng `npm run dev` trước.
 
 ## 8. Quy tắc làm việc
 

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import Logo from '../../components/layout/Logo'
 import { useAuth } from '../../hooks/useAuth'
 import { getErrorMessage } from '../../utils/apiError'
 import { APP_NAME } from '../../utils/appConfig'
@@ -72,6 +73,10 @@ function Login() {
 
       <div className={styles.formPanel}>
         <div className={styles.formInner}>
+          {/* Logo trên nền Giấy (khối Xanh mực giữ tên lớn): nhận diện + đường quay về trang chủ */}
+          <div className={styles.formLogo}>
+            <Logo />
+          </div>
           <h1 className={styles.title}>Đăng nhập</h1>
           <p className={styles.subtitle}>Dùng chung cho ứng viên, nhà tuyển dụng và quản trị viên.</p>
 

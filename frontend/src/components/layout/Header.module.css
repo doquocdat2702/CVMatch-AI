@@ -9,11 +9,10 @@
   border-bottom: var(--border-width) solid var(--color-border);
 }
 
-.appName {
-  font-size: var(--text-md);
-  line-height: var(--leading-md);
-  font-weight: var(--weight-semibold);
-  white-space: nowrap;
+/* Khung của Logo: min-width: 0 để tên hệ thống cắt "..." được khi hẹp */
+.brand {
+  display: flex;
+  min-width: 0;
 }
 
 .account {

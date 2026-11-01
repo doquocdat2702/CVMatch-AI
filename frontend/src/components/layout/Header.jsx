@@ -1,8 +1,9 @@
+import { startTransition } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '../common/Button'
 import { useAuth } from '../../hooks/useAuth'
-import { APP_NAME } from '../../utils/appConfig'
 import { ROLES } from '../../utils/roles'
+import Logo from './Logo'
 import NotificationBell from './NotificationBell'
 import styles from './Header.module.css'
 
@@ -13,14 +14,21 @@ function Header() {
   const { user, role, logout } = useAuth()
   const navigate = useNavigate()
 
+  // Đăng xuất về trang chủ "/" (bố cục khách), không mang theo trang cũ.
+  // BrowserRouter đổi route trong startTransition, nên xóa phiên cũng đặt trong transition để hai thay đổi
+  // render cùng lúc; nếu xóa phiên render trước, ProtectedRoute của trang đang đứng sẽ đẩy sang /login
   function handleLogout() {
-    logout()
-    navigate('/login', { replace: true })
+    startTransition(() => {
+      logout()
+      navigate('/', { replace: true })
+    })
   }
 
   return (
     <header className={styles.header}>
-      <span className={styles.appName}>{APP_NAME}</span>
+      <div className={styles.brand}>
+        <Logo />
+      </div>
       <div className={styles.account}>
         {/* Admin không có chuông. key theo tài khoản: đổi tài khoản thì chuông bắt đầu lại từ đầu */}
         {user && ROLES_WITH_NOTIFICATIONS.includes(role) && <NotificationBell key={user.id} role={role} />}

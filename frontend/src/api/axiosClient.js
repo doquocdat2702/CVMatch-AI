@@ -17,7 +17,7 @@ axiosClient.interceptors.request.use((config) => {
 })
 
 // Route công khai: chưa đăng nhập vẫn xem được, gặp 401 thì ở yên tại chỗ
-const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-password']
+const PUBLIC_PATHS = ['/', '/about', '/contact', '/privacy', '/terms', '/login', '/register', '/forgot-password', '/reset-password']
 const PUBLIC_PATTERNS = [/^\/jobs\/[^/]+$/] // /jobs/:id
 
 function isPublicPath(pathname) {

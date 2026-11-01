@@ -28,4 +28,13 @@ async function getById(req, res, next) {
   }
 }
 
-module.exports = { getMine, updateMine, getById };
+async function getPublic(req, res, next) {
+  try {
+    const data = await companyService.getPublicCompany();
+    return success(res, data, 'Lấy thông tin công ty thành công');
+  } catch (err) {
+    return next(err);
+  }
+}
+
+module.exports = { getMine, updateMine, getById, getPublic };

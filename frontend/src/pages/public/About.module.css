@@ -1,0 +1,81 @@
+/* Đoạn giới thiệu và các dòng thông tin rộng tối đa bằng form để dòng chữ không quá dài */
+.company {
+  max-width: var(--form-max);
+  margin-bottom: var(--space-6);
+}
+
+.name {
+  margin: 0 0 var(--space-3);
+  overflow-wrap: anywhere;
+}
+
+/* Giữ nguyên xuống dòng như HR nhập ở trang Công ty */
+.description {
+  margin: 0 0 var(--space-5);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* Nhãn nhỏ màu Chì, giá trị bên dưới (giống chế độ xem của trang Công ty) */
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.term {
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.value {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.link {
+  color: var(--color-primary);
+}
+
+/* Link dạng nút chính (điều hướng nên dùng thẻ a, không dùng button) */
+.cta {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-height);
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-on-primary);
+  text-decoration: none;
+  background-color: var(--color-primary);
+  border: var(--border-width) solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--duration-fast) ease;
+}
+
+.cta:hover {
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.link:focus-visible,
+.cta:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.alertError {
+  max-width: var(--form-max);
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger-border);
+  border-radius: var(--radius-sm);
+}

@@ -44,12 +44,12 @@ function ensureNotSelf(adminId, userId, message) {
   }
 }
 
-// Hệ thống phục vụ MỘT công ty, do seed tạo từ COMPANY_NAME.
+// Hệ thống phục vụ MỘT công ty, server tạo / đồng bộ theo COMPANY_NAME mỗi lần khởi động (G7).
 // DB lỡ có nhiều hơn 1 công ty (dữ liệu cũ) thì dùng công ty tạo sớm nhất.
 async function getSingleCompany() {
   const company = await prisma.company.findFirst({ orderBy: { id: 'asc' } });
   if (!company) {
-    throw createError('Chưa cấu hình công ty, hãy chạy seed', 400);
+    throw createError('Chưa có công ty: kiểm tra COMPANY_NAME trong .env rồi khởi động lại server', 400);
   }
   return company;
 }

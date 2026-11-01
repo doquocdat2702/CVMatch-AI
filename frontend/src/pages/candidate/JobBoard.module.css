@@ -3,6 +3,49 @@
   color: var(--color-text-muted);
 }
 
+/* ===== Tab Tất cả / Gợi ý theo CV (chỉ ứng viên, T35d) ===== */
+
+/* Tab là chữ thường trên một đường kẻ, không dạng nút, không khung.
+   Màn hình hẹp không đủ chỗ thì cả cụm tab xuống dòng, chữ trong tab không bị bẻ */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--space-5);
+  margin: 0 0 var(--space-5);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+/* Gạch chân 2px đè lên đường kẻ 1px của cụm tab (margin âm 1 viền) */
+.tab {
+  margin-bottom: calc(var(--border-width) * -1);
+  padding: var(--space-2) 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  background-color: transparent;
+  border: none;
+  border-bottom: calc(var(--border-width) * 2) solid transparent;
+  cursor: pointer;
+  transition: color var(--duration-fast) ease;
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+.tab:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Tab đang chọn: chữ Mực đen, gạch chân Xanh mực (giống mục đang ở của menu chính) */
+.tabSelected {
+  color: var(--color-text);
+  border-bottom-color: var(--color-primary);
+}
+
 /* Lưới card: 1 cột điện thoại, 2 cột từ 768px, 3 cột từ 1200px (docs/design.md mục 6) */
 .grid {
   display: grid;

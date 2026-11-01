@@ -48,8 +48,9 @@ function MatchingDetail() {
     setReloadKey((key) => key + 1)
   }
 
+  // Danh sách gợi ý là tab "Gợi ý theo CV của bạn" trong trang Việc làm (T35d)
   const backLink = (
-    <Link className={styles.backLink} to="/candidate/recommended-jobs">
+    <Link className={styles.backLink} to="/?view=recommended">
       Quay lại việc làm gợi ý
     </Link>
   )

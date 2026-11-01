@@ -2,39 +2,19 @@
 // Một parser lỗi thì vẫn dùng được kết quả của parser còn lại.
 // Chế độ rule: chỉ chạy rule (kể cả bóc kỹ năng bằng từ điển), KHÔNG gọi NLP.
 // Chế độ hybrid: chạy cả hai, kỹ năng của NLP và của từ điển gộp lại, mỗi kỹ năng một lần.
-const { parseByRule, extractDateRanges, extractSkillsByDictionary } = require('./rule.parser');
+const { parseByRule, extractDateRanges, extractSkillsByDictionary, parseDateValue } = require('./rule.parser');
 const { parseByNlp } = require('./nlp.parser');
 const { normalizeText, normalizeSkillName, resolveSkillId, loadSkillIndex } = require('../normalization/normalizer');
 
 const SOURCE_RULE = 'RULE';
 const SOURCE_NLP = 'NLP';
 
-// Chuyển chuỗi ngày của NLP ("2020-01-15" | "2020-01" | "2020") về Date, sai thì null
-function toDate(value) {
-  if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value;
-  }
-  if (typeof value !== 'string') {
-    return null;
-  }
-
-  const text = value.trim();
-  let match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-  if (match) {
-    return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
-  }
-
-  match = text.match(/^(\d{4})-(\d{1,2})$/);
-  if (match) {
-    return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, 1));
-  }
-
-  match = text.match(/^(\d{4})$/);
-  if (match) {
-    return new Date(Date.UTC(Number(match[1]), 0, 1));
-  }
-
-  return null;
+// Chuyển chuỗi ngày của NLP về Date bằng CÙNG hàm chuẩn hóa với rule (parseDateValue):
+// nhận "2020-01-15", "2020-01", "2020" và cả các dạng trong CV như "03/2020", "T3/2020", "Tháng 3, 2020".
+// isEnd = true cho endDate: chỉ có tháng / năm thì lấy ngày cuối tháng / cuối năm.
+// "Hiện tại", "Present" hoặc không đọc được -> null (endDate null là đang làm)
+function toDate(value, isEnd = false) {
+  return parseDateValue(value, isEnd);
 }
 
 function emptyRuleResult() {
@@ -135,7 +115,7 @@ function resolveExperienceDates(experience) {
 
   return {
     startDate: toDate(experience.startDate),
-    endDate: toDate(experience.endDate),
+    endDate: toDate(experience.endDate, true),
     dateSource: SOURCE_NLP,
   };
 }
@@ -173,7 +153,7 @@ function resolveEducationDates(education, educationSection) {
 
   return {
     startDate: toDate(education.startDate),
-    endDate: toDate(education.endDate),
+    endDate: toDate(education.endDate, true),
     dateSource: SOURCE_NLP,
   };
 }

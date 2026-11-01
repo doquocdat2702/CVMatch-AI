@@ -24,10 +24,10 @@
   overflow-wrap: anywhere;
 }
 
-/* Ghi chú dưới mục Đổi mật khẩu */
+/* Ghi chú quên mật khẩu quản trị viên, dưới thông tin tài khoản */
 .note {
   max-width: var(--form-max);
-  margin: var(--space-4) 0 0;
+  margin: var(--space-6) 0 0;
   font-size: var(--text-xs);
   line-height: var(--leading-xs);
   color: var(--color-text-muted);

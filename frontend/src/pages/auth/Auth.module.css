@@ -69,6 +69,12 @@
   max-width: var(--auth-card-max);
 }
 
+/* Logo phía trên tiêu đề Đăng nhập (T35e) */
+.formLogo {
+  display: flex;
+  margin-bottom: var(--space-6);
+}
+
 /* Điện thoại, máy tính bảng dọc: khối Xanh mực thành dải phía trên form */
 @media (max-width: 900px) {
   .loginPage {

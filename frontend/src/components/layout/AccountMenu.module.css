@@ -1,0 +1,155 @@
+/* Khung neo cho menu thả xuống */
+.account {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Nút tài khoản: cao bằng nút cỡ nhỏ, chỉ hiện nền khi hover hoặc đang mở */
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--control-height-sm);
+  padding: 0 var(--space-2) 0 var(--space-1);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  background-color: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease;
+}
+
+.trigger:hover,
+.trigger[aria-expanded='true'] {
+  background-color: var(--color-hover);
+}
+
+.trigger:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Chữ cái đầu trong ô tròn: nền Xanh nhạt, chữ #0A4FA0 (6.98:1). Không dùng ảnh đại diện */
+.avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-5);
+  height: var(--space-5);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary-soft-text);
+  background-color: var(--color-primary-soft);
+  border-radius: 50%;
+}
+
+/* Tên rút gọn: dài thì cắt bằng dấu ... */
+.name {
+  max-width: calc(var(--sidebar-width) / 2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Dấu ▾: tam giác vẽ bằng viền, màu theo chữ */
+.caret {
+  flex-shrink: 0;
+  width: 0;
+  height: 0;
+  border-top: var(--space-1) solid currentColor;
+  border-right: var(--space-1) solid transparent;
+  border-left: var(--space-1) solid transparent;
+}
+
+/* Panel: nền Giấy, viền Viền, không đổ bóng (bóng chỉ dành cho modal), căn mép phải dưới nút */
+.panel {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: var(--z-dropdown);
+  width: var(--sidebar-width);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.identity {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.fullName {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.email {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.list {
+  margin: 0;
+  padding: var(--space-1) 0;
+  list-style: none;
+}
+
+.separator {
+  margin: var(--space-1) 0;
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+/* Mục menu: link và nút Đăng xuất trông giống nhau */
+.item {
+  display: block;
+  width: 100%;
+  padding: var(--space-2) var(--space-4);
+  font: inherit;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  text-align: left;
+  text-decoration: none;
+  color: var(--color-text);
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease;
+}
+
+.item:hover {
+  background-color: var(--color-hover);
+}
+
+/* Viền focus vẽ vào trong để không bị khung panel cắt mất */
+.item:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: calc(var(--focus-ring-offset) * -1);
+}
+
+/* Trang đang mở: giống mục đang chọn của Sidebar (nền Xanh nhạt, chữ #0A4FA0 đậm) */
+.active,
+.active:hover {
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary-soft-text);
+  background-color: var(--color-primary-soft);
+}
+
+/* Màn hình hẹp: chỉ còn ô chữ cái và dấu ▾ để header không tràn ngang */
+@media (max-width: 900px) {
+  .name {
+    display: none;
+  }
+}

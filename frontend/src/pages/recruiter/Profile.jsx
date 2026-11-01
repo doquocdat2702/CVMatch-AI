@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getMyRecruiterProfile, updateMyRecruiterProfile } from '../../api/recruiter.api'
 import Button from '../../components/common/Button'
-import ChangePasswordForm from '../../components/common/ChangePasswordForm'
 import Input from '../../components/common/Input'
 import Loading from '../../components/common/Loading'
 import { getErrorMessage } from '../../utils/apiError'
@@ -129,13 +128,18 @@ function RecruiterProfile() {
     )
   }
 
-  // Công ty: chỉ đọc ở cả chế độ xem lẫn chế độ sửa
+  // Công ty: chỉ đọc ở cả chế độ xem lẫn chế độ sửa. Có công ty thì chỉ hiện tên
+  // (server tự gán công ty duy nhất khi khởi động, G7); ghi chú chỉ còn khi chưa được gán
   const companyRow = (
     <div>
       <dt className={styles.term}>Công ty</dt>
       <dd className={styles.value}>
-        {companyName || <span className={styles.empty}>Chưa được gán</span>}
-        <span className={styles.readonlyNote}>Do quản trị viên gán, không sửa tại đây</span>
+        {companyName || (
+          <>
+            <span className={styles.empty}>Chưa được gán</span>
+            <span className={styles.readonlyNote}>Do quản trị viên gán, không sửa tại đây</span>
+          </>
+        )}
       </dd>
     </div>
   )
@@ -204,8 +208,6 @@ function RecruiterProfile() {
           <Button onClick={startEdit}>Sửa hồ sơ</Button>
         </>
       )}
-
-      <ChangePasswordForm />
     </>
   )
 }

@@ -29,6 +29,20 @@ if (!NLP_MODES.includes(nlpMode)) {
   throw new Error(`NLP_MODE phải là ${NLP_MODES.join(' hoặc ')} (đang là "${process.env.NLP_MODE}").`);
 }
 
+// Hệ thống phục vụ MỘT công ty, tên cố định theo COMPANY_NAME (G7): server tạo / đồng bộ công ty khi khởi động.
+// Thiếu, rỗng hoặc dài hơn cột Company.name (VarChar 255) thì không cho server khởi động
+const COMPANY_NAME_MAX_LENGTH = 255;
+const companyName = (process.env.COMPANY_NAME || '').trim();
+if (!companyName) {
+  throw new Error(
+    'Thiếu biến môi trường bắt buộc: COMPANY_NAME (tên công ty duy nhất của hệ thống). ' +
+      'Hãy thêm vào .env, ví dụ COMPANY_NAME="Công ty TNHH CVMatch".'
+  );
+}
+if (companyName.length > COMPANY_NAME_MAX_LENGTH) {
+  throw new Error(`COMPANY_NAME dài tối đa ${COMPANY_NAME_MAX_LENGTH} ký tự (hiện có ${companyName.length}).`);
+}
+
 const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: Number(process.env.PORT) || 5000,
@@ -40,6 +54,7 @@ const env = {
   EXTRACT_TIMEOUT_MS:
     Number(process.env.EXTRACT_TIMEOUT_MS) > 0 ? Number(process.env.EXTRACT_TIMEOUT_MS) : 15000,
   NLP_MODE: nlpMode,
+  COMPANY_NAME: companyName,
   // Dùng cho bước NLP ở chế độ hybrid: thiếu key thì parse CV / JD trả 503.
   // Chế độ rule không dùng tới key này
   GEMINI_API_KEY: process.env.GEMINI_API_KEY || null,

@@ -23,8 +23,9 @@ function validate(form) {
   return errors
 }
 
-// Mục "Đổi mật khẩu" dùng chung cho mọi role (ứng viên, nhà tuyển dụng, quản trị viên):
-// backend đổi mật khẩu cho chính tài khoản đang đăng nhập
+// Form "Đổi mật khẩu" dùng chung cho mọi role (ứng viên, nhà tuyển dụng, quản trị viên):
+// backend đổi mật khẩu cho chính tài khoản đang đăng nhập.
+// Từ T35e form nằm ở trang riêng (pages/common/ChangePassword) có sẵn tiêu đề h1, nên không còn h2 riêng
 function ChangePasswordForm() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [fieldErrors, setFieldErrors] = useState({})
@@ -65,9 +66,7 @@ function ChangePasswordForm() {
   }
 
   return (
-    <section className={styles.section}>
-      <h2>Đổi mật khẩu</h2>
-
+    <div className={styles.section}>
       {success && (
         <p className={styles.alertSuccess} role="status">
           Đã đổi mật khẩu
@@ -121,7 +120,7 @@ function ChangePasswordForm() {
           </Button>
         </div>
       </form>
-    </section>
+    </div>
   )
 }
 

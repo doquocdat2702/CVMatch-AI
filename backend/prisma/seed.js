@@ -2,6 +2,10 @@ require('dotenv').config();
 
 const bcrypt = require('bcryptjs');
 const prisma = require('../src/config/prisma');
+const { ensureSingleCompany, companySyncMessage } = require('../src/modules/company/company.service');
+
+// Khớp cột Company.name (VarChar 255) và kiểm tra trong src/config/env.js
+const COMPANY_NAME_MAX_LENGTH = 255;
 
 const ROLES = [
   { name: 'ADMIN', description: 'Quản trị hệ thống' },
@@ -68,6 +72,27 @@ const SKILLS = [
   { name: 'Làm việc nhóm', aliases: 'teamwork,team work,phoi hop nhom' },
 ];
 
+// Đọc và kiểm tra biến bắt buộc NGAY ĐẦU script: thiếu thì dừng trước khi ghi bất cứ gì vào DB
+function readConfig() {
+  const config = {
+    companyName: (process.env.COMPANY_NAME || '').trim(),
+    adminEmail: (process.env.ADMIN_EMAIL || '').trim(),
+    adminPassword: process.env.ADMIN_PASSWORD || '',
+  };
+
+  const missing = [];
+  if (!config.companyName) missing.push('COMPANY_NAME');
+  if (!config.adminEmail) missing.push('ADMIN_EMAIL');
+  if (!config.adminPassword) missing.push('ADMIN_PASSWORD');
+  if (missing.length > 0) {
+    throw new Error(`Thiếu ${missing.join(', ')} trong .env. Seed dừng, chưa ghi gì vào DB.`);
+  }
+  if (config.companyName.length > COMPANY_NAME_MAX_LENGTH) {
+    throw new Error(`COMPANY_NAME dài tối đa ${COMPANY_NAME_MAX_LENGTH} ký tự. Seed dừng, chưa ghi gì vào DB.`);
+  }
+  return config;
+}
+
 async function seedRoles() {
   for (const role of ROLES) {
     await prisma.role.upsert({
@@ -79,60 +104,48 @@ async function seedRoles() {
   console.log(`Đã seed ${ROLES.length} role.`);
 }
 
-async function seedAdmin() {
-  const email = process.env.ADMIN_EMAIL;
-  const password = process.env.ADMIN_PASSWORD;
-
-  if (!email || !password) {
-    throw new Error(
-      'Thiếu ADMIN_EMAIL hoặc ADMIN_PASSWORD trong .env. Hãy bổ sung trước khi chạy seed.'
-    );
+// Công ty duy nhất theo COMPANY_NAME: dùng chung logic với lúc server khởi động (company.service.js).
+// Chưa có thì tạo, khác tên thì đổi tên (id giữ nguyên), gán HR chưa có công ty; có nhiều hơn 1 công ty
+// thì chỉ cảnh báo kèm danh sách, KHÔNG tự gộp hay xóa
+async function seedCompany(companyName) {
+  const result = await ensureSingleCompany(companyName);
+  if (result.status !== 'multiple') {
+    console.log(companySyncMessage(result));
+    return;
   }
 
-  const adminRole = await prisma.role.findUnique({ where: { name: 'ADMIN' } });
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  await prisma.user.upsert({
-    where: { email },
-    update: { password: hashedPassword, isActive: true, roleId: adminRole.id },
-    create: { email, password: hashedPassword, roleId: adminRole.id },
-  });
-  console.log(`Đã seed tài khoản admin: ${email}`);
-}
-
-// Hệ thống phục vụ MỘT công ty: chỉ tạo khi DB chưa có công ty nào.
-// Đã có công ty thì giữ nguyên (tên có thể đã được HR sửa qua PUT /api/companies/me).
-// Có nhiều hơn 1 công ty thì chỉ in cảnh báo, KHÔNG tự gộp hay xóa.
-async function seedCompany() {
+  console.warn(companySyncMessage(result));
   const companies = await prisma.company.findMany({
     orderBy: { id: 'asc' },
     include: { _count: { select: { recruiters: true, jobs: true } } },
   });
-
-  if (companies.length === 0) {
-    const name = typeof process.env.COMPANY_NAME === 'string' ? process.env.COMPANY_NAME.trim() : '';
-    if (!name) {
-      throw new Error('Thiếu COMPANY_NAME trong .env. Hãy bổ sung trước khi chạy seed.');
-    }
-    const company = await prisma.company.create({ data: { name } });
-    console.log(`Đã seed công ty: ${company.name} (id ${company.id})`);
-    return;
-  }
-
-  if (companies.length === 1) {
-    console.log(`Công ty đã tồn tại, giữ nguyên: ${companies[0].name} (id ${companies[0].id})`);
-    return;
-  }
-
-  console.warn(
-    `CẢNH BÁO: DB đang có ${companies.length} công ty, hệ thống chỉ dùng một công ty. ` +
-      'Seed không tự gộp hay xóa, hãy xử lý thủ công:'
-  );
   for (const company of companies) {
     console.warn(
       `  - id ${company.id}: ${company.name} | ${company._count.recruiters} recruiter | ${company._count.jobs} tin tuyển dụng`
     );
   }
+}
+
+// Chỉ tạo admin khi chưa có tài khoản theo ADMIN_EMAIL. Đã có thì KHÔNG đổi mật khẩu, vai trò hay trạng thái
+// (mật khẩu admin đổi trên giao diện vẫn giữ sau khi chạy lại seed; quên mật khẩu thì dùng
+// scripts/reset-admin-password.js)
+async function seedAdmin(adminEmail, adminPassword) {
+  const existing = await prisma.user.findUnique({
+    where: { email: adminEmail },
+    select: { role: { select: { name: true } } },
+  });
+  if (existing) {
+    console.log(`Admin đã tồn tại, bỏ qua: ${adminEmail}`);
+    if (existing.role.name !== 'ADMIN') {
+      console.warn(`CẢNH BÁO: ${adminEmail} đang là tài khoản ${existing.role.name}, không phải ADMIN. Seed không đổi.`);
+    }
+    return;
+  }
+
+  const adminRole = await prisma.role.findUnique({ where: { name: 'ADMIN' } });
+  const hashedPassword = await bcrypt.hash(adminPassword, 10);
+  await prisma.user.create({ data: { email: adminEmail, password: hashedPassword, roleId: adminRole.id } });
+  console.log(`Đã tạo tài khoản admin: ${adminEmail}`);
 }
 
 async function seedSkills() {
@@ -146,10 +159,13 @@ async function seedSkills() {
   console.log(`Đã seed ${SKILLS.length} skill.`);
 }
 
+// Thứ tự: kiểm tra biến -> roles -> company -> admin -> skills. Mọi bước đều chạy lại được an toàn
+// (upsert / chỉ tạo khi chưa có), không bước nào xóa dữ liệu
 async function main() {
+  const config = readConfig();
   await seedRoles();
-  await seedAdmin();
-  await seedCompany();
+  await seedCompany(config.companyName);
+  await seedAdmin(config.adminEmail, config.adminPassword);
   await seedSkills();
   console.log('Seed hoàn tất.');
 }

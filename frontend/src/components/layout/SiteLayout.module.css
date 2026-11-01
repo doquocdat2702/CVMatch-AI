@@ -1,0 +1,181 @@
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--color-surface);
+}
+
+/* Cùng viền dưới với Header của MainLayout */
+.header {
+  background-color: var(--color-surface);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+/* 3 cột: Logo | menu chính (đúng giữa) | tài khoản.
+   Rộng bằng vùng nội dung cộng lề hai bên để Logo thẳng mép trái nội dung */
+.bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-areas: 'brand nav actions';
+  align-items: center;
+  column-gap: var(--space-4);
+  max-width: calc(var(--content-max) + var(--space-6) * 2);
+  height: var(--header-height);
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+}
+
+/* min-width: 0 để tên hệ thống trong Logo cắt "..." được thay vì đẩy header rộng ra */
+.brand {
+  grid-area: brand;
+  display: flex;
+  min-width: 0;
+}
+
+/* ===== Menu chính ===== */
+
+.nav {
+  grid-area: nav;
+  align-self: start;
+}
+
+.navList {
+  display: flex;
+  gap: var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Cao hơn hàng header đúng 1 viền: gạch chân 2px đè lên đường viền dưới của header.
+   Viền trên trong suốt cân với gạch chân để chữ vẫn đứng giữa */
+.navLink {
+  display: flex;
+  align-items: center;
+  height: calc(var(--header-height) + var(--border-width));
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  border-top: calc(var(--border-width) * 2) solid transparent;
+  border-bottom: calc(var(--border-width) * 2) solid transparent;
+  transition: color var(--duration-fast) ease;
+}
+
+.navLink:hover {
+  color: var(--color-text);
+}
+
+/* Mục đang ở: chữ Mực đen, gạch chân 2px Xanh mực (nhận ra được mà không cần phân biệt màu) */
+.navActive {
+  color: var(--color-text);
+  border-bottom-color: var(--color-primary);
+}
+
+/* Viền focus vẽ vào trong để không đè lên viền header */
+.navLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: calc(var(--focus-ring-offset) * -1);
+}
+
+/* ===== Bên phải: khách / ứng viên ===== */
+
+.actions {
+  grid-area: actions;
+  display: flex;
+  align-items: center;
+  justify-self: end;
+  gap: var(--space-3);
+}
+
+/* Đăng nhập: link chữ Xanh mực, vùng bấm cao bằng nút nhỏ */
+.loginLink {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-height-sm);
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  color: var(--color-primary);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+
+.loginLink:hover {
+  text-decoration: underline;
+}
+
+/* Đăng ký: link dạng nút chính cỡ nhỏ (điều hướng nên dùng thẻ a, không dùng button) */
+.registerButton {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  color: var(--color-on-primary);
+  text-decoration: none;
+  background-color: var(--color-primary);
+  border: var(--border-width) solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--duration-fast) ease;
+}
+
+.registerButton:hover {
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.loginLink:focus-visible,
+.registerButton:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* ===== Nội dung ===== */
+
+.content {
+  flex: 1;
+  padding: var(--space-6);
+}
+
+/* Không có sidebar nên căn giữa vùng nội dung */
+.inner {
+  max-width: var(--content-max);
+  margin: 0 auto;
+}
+
+/* Màn hình hẹp: header 2 hàng.
+   Hàng 1 cao bằng header: Logo bên trái, chuông + tài khoản (hoặc Đăng nhập + Đăng ký) bên phải.
+   Hàng 2 cao bằng ô nhập: 3 mục chính nằm ngang, căn trái theo Logo. Link cao hơn hàng 1 viền
+   để gạch chân vẫn đè lên viền dưới header như trên màn hình rộng */
+@media (max-width: 900px) {
+  .bar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: var(--header-height) var(--control-height);
+    grid-template-areas:
+      'brand actions'
+      'nav nav';
+    height: auto;
+    max-width: none;
+    padding: 0 var(--space-4);
+  }
+
+  .navLink {
+    height: calc(var(--control-height) + var(--border-width));
+  }
+
+  .actions {
+    gap: var(--space-2);
+  }
+
+  .content {
+    padding: var(--space-4);
+  }
+}

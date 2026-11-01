@@ -103,6 +103,7 @@
   --modal-max-wide: 880px; /* modal chứa bảng, vd ma trận đối chiếu */
   --auth-card-max: 400px;
   --popover-width: 360px; /* dropdown thông báo trên Header (T35b) */
+  --logo-mark-size: 28px; /* ô chữ cái của Logo (T35e) */
 
   /* ===== Chuyển động ===== */
   --duration-fast: 120ms;

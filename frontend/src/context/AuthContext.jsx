@@ -48,6 +48,9 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(readStoredSession)
   // Có token thì chờ getMe xác nhận phiên rồi mới cho vào trang cần đăng nhập
   const [loading, setLoading] = useState(session.token !== null)
+  // Họ tên của ứng viên trên nút tài khoản (AccountMenu). Phiên chỉ có id, email, role nên họ tên nằm riêng:
+  // AccountMenu tải từ hồ sơ khi còn trống, trang Hồ sơ cập nhật ngay sau khi lưu. Không lưu localStorage
+  const [profileName, setProfileName] = useState('')
 
   // Chỉ chạy một lần khi khởi động app
   useEffect(() => {
@@ -92,6 +95,7 @@ export function AuthProvider({ children }) {
     const user = pickUser(result.data.user)
     saveSession(token, user)
     setSession({ token, user })
+    setProfileName('')
     return user
   }
 
@@ -99,6 +103,7 @@ export function AuthProvider({ children }) {
   function logout() {
     clearSession()
     setSession({ token: null, user: null })
+    setProfileName('')
   }
 
   const value = {
@@ -109,6 +114,8 @@ export function AuthProvider({ children }) {
     loading,
     login,
     logout,
+    profileName,
+    setProfileName,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

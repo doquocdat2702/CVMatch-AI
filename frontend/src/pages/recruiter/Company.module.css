@@ -33,6 +33,14 @@
   color: var(--color-text-muted);
 }
 
+/* Ghi chú dưới tên công ty (chỉ đọc), giống ghi chú dòng Công ty ở trang Hồ sơ */
+.readonlyNote {
+  display: block;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
 .link {
   color: var(--color-primary);
 }

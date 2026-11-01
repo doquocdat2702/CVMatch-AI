@@ -7,9 +7,9 @@ import Textarea from '../../components/common/Textarea'
 import { getErrorMessage } from '../../utils/apiError'
 import styles from './Company.module.css'
 
-// maxLength khớp độ dài cột trong database (description là cột Text, không giới hạn)
+// Các trường HR sửa được; maxLength khớp độ dài cột trong database (description là cột Text, không giới hạn).
+// Tên công ty không nằm ở đây: cố định theo COMPANY_NAME của hệ thống (G7), chỉ hiển thị
 const FIELDS = [
-  { name: 'name', label: 'Tên công ty', required: true, maxLength: 255 },
   { name: 'description', label: 'Giới thiệu công ty', type: 'textarea' },
   { name: 'address', label: 'Địa chỉ', maxLength: 255, autoComplete: 'street-address' },
   { name: 'website', label: 'Website', type: 'url', maxLength: 255, hint: 'Ví dụ: https://congty.vn' },
@@ -32,7 +32,7 @@ function isWebLink(value) {
 }
 
 // Hệ thống phục vụ một công ty: mọi nhà tuyển dụng cùng xem và sửa thông tin công ty này
-// (PUT /companies/me sửa đúng công ty của người đang đăng nhập)
+// (PUT /companies/me sửa đúng công ty của người đang đăng nhập). Tên công ty chỉ đọc
 function Company() {
   const [company, setCompany] = useState(EMPTY_FORM)
   const [loading, setLoading] = useState(true)
@@ -92,17 +92,10 @@ function Company() {
     event.preventDefault()
     setSaveError('')
 
-    const name = form.name.trim()
-    if (!name) {
-      setFieldErrors({ name: 'Vui lòng nhập tên công ty' })
-      return
-    }
-
     setSaving(true)
     try {
-      // Gửi cả 4 trường: trường để trống thì backend xóa giá trị cũ
+      // Gửi 3 trường sửa được (không gửi tên): trường để trống thì backend xóa giá trị cũ
       const result = await updateMyCompany({
-        name,
         description: form.description.trim(),
         address: form.address.trim(),
         website: form.website.trim(),
@@ -148,6 +141,17 @@ function Company() {
     )
   }
 
+  // Tên công ty: chỉ đọc ở cả chế độ xem lẫn chế độ sửa
+  const nameRow = (
+    <div>
+      <dt className={styles.term}>Tên công ty</dt>
+      <dd className={styles.value}>
+        {company.name}
+        <span className={styles.readonlyNote}>Tên công ty được cấu hình bởi hệ thống</span>
+      </dd>
+    </div>
+  )
+
   return (
     <>
       <h1>Công ty</h1>
@@ -160,6 +164,8 @@ function Company() {
           Đã lưu thông tin công ty.
         </p>
       )}
+
+      {editing && <dl className={styles.details}>{nameRow}</dl>}
 
       {editing ? (
         <form className={styles.form} onSubmit={handleSubmit} noValidate>
@@ -210,6 +216,7 @@ function Company() {
       ) : (
         <>
           <dl className={styles.details}>
+            {nameRow}
             {FIELDS.map((field) => (
               <div key={field.name}>
                 <dt className={styles.term}>{field.label}</dt>

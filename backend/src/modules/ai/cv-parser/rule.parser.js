@@ -134,7 +134,13 @@ function extractContact(rawText) {
 //     -> [{ raw: 'May 2021 - Present', start: 2021-05-01, end: null, isCurrent: true }]
 //   Input: "15/06/2020 – 20/08/2022"
 //     -> [{ raw: '15/06/2020 – 20/08/2022', start: 2020-06-15, end: 2022-08-20, isCurrent: false }]
+//   Input: "T3/2020 ~ Tháng 6, 2021"
+//     -> [{ raw: 'T3/2020 ~ Tháng 6, 2021', start: 2020-03-01, end: 2021-06-30, isCurrent: false }]
+//   Input: "3/2022 — Hiện tại" -> [{ start: 2022-03-01, end: null, isCurrent: true }]
 //   Input: "Ngay ra truong: khong ro" -> []  (không parse được thì bỏ qua, không throw)
+//   Năm đứng riêng ("Dự án cá nhân 2024") KHÔNG phải khoảng thời gian -> [] (không đoán thời lượng)
+// Dạng ngày nhận được: dd/mm/yyyy, MM/YYYY, M/YYYY, T3/2020, Tháng 3/2020, Tháng 3, 2020, May 2021, YYYY.
+// Đang làm: Hiện tại, hiện nay, (đến) nay, Present, Current, Now. Dấu nối: - – — ~, đến, to, tới, until.
 
 const MONTH_NAMES = {
   jan: 1,
@@ -164,7 +170,8 @@ const MONTH_NAMES = {
 };
 
 const P_FULL_DATE = '\\d{1,2}[\\/\\-.]\\d{1,2}[\\/\\-.]\\d{4}';
-const P_VN_MONTH = '(?:thang|t)\\s?\\d{1,2}\\s?[\\/\\-. ]\\s?\\d{4}';
+// "Tháng 3/2020", "Tháng 3, 2020", "T3/2020"; chữ "t" không được dính sau một chữ cái khác ("Set3/2020")
+const P_VN_MONTH = '(?<![a-z])(?:thang|t)\\s?\\d{1,2}\\s*[\\/\\-., ]\\s*\\d{4}';
 const P_EN_MONTH = '(?:' + Object.keys(MONTH_NAMES).join('|') + ')\\.?\\s+\\d{4}';
 const P_MONTH_YEAR = '\\d{1,2}[\\/\\-.]\\d{4}';
 const P_YEAR = '\\d{4}';
@@ -209,8 +216,8 @@ function parseDateToken(token, isEnd) {
     return { year, month, day };
   }
 
-  // thang 5/2021, t5/2021, thang 5 2021
-  match = normalized.match(/^(?:thang|t)\s?(\d{1,2})\s?[\/\-. ]\s?(\d{4})$/);
+  // thang 5/2021, t5/2021, thang 5 2021, thang 5, 2021
+  match = normalized.match(/^(?:thang|t)\s?(\d{1,2})\s*[\/\-., ]\s*(\d{4})$/);
   if (match) {
     const month = Number(match[1]);
     const year = Number(match[2]);
@@ -262,6 +269,58 @@ function isCurrentToken(token) {
 
 function toDate({ year, month, day }) {
   return new Date(Date.UTC(year, month - 1, day));
+}
+
+// Dạng ISO mà prompt yêu cầu NLP trả về: "2020-01-15", "2020-01"
+function parseIsoToken(text, isEnd) {
+  let match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (match) {
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    if (!isValidYear(year) || month < 1 || month > 12 || day < 1 || day > lastDayOfMonth(year, month)) {
+      return null;
+    }
+    return { year, month, day };
+  }
+
+  match = text.match(/^(\d{4})-(\d{1,2})$/);
+  if (match) {
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    if (!isValidYear(year) || month < 1 || month > 12) {
+      return null;
+    }
+    return { year, month, day: isEnd ? lastDayOfMonth(year, month) : 1 };
+  }
+
+  return null;
+}
+
+// ===== Hàm: parseDateValue =====
+// Chuẩn hóa MỘT mốc ngày về Date (UTC). Dùng chung cho ngày rule đọc được và ngày do NLP trả về,
+// để hai nguồn theo cùng quy ước.
+// isEnd = true (mốc kết thúc): chỉ có tháng / năm thì lấy ngày cuối tháng / cuối năm, giống extractDateRanges.
+// "Hiện tại", "Present"... hoặc không đọc được -> null (endDate null nghĩa là đang làm, theo quy ước bóc tách CV).
+// Test case:
+//   parseDateValue('2020-01-15')           -> 2020-01-15
+//   parseDateValue('2020-03', true)        -> 2020-03-31
+//   parseDateValue('T3/2020')              -> 2020-03-01
+//   parseDateValue('Tháng 3, 2020', true)  -> 2020-03-31
+//   parseDateValue('2024', true)           -> 2024-12-31
+//   parseDateValue('Present', true)        -> null
+//   parseDateValue('không rõ')             -> null
+function parseDateValue(value, isEnd = false) {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+  if (typeof value !== 'string' || !value.trim()) {
+    return null;
+  }
+
+  const text = value.trim();
+  const parts = parseIsoToken(text, isEnd) || parseDateToken(text, isEnd);
+  return parts ? toDate(parts) : null;
 }
 
 function extractDateRanges(rawText) {
@@ -593,6 +652,7 @@ function parseByRule(rawText) {
 module.exports = {
   extractContact,
   extractDateRanges,
+  parseDateValue,
   calculateYears,
   splitSections,
   extractSkillsByDictionary,
