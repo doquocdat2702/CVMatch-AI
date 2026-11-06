@@ -1,0 +1,33 @@
+.coverage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.text {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-semibold);
+}
+
+/* Thanh màu trung tính: nền Viền, phần đã có bằng chứng màu Chì */
+.track {
+  height: var(--space-2);
+  overflow: hidden;
+  background-color: var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.fill {
+  height: 100%;
+  background-color: var(--color-text-muted);
+}
+
+/* Note của API: chữ nhỏ màu Chì, ngay dưới thanh */
+.note {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}

@@ -25,6 +25,15 @@
 }
 
 /* Câu nhắc coverage của API: chữ nhỏ màu xám dưới bảng */
+/* Phân trang dưới bảng (D1); chỉ có 1 trang thì Pagination không hiện gì, bỏ luôn khoảng cách */
+.pagination {
+  margin-top: var(--space-4);
+}
+
+.pagination:empty {
+  display: none;
+}
+
 .note {
   margin: var(--space-2) 0 0;
   font-size: var(--text-xs);

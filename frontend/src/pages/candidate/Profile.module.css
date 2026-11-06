@@ -1,15 +1,10 @@
-.intro {
-  margin: 0 0 var(--space-6);
-  color: var(--color-text-muted);
-}
-
 /* Chế độ xem: nhãn nhỏ màu Chì, giá trị bên dưới */
 .details {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   max-width: var(--form-max);
-  margin: 0 0 var(--space-6);
+  margin: 0 0 var(--space-5);
 }
 
 .term {

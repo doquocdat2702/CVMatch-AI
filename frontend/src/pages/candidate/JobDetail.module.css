@@ -1,84 +1,229 @@
-.backLink {
-  display: inline-block;
+/* ===== Breadcrumb "Việc làm / <tên tin>" ===== */
+
+.breadcrumb {
   margin-bottom: var(--space-4);
+}
+
+.breadcrumbList {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  list-style: none;
+}
+
+.breadcrumbList > li {
+  flex: none;
+}
+
+/* Dấu "/" chỉ để nhìn: chuỗi rỗng sau "/" là nội dung thay thế cho trình đọc màn hình */
+.breadcrumbList > li + li::before {
+  content: '/';
+  content: '/' / '';
+  margin: 0 var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.breadcrumbLink {
+  display: inline-flex;
+  align-items: center;
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.breadcrumbLink:hover {
+  text-decoration: underline;
+}
+
+/* Tên tin dài thì cắt "..." trên một dòng, không đẩy trang rộng ra */
+.breadcrumbList > .breadcrumbCurrent {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+}
+
+/* ===== Bố cục 2 cột ===== */
+
+/* Trái: tin (đầu tin + nội dung JD ghép thành một tờ Giấy). Phải: khung ứng tuyển dính khi cuộn */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--aside-width);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    'head side'
+    'body side';
+  align-items: start;
+  column-gap: var(--space-6);
+}
+
+/* HR / Admin: không có khung ứng tuyển, tin rộng hết vùng nội dung */
+.layoutSingle {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'head'
+    'body';
+}
+
+/* Nửa trên của tờ Giấy: không viền dưới, nửa dưới (.body) vẽ đường kẻ ngăn */
+.head {
+  grid-area: head;
+  padding: var(--space-6) var(--space-6) var(--space-5);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-bottom: none;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+/* Tên tin là điểm nhấn của trang: serif 36px */
+.title {
+  margin: 0;
+  font-size: var(--text-3xl);
+  line-height: var(--leading-3xl);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+}
+
+.metaItem {
+  overflow-wrap: anywhere;
+}
+
+.metaDot {
+  margin: 0 var(--space-2);
+  color: var(--color-border-strong);
+}
+
+.closed {
+  display: flex;
+  margin-top: var(--space-3);
+}
+
+.body {
+  grid-area: body;
+  padding: var(--space-5) var(--space-6) var(--space-6);
+  overflow-wrap: anywhere;
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+/* ===== Nội dung JD ===== */
+
+/* Dòng tối đa ~70 ký tự cho dễ đọc, chữ 16px dòng 26px (cỡ đoạn văn chung) */
+.section {
+  max-width: var(--text-measure);
+}
+
+.section + .section {
+  margin-top: var(--space-6);
+}
+
+/* h2 dùng style chung (18px đậm 600), chỉ đổi lề */
+.sectionTitle {
+  margin: 0 0 var(--space-3);
+}
+
+.paragraph {
+  margin: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+.list > li::marker {
+  color: var(--color-text-muted);
+}
+
+.paragraph + .paragraph,
+.paragraph + .list,
+.list + .paragraph,
+.list + .list {
+  margin-top: var(--space-3);
+}
+
+/* ===== Khung bên phải ===== */
+
+.side {
+  grid-area: side;
+  position: sticky;
+  top: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+/* ApplyAction chưa hiện gì trong lúc kiểm tra đơn: ẩn khung trống */
+.applyBox:empty {
+  display: none;
+}
+
+.boxTitle {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.boxLink {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
   font-size: var(--text-sm);
   line-height: var(--leading-sm);
   font-weight: var(--weight-medium);
   color: var(--color-primary);
 }
 
-.header {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin-bottom: var(--space-5);
+.fullButton {
+  width: 100%;
 }
 
-/* h1 dùng style chung (index.css), chỉ bỏ lề dưới để sát dòng thông tin */
-.title {
+.hint {
   margin: 0;
-  overflow-wrap: anywhere;
-}
-
-.company {
-  margin: 0;
-  font-weight: var(--weight-medium);
-}
-
-.meta {
-  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
   color: var(--color-text-muted);
 }
 
-.closed {
-  margin-top: var(--space-1);
-}
-
-/* Ứng tuyển và Xem đối chiếu đứng cạnh nhau, căn theo mép trên */
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: var(--space-3);
-  margin-bottom: var(--space-6);
-}
-
-/* Link dạng nút phụ cao bằng nút Ứng tuyển */
-.secondaryButton {
-  display: inline-flex;
-  align-items: center;
-  height: var(--control-height);
-  padding: 0 var(--space-4);
+/* Tin đã đóng: câu chữ Chì thay cho nút Ứng tuyển ngay */
+.closedText {
+  margin: 0;
   font-size: var(--text-sm);
   line-height: var(--leading-sm);
-  font-weight: var(--weight-medium);
-  color: var(--color-text);
-  text-decoration: none;
-  background-color: var(--color-surface);
-  border: var(--border-width) solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  transition: background-color var(--duration-fast) ease;
+  color: var(--color-text-muted);
 }
 
-.secondaryButton:hover {
-  background-color: var(--color-hover);
-}
+/* ===== Vị trí khác đang tuyển ===== */
 
-.backLink:focus-visible,
-.secondaryButton:focus-visible {
-  outline: var(--focus-ring-width) solid var(--color-primary);
-  outline-offset: var(--focus-ring-offset);
-}
-
-.section {
-  max-width: var(--content-max);
-}
-
-/* Toàn bộ nội dung JD, giữ nguyên xuống dòng như HR nhập */
-.description {
-  margin: 0;
-  white-space: pre-line;
-  overflow-wrap: anywhere;
+.related {
+  margin-top: var(--space-7);
 }
 
 .alertError {
@@ -90,4 +235,83 @@
   background-color: var(--color-danger-bg);
   border: var(--border-width) solid var(--color-danger-border);
   border-radius: var(--radius-sm);
+}
+
+/* ===== Dưới 900px: 1 cột ===== */
+
+/* Thứ tự: đầu tin, khung đối chiếu, nội dung JD, nút ứng tuyển. Khung bên phải (.side) display: contents nên
+   2 khung con xếp thẳng vào cột. Nút ứng tuyển position: sticky; bottom: 0 trong cột: dính ở đáy màn hình
+   khi đang đọc, cuộn hết tin thì về đúng chỗ của nó dưới nội dung nên không che phần cuối trang */
+@media (max-width: 900px) {
+  /* stretch: bỏ align-items: start của lưới máy tính để mọi khung rộng hết cột (thanh dính đáy cũng vậy) */
+  .layout {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-4);
+  }
+
+  /* Màn hình hẹp: công ty, địa điểm, ngày đăng mỗi mục một dòng, không có dấu "·" ở đầu dòng */
+  .meta {
+    flex-direction: column;
+  }
+
+  .metaDot {
+    display: none;
+  }
+
+  .head {
+    order: 1;
+    padding: var(--space-5) var(--space-4);
+    border-bottom: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  .title {
+    font-size: var(--text-2xl);
+    line-height: var(--leading-2xl);
+  }
+
+  .side {
+    display: contents;
+  }
+
+  .matchBox {
+    order: 2;
+    padding: var(--space-4);
+  }
+
+  .body {
+    order: 3;
+    padding: var(--space-5) var(--space-4);
+    border-radius: var(--radius-md);
+  }
+
+  /* Thanh dính đáy: tràn hết bề ngang (bù lề --space-4 của vùng nội dung), viền trên Viền đậm, không bóng.
+     z-index 1: nổi trên nội dung đang cuộn, dưới dropdown (--z-dropdown) và modal */
+  .applyBox {
+    order: 4;
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    gap: var(--space-2);
+    margin: 0 calc(var(--space-4) * -1);
+    padding: var(--space-3) var(--space-4);
+    border-width: var(--border-width) 0 0;
+    border-color: var(--color-border-strong);
+    border-radius: 0;
+  }
+
+  .applyBox .hint {
+    display: none;
+  }
+
+  .breadcrumbLink,
+  .boxLink {
+    min-height: var(--touch-target);
+  }
+
+  .related {
+    margin-top: var(--space-6);
+  }
 }

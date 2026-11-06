@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { getErrorMessage } from '../../utils/apiError'
 import { APP_NAME } from '../../utils/appConfig'
 import { getRoleHome } from '../../utils/roles'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import styles from './Auth.module.css'
 
 // Chỉ nhận đường dẫn nội bộ ("/jobs/5"), không nhận "//site-khac.com" hay URL đầy đủ,
@@ -15,6 +16,7 @@ function isInternalPath(path) {
 
 // Đăng nhập dùng chung cho Admin, Recruiter và Candidate
 function Login() {
+  useDocumentTitle('Đăng nhập')
   const { login, isAuthenticated, role, loading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()

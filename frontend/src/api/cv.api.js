@@ -25,6 +25,13 @@ export async function getCVDetail(id) {
   return response.data
 }
 
+// File CV gốc (T35f, GET /cvs/:id/file): trả về Blob. Chủ CV xem được; HR / Admin xem được CV
+// của ứng viên đã nộp đơn. Dùng qua openCvFile (utils/cvFile.js), không gọi trực tiếp ở trang
+export async function getCVFile(id) {
+  const response = await axiosClient.get(`/cvs/${id}/file`, { responseType: 'blob' })
+  return response.data
+}
+
 export async function deleteCV(id) {
   const response = await axiosClient.delete(`/cvs/${id}`)
   return response.data

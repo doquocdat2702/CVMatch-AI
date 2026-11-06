@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { forgotPassword } from '../../api/auth.api'
 import { getErrorMessage } from '../../utils/apiError'
 import { isValidEmail } from '../../utils/validation'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import styles from './Auth.module.css'
 
 // Luôn hiện cùng một câu dù email có tài khoản hay không,
@@ -10,6 +11,7 @@ import styles from './Auth.module.css'
 const SENT_MESSAGE = 'Nếu email tồn tại, chúng tôi đã gửi hướng dẫn đặt lại mật khẩu'
 
 function ForgotPassword() {
+  useDocumentTitle('Quên mật khẩu')
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)

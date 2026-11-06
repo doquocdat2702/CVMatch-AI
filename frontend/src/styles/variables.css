@@ -68,6 +68,12 @@
   --leading-2xl: 2rem; /* 32px */
   --text-3xl: 2.25rem; /* 36px */
   --leading-3xl: 2.75rem; /* 44px */
+  /* Chỉ tên công ty ở khối mở đầu trang chủ (T35f), máy tính. Dòng 64px (1.33) để dấu chồng không chạm dòng trên */
+  --text-4xl: 3rem; /* 48px */
+  --leading-4xl: 4rem; /* 64px */
+  /* Độ dài dòng tối đa của đoạn văn dài (nội dung JD, T35f): khoảng 70 ký tự tiếng Việt ở 16px.
+     Không dùng đơn vị ch vì chữ số "0" của Be Vietnam Pro rộng (70ch thành khoảng 90 ký tự) */
+  --text-measure: 36rem;
 
   /* ===== Khoảng cách (bội số của 4) ===== */
   --space-1: 4px;
@@ -93,6 +99,8 @@
   /* ===== Kích thước ===== */
   --control-height: 40px;
   --control-height-sm: 32px;
+  --control-height-lg: 48px; /* ô tìm kiếm và nút Tìm ở khối mở đầu trang chủ (T35f) */
+  --touch-target: 44px; /* vùng bấm tối thiểu trên điện thoại (dưới 900px) ở bố cục khách và ứng viên (T35f) */
   --table-row-min-height: 44px;
   --spinner-size: 20px;
   --header-height: 56px;
@@ -104,11 +112,13 @@
   --auth-card-max: 400px;
   --popover-width: 360px; /* dropdown thông báo trên Header (T35b) */
   --logo-mark-size: 28px; /* ô chữ cái của Logo (T35e) */
+  --aside-width: 320px; /* khung ứng tuyển dính bên phải trang chi tiết tin (T35f) */
 
   /* ===== Chuyển động ===== */
   --duration-fast: 120ms;
   --duration-base: 150ms;
   --duration-spin: 800ms; /* một vòng quay của Loading */
+  --duration-pulse: 1200ms; /* một nhịp mờ - rõ của khung xương khi đang tải (T35f) */
   --spinner-stroke: 2px;
 
   /* ===== Lớp chồng ===== */

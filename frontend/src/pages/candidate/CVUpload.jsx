@@ -5,7 +5,11 @@ import Badge from '../../components/common/Badge'
 import Button from '../../components/common/Button'
 import Loading from '../../components/common/Loading'
 import Modal from '../../components/common/Modal'
-import Table from '../../components/common/Table'
+import CvViewButton from '../../components/cv/CvViewButton'
+import CVExportModal from '../../components/cv-export/CVExportModal'
+import PageHeader from '../../components/layout/PageHeader'
+import Panel from '../../components/layout/Panel'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import { getErrorMessage } from '../../utils/apiError'
 import { formatDateTime } from '../../utils/format'
 import styles from './CVUpload.module.css'
@@ -40,6 +44,7 @@ function validateFile(file) {
 }
 
 function CVUpload() {
+  useDocumentTitle('CV của tôi')
   const [cvs, setCvs] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -61,6 +66,9 @@ function CVUpload() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+
+  // Hộp Xuất CV mới (T35f): chỉ render khi mở, mỗi lần mở lấy lại hồ sơ
+  const [exportOpen, setExportOpen] = useState(false)
 
   // Đang tải lên hoặc đang phân tích thì khóa các thao tác khác
   const busy = uploading || processing !== null
@@ -209,46 +217,41 @@ function CVUpload() {
     }
   }
 
-  // ===== Bảng =====
+  // ===== Danh sách thẻ CV =====
 
-  const columns = [
-    {
-      key: 'fileName',
-      title: 'Tên file',
-      render: (cv) => <span className={styles.fileName}>{cv.fileName}</span>,
-    },
-    {
-      key: 'uploadedAt',
-      title: 'Ngày tải lên',
-      render: (cv) => formatDateTime(cv.uploadedAt),
-    },
-    {
-      key: 'status',
-      title: 'Trạng thái',
-      render: (cv) => {
-        // Dòng đang phân tích hiện "Đang xử lý" ngay, không chờ backend
-        const status = processing && processing.cvId === cv.id ? 'PROCESSING' : cv.status
-        return (
-          <div className={styles.statusCell}>
-            <Badge status={status}>{STATUS_LABEL[status] || status}</Badge>
-            {status === 'FAILED' && cv.errorMessage && <p className={styles.errorText}>{cv.errorMessage}</p>}
+  // CV hiện tại = CV mới nhất đã phân tích (API trả mới nhất trước): nhà tuyển dụng xem CV này khi xét đơn (T35f).
+  // Kết quả phân tích và Xuất CV mới thuộc hồ sơ chung nên chỉ đặt trên thẻ của CV hiện tại
+  const currentCv = cvs.find((cv) => cv.status === 'COMPLETED') || null
+
+  function renderCard(cv) {
+    // Thẻ đang phân tích hiện "Đang xử lý" ngay, không chờ backend
+    const status = processing && processing.cvId === cv.id ? 'PROCESSING' : cv.status
+    const isProcessing = status === 'PROCESSING'
+    const isDone = cv.status === 'COMPLETED'
+    const isCurrent = currentCv !== null && cv.id === currentCv.id
+    let analyzeLabel = 'Phân tích CV'
+    if (isProcessing) analyzeLabel = 'Đang xử lý'
+    else if (isDone) analyzeLabel = 'Phân tích lại'
+
+    return (
+      <li key={cv.id} className={styles.card}>
+        <div className={styles.cardHead}>
+          <div className={styles.cardInfo}>
+            <p className={styles.fileName}>{cv.fileName}</p>
+            <p className={styles.cardMeta}>Tải lên {formatDateTime(cv.uploadedAt)}</p>
           </div>
-        )
-      },
-    },
-    {
-      key: 'actions',
-      title: 'Thao tác',
-      align: 'right',
-      render: (cv) => {
-        const isProcessing = cv.status === 'PROCESSING' || (processing !== null && processing.cvId === cv.id)
-        const isDone = cv.status === 'COMPLETED'
-        let analyzeLabel = 'Phân tích CV'
-        if (isProcessing) analyzeLabel = 'Đang xử lý'
-        else if (isDone) analyzeLabel = 'Phân tích lại'
+          <div className={styles.cardTags}>
+            {isCurrent && <span className={styles.currentTag}>CV hiện tại</span>}
+            <Badge status={status}>{STATUS_LABEL[status] || status}</Badge>
+          </div>
+        </div>
 
-        return (
-          <div className={styles.rowActions}>
+        {status === 'FAILED' && cv.errorMessage && <p className={styles.errorText}>{cv.errorMessage}</p>}
+
+        <div className={styles.cardActions}>
+          <div className={styles.actionGroup}>
+            {/* Xem file gốc (T35f): PDF mở tab mới, DOCX tải về */}
+            <CvViewButton cv={cv} label="Xem" variant="secondary" />
             <Button
               size="sm"
               variant={isDone ? 'secondary' : 'primary'}
@@ -257,31 +260,69 @@ function CVUpload() {
             >
               {analyzeLabel}
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => openDelete(cv)} disabled={busy}>
-              Xóa
-            </Button>
+            {isCurrent && (
+              <>
+                <Link className={styles.linkButton} to="/candidate/cvs/parsed">
+                  Xem kết quả
+                </Link>
+                <Button size="sm" variant="secondary" onClick={() => setExportOpen(true)} disabled={busy}>
+                  Xuất CV mới
+                </Button>
+              </>
+            )}
           </div>
-        )
-      },
-    },
-  ]
+          <Button size="sm" variant="ghost" onClick={() => openDelete(cv)} disabled={busy}>
+            Xóa<span className={styles.srOnly}> CV {cv.fileName}</span>
+          </Button>
+        </div>
+      </li>
+    )
+  }
 
   const dropzoneClass = [styles.dropzone, dragOver ? styles.dragOver : ''].filter(Boolean).join(' ')
 
+  let listContent
+  if (loading) {
+    listContent = <Loading text="Đang tải danh sách CV..." />
+  } else if (loadError) {
+    listContent = (
+      <div className={styles.state}>
+        <p className={styles.alertError} role="alert">
+          {loadError}
+        </p>
+        <Button variant="secondary" onClick={handleRetry}>
+          Thử lại
+        </Button>
+      </div>
+    )
+  } else if (cvs.length === 0) {
+    // Trạng thái rỗng: một câu + một hành động chính (mở hộp chọn file như vùng kéo thả)
+    listContent = (
+      <div className={styles.empty}>
+        <p className={styles.emptyTitle}>Bạn chưa có CV nào.</p>
+        <p className={styles.emptyText}>Tải CV lên để ứng tuyển nhanh và xem việc làm gợi ý theo hồ sơ.</p>
+        <Button onClick={() => fileInputRef.current.click()} disabled={busy}>
+          Tải CV lên
+        </Button>
+      </div>
+    )
+  } else {
+    listContent = <ul className={styles.list}>{cvs.map(renderCard)}</ul>
+  }
+
   return (
     <>
-      <h1>CV của tôi</h1>
-      <p className={styles.intro}>
-        Tải CV lên rồi bấm "Phân tích CV" để hệ thống đọc kỹ năng, kinh nghiệm và học vấn vào hồ sơ của bạn. Kiểm tra
-        và chỉnh sửa kết quả ở trang{' '}
-        <Link className={styles.link} to="/candidate/cvs/parsed">
-          Kết quả phân tích CV
-        </Link>
-        .
-      </p>
+      <PageHeader
+        title="CV của tôi"
+        description="Tải CV lên rồi phân tích để hệ thống đọc kỹ năng, kinh nghiệm và học vấn vào hồ sơ."
+        actions={
+          <Link className={styles.linkButton} to="/candidate/cvs/parsed">
+            Kết quả phân tích CV
+          </Link>
+        }
+      />
 
-      <section className={styles.section}>
-        <h2>Tải CV lên</h2>
+      <Panel title="Tải CV lên">
         <div className={dropzoneClass} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
           {uploading ? (
             <Loading text="Đang tải CV lên..." />
@@ -305,10 +346,10 @@ function CVUpload() {
             {uploadMessage.text}
           </p>
         )}
-      </section>
+      </Panel>
 
       <section className={styles.section}>
-        <h2>Danh sách CV</h2>
+        <h2 className={styles.sectionTitle}>Danh sách CV</h2>
 
         {processing && (
           <div className={styles.progress}>
@@ -335,20 +376,7 @@ function CVUpload() {
           </p>
         )}
 
-        {loading && <Loading text="Đang tải danh sách CV..." />}
-        {!loading && loadError && (
-          <>
-            <p className={styles.alertError} role="alert">
-              {loadError}
-            </p>
-            <Button variant="secondary" onClick={handleRetry}>
-              Thử lại
-            </Button>
-          </>
-        )}
-        {!loading && !loadError && (
-          <Table columns={columns} data={cvs} emptyText="Chưa có CV nào. Hãy tải CV lên ở phía trên." />
-        )}
+        {listContent}
       </section>
 
       <Modal
@@ -375,6 +403,9 @@ function CVUpload() {
           </p>
         )}
       </Modal>
+
+      {/* Xuất CV mới từ hồ sơ đã phân tích (cùng hộp với nút "Xuất CV" ở trang Kết quả phân tích, T29b) */}
+      {exportOpen && <CVExportModal onClose={() => setExportOpen(false)} />}
     </>
   )
 }

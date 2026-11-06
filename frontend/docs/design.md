@@ -12,6 +12,8 @@ Chốt ở T27. Từ T28 trở đi mọi màn hình tuân theo tài liệu này 
   Badge trạng thái giống nhãn đóng trên hồ sơ.
 - Công cụ nội bộ: tối giản, không hero trên trang quản trị. Chỉ trang đăng nhập và trang việc làm
   công khai được có khối điểm nhấn.
+- Phía ứng viên (T35f): khối mở đầu Xanh mực ở trang chủ là "bìa hồ sơ", bên dưới là các tờ Giấy viền mảnh
+  (thẻ tin, khối nội dung) đặt trên nền Nền. Điểm nhấn duy nhất là tên công ty serif cỡ lớn, phần còn lại giữ yên.
 
 ## 2. Màu
 
@@ -72,7 +74,14 @@ Chữ thường cần ≥ 4.5:1. Viền ô nhập và viền focus (thành phầ
 | Badge xám xanh | 7.02:1 | Đạt |
 | Chữ lỗi và viền ô lỗi Đỏ trên Giấy | 7.36:1 | Đạt |
 | Chữ trắng trên nút danger / khi hover | 7.36 / 9.53:1 | Đạt |
-| Chữ phụ Xanh nhạt trên Xanh mực (khối đăng nhập) | 4.99:1 | Đạt |
+| Chữ phụ Xanh nhạt trên Xanh mực (khối đăng nhập; câu dẫn + số vị trí ở khối mở đầu trang chủ, T35f) | 4.99:1 | Đạt |
+| Tên công ty trắng trên Xanh mực (khối mở đầu, T35f) | 5.69:1 | Đạt |
+| Dải tìm kiếm Giấy trên Xanh mực (khung của ô nhập, T35f) | 5.69:1 | Đạt (≥ 3) |
+| Gợi ý trong ô tìm, tóm tắt và ngày đăng trên thẻ (Chì trên Giấy, T35f) | 6.44:1 | Đạt |
+| Vạch ngăn 2 ô tìm, viền trên thanh ứng tuyển dính đáy (Viền đậm trên Giấy, T35f) | 3.16:1 | Đạt (≥ 3) |
+| Dòng nhắc tải CV, nhãn "CV hiện tại" (`#0A4FA0` trên Xanh nhạt, T35f) | 6.98:1 | Đạt |
+| Mô tả trang, dấu "/" của breadcrumb (Chì trên Nền, T35f) | 5.99:1 | Đạt |
+| Breadcrumb "Việc làm", viền thẻ khi rê chuột (Xanh mực trên Nền, T35f) | 5.30:1 | Đạt |
 | Chữ disabled trên nền disabled | 3.13:1 | WCAG miễn cho thành phần bị vô hiệu |
 
 ## 3. Font
@@ -107,7 +116,11 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
 | `--text-lg` / `--leading-lg` | 18 / 27 | Tiêu đề mục (h2), tiêu đề modal |
 | `--text-xl` / `--leading-xl` | 21 / 30 | Số liệu ở trang Tổng quan |
 | `--text-2xl` / `--leading-2xl` | 24 / 32 | Tiêu đề trang h1 (serif) |
-| `--text-3xl` / `--leading-3xl` | 36 / 44 | Chỉ khối điểm nhấn: trang đăng nhập, việc làm công khai |
+| `--text-3xl` / `--leading-3xl` | 36 / 44 | Chỉ khối điểm nhấn: trang đăng nhập, việc làm công khai; tên tin ở trang chi tiết tin (T35f) |
+| `--text-4xl` / `--leading-4xl` | 48 / 64 | Chỉ tên công ty ở khối mở đầu trang chủ trên máy tính (T35f); dưới 900px dùng 36 / 44 |
+
+- Độ dài dòng của đoạn văn dài (nội dung JD, T35f): `--text-measure` 36rem, khoảng 70 ký tự tiếng Việt ở 16px.
+  Không dùng đơn vị `ch`: chữ số "0" của Be Vietnam Pro rộng 10,8px nên 70ch thành khoảng 90 ký tự một dòng.
 
 - Dòng của tiêu đề không thấp hơn 1.3 để dấu tiếng Việt không bị cắt.
 - Độ đậm: `--weight-regular` 400 chữ thường, `--weight-medium` 500 menu và nút,
@@ -131,6 +144,9 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
   Không dùng kiểu bo tròn viên thuốc.
 - Bóng: chỉ modal có bóng (`--shadow-modal`). Không bọc nội dung trong card đổ bóng
   (dropdown thông báo, menu tài khoản, footer cũng chỉ có viền).
+- Biến thêm ở T35f: `--control-height-lg` 48px (ô tìm kiếm và nút Tìm ở khối mở đầu), `--touch-target` 44px
+  (vùng bấm tối thiểu dưới 900px ở bố cục khách và ứng viên), `--aside-width` 320px (khung ứng tuyển dính),
+  `--duration-pulse` 1200ms (nhịp mờ - rõ của khung xương khi đang tải).
 
 ## 6. Bố cục
 
@@ -157,7 +173,8 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
   (vạch giúp nhận ra mục đang chọn mà không cần phân biệt màu).
 - Dưới 900px: sidebar thành hàng menu nằm dưới header, tự xuống dòng; không cuộn ngang trang.
 - Media query không dùng được biến CSS, nên 2 mốc cố định là **900px** (bố cục) và **768px** (form 2 cột).
-  Riêng lưới card bảng tin việc làm (T31): 1 cột, 2 cột từ **768px**, 3 cột từ **1200px** (bằng `--content-max`).
+  Lưới thẻ tin (trang chủ, tab Gợi ý; T35f thay cho lưới 3 cột của T31): 1 cột đến 900px, 2 cột từ 901px.
+  Mục "Vị trí khác đang tuyển" ở trang chi tiết tin: 3 cột từ 901px.
 - Tương tự, `@page` (bản in CV, T29b) ghi số trực tiếp: khổ A4, lề 15mm, khớp `--print-page-width` và
   `--print-page-margin` trong variables.css.
 
@@ -186,6 +203,13 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
   không Sidebar. Thanh header rộng bằng vùng nội dung cộng lề hai bên (`--content-max` + 2 × `--space-6`) nên Logo
   thẳng mép trái nội dung. Không thêm biến độ rộng mới (dùng `--content-max` có sẵn).
 - Khung cột `min-height: 100vh`, vùng nội dung `flex: 1`: trang ít nội dung thì footer vẫn sát đáy màn hình.
+- Từ T35f vùng nội dung có nền Nền (header, footer vẫn Giấy) để tờ Giấy viền mảnh nổi lên. Khung có
+  `overflow-x: clip` (không phải hidden, để `position: sticky` bên trong vẫn chạy) cho khối mở đầu tràn hết bề ngang.
+- Viền focus mặc định cho mọi phần tử bấm được chưa tự đặt (T35f), viết trong `:where()` để độ ưu tiên thấp nhất:
+  viền focus riêng của component vẫn thắng.
+- Dưới 900px (T35f): nút, ô nhập, ô chọn trong nội dung, chuông và nút tài khoản, Đăng nhập / Đăng ký, hàng menu,
+  link chân trang cao tối thiểu `--touch-target` 44px. Chuông và nút tài khoản dùng chung với Header của HR nên
+  chỉ phóng to trong SiteLayout. Modal gắn vào body (ngoài SiteLayout) nên hộp ứng tuyển tự đặt 44px cho nút của nó.
 - Lưới 3 cột `1fr auto 1fr`: Logo | menu chính đúng giữa | bên phải.
 - Menu chính: chữ 14px đậm 500, mục khác màu Chì, mục đang ở chữ Mực đen + gạch chân 2px Xanh mực
   (`calc(var(--border-width) * 2)`, không thêm biến) đè lên viền dưới của header. Dùng `NavLink` (tự gắn `aria-current="page"`).
@@ -200,6 +224,94 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
 - Đăng xuất (AccountMenu, Header của MainLayout) về trang chủ `/` ở bố cục khách, không mang theo trang cũ.
 - Trang đăng nhập, đăng ký, quên / đặt lại mật khẩu giữ bố cục riêng, không dùng SiteLayout.
   Trang đăng nhập có Logo ở đầu cột form (T35e), khối Xanh mực giữ tên hệ thống cỡ lớn.
+
+### Trang chủ `/` (T35f)
+
+```
+┌──────────────────────────────── header ────────────────────────────────┐
+│████████████████████ nền Xanh mực đặc, tràn hết bề ngang █████████████████│
+│ Cơ hội nghề nghiệp tại                          (18px đậm 500, Xanh nhạt) │
+│ Công ty TNHH ABC                                  (serif 48px, chữ trắng) │
+│ 29 vị trí đang tuyển                                         (Xanh nhạt) │
+│ ┌ dải Giấy ─────────────────────────────────────────────────────────────┐ │
+│ │ Tên vị trí, ví dụ: Kế toán        │ Địa điểm, ví dụ: Hà Nội   [ Tìm ] │ │
+│ └───────────────────────────────────────────────────────────────────────┘ │
+│███████████████████████████████████████████████████████████████████████████│
+│ Tất cả (29)   Gợi ý theo CV của bạn (17)          (khách: h2 "Vị trí đang tuyển") │
+│ Tải CV để ứng tuyển nhanh và xem gợi ý việc làm theo hồ sơ. Tải CV lên   │ chỉ ứng viên chưa có CV phân tích
+│ ┌ thẻ Giấy ────────────────────┐ ┌──────────────────────────────┐         │
+│ │ Kế toán tổng hợp (serif 18)  │ │ ...                          │         │ 2 cột từ 901px
+│ │ Hà Nội                       │ │                              │         │
+│ │ Tóm tắt JD 2 dòng...         │ │                              │         │
+│ │ Đăng 3 ngày trước  [Đã ứng tuyển] │                          │         │
+│ └──────────────────────────────┘ └──────────────────────────────┘         │
+```
+
+- Khối mở đầu dùng chung cho khách và ứng viên, chữ căn trái thẳng mép nội dung. Tràn hết bề ngang bằng margin âm
+  `calc(50% - 50vw)` và padding bù lại; sát header bằng margin âm đúng bằng lề vùng nội dung của SiteLayout.
+  HR / Admin vào "/" (MainLayout có Sidebar) thì khối nằm gọn trong vùng nội dung, bo 8px.
+- h1 gồm câu dẫn + tên công ty (`GET /company/public`, lỗi thì tên hệ thống); đang tải thì giữ chỗ để chữ không nhảy.
+  "N vị trí đang tuyển": tổng số tin đang mở, không theo bộ lọc.
+- Tìm kiếm: 2 ô (tên vị trí, địa điểm) + nút Tìm trong một dải Giấy, dải là khung của ô (ô không viền riêng, viền
+  focus vẽ vào trong). Dùng đúng tham số `keyword` (lọc theo tiêu đề) và `location` của `GET /jobs`, nằm trên URL
+  (`?keyword=&location=`). Tìm thì về tab Tất cả, trang 1; sang tab Gợi ý thì bỏ bộ lọc. Dưới 900px 2 ô và nút xếp dọc.
+- Đang lọc: dòng "3 vị trí khớp với “kế toán” tại “Hà Nội”" + nút ghost "Xóa bộ lọc". Không có kết quả: khối rỗng
+  "Không có vị trí nào khớp với ..." + "Thử tên vị trí ngắn hơn hoặc bỏ địa điểm." + nút "Xóa bộ lọc".
+- Thẻ tin (`JobCard`): tiêu đề serif 18px, địa điểm 14px đậm 500, đoạn đầu JD 2 dòng (`line-clamp`, Chì),
+  "Đăng hôm nay / hôm qua / X ngày trước / ngày dd/mm/yyyy" 12px Chì, Badge "Đã ứng tuyển" ở chân thẻ.
+  Một link duy nhất ở tiêu đề phủ kín thẻ bằng `::after`; viền focus vẽ trên lớp phủ (bao cả thẻ).
+  Rê chuột: viền Xanh mực, không bóng, chuyển 150ms (`--duration-base`). Công ty không lặp lại trên thẻ (một công ty).
+- Đang tải: khung xương (`JobCardSkeleton`) cùng lưới và cỡ với thẻ thật, thanh `--color-hover` mờ - rõ chậm;
+  `prefers-reduced-motion` thì đứng yên. Trình đọc màn hình đọc câu ẩn "Đang tải việc làm...".
+- Mỗi trang 10 thẻ (`CARD_PAGE_SIZE`, 5 hàng của lưới 2 cột); bảng của HR giữ 9 dòng (`PAGE_SIZE`).
+  Đổi trang thì cuộn tới đầu danh sách, không cuộn lên tận khối mở đầu.
+
+### Chi tiết tin `/jobs/:id` (T35f)
+
+```
+Việc làm / Kế toán tổng hợp                                   (breadcrumb, tên tin dài thì cắt "...")
+┌ tờ Giấy ─────────────────────────────────────┐  ┌ khung dính (sticky) ──────┐
+│ Kế toán tổng hợp (serif 36)                  │  │ [     Ứng tuyển ngay     ] │  hoặc Đã ứng tuyển / Tin đã đóng
+│ Công ty · Hà Nội · Đăng 11 ngày trước        │  └───────────────────────────┘
+├──────────────────────────────────────────────┤  ┌───────────────────────────┐
+│ Mô tả công việc (h2)                         │  │ Đối chiếu với hồ sơ của bạn│  chỉ ứng viên có CV phân tích
+│ • ...            (dòng tối đa ~70 ký tự)     │  │ 4/7 yêu cầu có bằng chứng  │
+│ Yêu cầu ứng viên / Ưu tiên / Quyền lợi       │  │ [=====-----] note của API  │
+└──────────────────────────────────────────────┘  │ Xem chi tiết đối chiếu     │
+Vị trí khác đang tuyển: 3 thẻ                       └───────────────────────────┘
+```
+
+- Máy tính: lưới `minmax(0, 1fr) var(--aside-width)`; đầu tin + JD ghép thành một tờ Giấy (đường kẻ ngăn giữa),
+  khung bên phải `position: sticky; top: var(--space-6)`. HR / Admin không có khung bên phải, tin rộng hết vùng nội dung.
+- JD (`utils/jobText.js`): dòng ngắn (≤ 60 ký tự) bắt đầu bằng "Mô tả", "Yêu cầu", "Ưu tiên", "Quyền lợi"...
+  hoặc kết thúc bằng ":" là tiêu đề phần (h2); dòng kết thúc bằng dấu câu là câu văn. Tiêu đề viết hoa toàn bộ
+  đổi về viết thường. Dòng "- ", "• ", "+ " thành danh sách; JD không có tiêu đề nào thì nằm dưới "Mô tả công việc".
+- Coverage (chỉ ứng viên đã có CV phân tích xong, API đối chiếu chỉ đọc DB, không gọi Gemini): `CoverageBar`
+  "x/y yêu cầu có bằng chứng (z%)" + thanh trung tính + note; tin chưa có yêu cầu thì "Tin chưa có yêu cầu để đối chiếu."
+- "Vị trí khác đang tuyển": 4 tin mới nhất của `GET /jobs`, bỏ tin đang xem, lấy 3. Bấm thẻ là mount lại trang
+  (route có key theo mã tin) và cuộn về đầu.
+- Dưới 900px 1 cột theo thứ tự: đầu tin, khung đối chiếu, JD, khung ứng tuyển. Khung ứng tuyển là thanh dính đáy
+  (`position: sticky; bottom: 0`, nền Giấy, viền trên Viền đậm, tràn hết bề ngang, nút rộng hết thanh): dính ở đáy
+  khi đang đọc, cuộn hết tin thì về đúng chỗ dưới JD nên không che phần cuối trang. Dòng thông tin mỗi mục một dòng.
+- Khách: "Ứng tuyển ngay" + câu "Đăng nhập để gửi CV và theo dõi đơn ứng tuyển." (ẩn trên thanh dính đáy).
+  Ứng viên: `ApplyAction variant="panel"` (nút rộng hết khung; trạng thái đơn và "Xem đơn" chung một dòng).
+
+### Trang của ứng viên: CV của tôi, Hồ sơ, Đơn ứng tuyển, Đổi mật khẩu (T35f)
+
+- Đầu trang `PageHeader`: h1 serif + một câu mô tả màu Chì, nút phụ (nếu có) bên phải.
+- Nội dung trong tờ Giấy viền mảnh (`Panel`; Hồ sơ, Đổi mật khẩu rộng bằng form), mỗi mục một khối, cách `--space-5`.
+- CV của tôi: khối "Tải CV lên" (vùng kéo thả giữ nguyên) rồi danh sách thẻ CV: tên file, ngày tải, nhãn "CV hiện tại",
+  Badge trạng thái; hàng thao tác Xem, Phân tích CV / Phân tích lại, Xem kết quả và Xuất CV mới (chỉ thẻ CV hiện tại,
+  vì kết quả phân tích là hồ sơ chung), Xóa tách riêng bên phải. Đầu trang có link "Kết quả phân tích CV".
+- Đơn ứng tuyển: thanh trên (CV nhà tuyển dụng xem được + ô lọc trạng thái) rồi danh sách thẻ đơn thay cho bảng:
+  tên tin (serif, link về tin), "Nộp ngày dd/mm/yyyy (X ngày trước)", Badge, tiến trình 3 bước, "Lúc nộp: z% yêu cầu
+  có bằng chứng"; Xem ma trận, Chi tiết đối chiếu bên trái, Rút đơn (chỉ khi Đã nộp) bên phải.
+- Trạng thái rỗng: một câu + một hành động chính ("Bạn chưa ứng tuyển vị trí nào." + "Xem việc làm";
+  "Bạn chưa có CV nào." + "Tải CV lên"; lọc ra rỗng: "Không có đơn nào ở trạng thái này." + "Xem tất cả đơn").
+- Đổi mật khẩu: route của ứng viên truyền `siteStyle` cho trang dùng chung; HR / Admin giữ bố cục cũ (h1 + form).
+- Tiêu đề tab trình duyệt (`useDocumentTitle`): "<tên trang> | <VITE_APP_NAME>" ở trang chủ, chi tiết tin (tên tin),
+  chi tiết đối chiếu, các trang ứng viên, trang công khai và trang đăng nhập / đăng ký. Rời trang thì về tên hệ thống,
+  nên trang HR / Admin (chưa đặt tiêu đề riêng) chỉ hiện tên hệ thống.
 
 ### Footer của SiteLayout (`SiteFooter`, T35e)
 
@@ -300,14 +412,18 @@ Trên điện thoại, khối Xanh mực thành dải phía trên form; Logo ở
 - Disabled: nền `--color-disabled-bg`, chữ `--color-disabled-text`, con trỏ not-allowed;
   không dùng opacity.
 - Đang xử lý: nút bị khóa và đổi chữ ("Đang lưu...").
-- Chuyển màu khi hover 120ms. Có `prefers-reduced-motion` thì tắt chuyển động
-  (vòng xoay Loading, hiệu ứng mở modal).
+- Chuyển màu khi hover 120ms; thành phần thêm từ T35f (thẻ tin, tab, nút Tìm, link dạng nút) dùng 150ms
+  (`--duration-base`). Có `prefers-reduced-motion` thì tắt chuyển động (vòng xoay Loading, hiệu ứng mở modal,
+  nhịp của khung xương).
 
 ## 10. Các component khác
 
 - `Modal`: rộng tối đa 520px, bo 8px, có bóng. Đóng bằng Esc, nút "Đóng" hoặc bấm ra lớp phủ.
   Nút hành động ở chân modal căn phải (khác form trên trang, vốn căn trái).
-- `Loading`: vòng xoay CSS kèm chữ "Đang tải...".
+- `Loading`: vòng xoay CSS kèm chữ "Đang tải...". Danh sách thẻ tin dùng khung xương thay cho Loading (T35f).
+- `Modal` (T35f): thêm prop tùy chọn `closeButtonClassName` cho nút "Đóng" ở đầu modal (hộp ứng tuyển dùng để nút
+  cao 44px trên điện thoại); không truyền thì như cũ.
+- `CvViewButton` (T35f): thêm prop `variant` (mặc định ghost như trong bảng; thẻ CV dùng secondary).
 - `Pagination`: "Trước", số trang, "Sau"; trang hiện tại nền Xanh nhạt; ẩn khi chỉ có 1 trang.
 - `Badge`: 12px đậm 600, bo 4px, có viền; màu theo prop `status` (mục 2).
 - `StatCard` (T35c, `components/dashboard/`): ô chỉ có viền, nhãn 14px Chì, con số `--text-xl` đậm 600 chữ số đều,
@@ -341,7 +457,8 @@ Trên điện thoại, khối Xanh mực thành dải phía trên form; Logo ở
   Home / End để chuyển. Tab đang chọn lưu trên URL. Số trong ngoặc chỉ hiện khi đã có dữ liệu thật
   (không "(0)" giả, không vòng xoay trong tab). Màn hình hẹp thì cả cụm tab xuống dòng, chữ trong tab không bẻ.
 - Card gợi ý việc làm (tab Gợi ý): cả card bấm được (link "Xem chi tiết đối chiếu" phủ kín card bằng `::after`,
-  tên tin nằm ẩn trong link cho trình đọc màn hình); rê chuột thì viền card thành Viền đậm.
+  tên tin nằm ẩn trong link cho trình đọc màn hình). Từ T35f cùng kiểu với thẻ tin của tab Tất cả: tiêu đề serif,
+  rê chuột viền Xanh mực, Badge "Đã ứng tuyển" ở chân thẻ, coverage qua `CoverageBar` (components/matching).
 - `Logo` (T35e, `components/layout/`): ô vuông `--logo-mark-size` 28px nền Xanh mực, chữ cái đầu của `VITE_APP_NAME`
   màu trắng (5.69:1), font tiêu đề, bo `--radius-sm`; bên cạnh là tên hệ thống font tiêu đề 18px đậm 600, Mực đen.
   Cả khối là link: khách / ứng viên về `/`, HR về `/recruiter/dashboard`, Admin về `/admin/dashboard`;

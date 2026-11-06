@@ -55,3 +55,27 @@ export function formatRelativeTime(value, now = new Date()) {
   if (days < 7) return `${days} ngày trước`
   return formatDate(value)
 }
+
+// Ngày đăng / ngày nộp theo lịch máy người dùng (T35f): "hôm nay", "hôm qua", "5 ngày trước";
+// quá 30 ngày thì hiện ngày cụ thể (12/09/2026). Khác formatRelativeTime (thông báo) ở chỗ không tính phút, giờ
+export function formatRelative(value, now = new Date()) {
+  if (!value) return ''
+  const date = new Date(value)
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  // round: ngày đổi giờ mùa hè (nếu có) làm một ngày dài 23 hoặc 25 giờ
+  const days = Math.round((startOfToday - startOfDay) / 86400000)
+  // Giờ máy chủ nhanh hơn máy người dùng thì số ngày âm, vẫn tính là hôm nay
+  if (days <= 0) return 'hôm nay'
+  if (days === 1) return 'hôm qua'
+  if (days <= 30) return `${days} ngày trước`
+  return formatDate(value)
+}
+
+// Dòng ngày đăng tin (T35f): "Đăng hôm nay", "Đăng 5 ngày trước"; quá 30 ngày "Đăng ngày 12/09/2026"
+export function formatPostedAt(value) {
+  if (!value) return ''
+  const relative = formatRelative(value)
+  // formatRelative trả ngày cụ thể (có dấu "/") khi quá 30 ngày
+  return relative.includes('/') ? `Đăng ngày ${relative}` : `Đăng ${relative}`
+}

@@ -87,6 +87,14 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   Admin duy nhất quên: `node scripts/reset-admin-password.js`.
 - Upload: tên file UUID, kiểm magic bytes (%PDF / PK), tối đa 5MB, `defParamCharset: 'utf8'` cho tên tiếng Việt.
   Thư mục upload KHÔNG phục vụ dạng file tĩnh.
+- Xem file CV gốc (T35f, endpoint đã duyệt): `GET /api/cvs/:id/file`, cần đăng nhập. Ứng viên chỉ xem CV của mình;
+  RECRUITER / ADMIN chỉ xem CV của ứng viên đã nộp ít nhất 1 đơn (xem chung). Không có quyền hoặc mã sai -> 404
+  "Không tìm thấy CV" (không lộ CV có tồn tại); file mất trên đĩa hoặc filePath ra ngoài UPLOAD_DIR -> 404
+  "Không tìm thấy file CV". PDF `inline`, DOCX `attachment`, tên file RFC 5987, `Cache-Control: private, no-store`.
+  Frontend `openCvFile` (utils/cvFile.js) tải blob qua axios: PDF mở tab mới bằng object URL, DOCX tải về.
+- Application KHÔNG có cvId (chủ dự án chọn không đổi schema, T35f): "CV đã ứng tuyển" = **CV hiện tại**
+  (CV mới nhất đã phân tích, status COMPLETED). Danh sách đơn của HR (`GET /applications/job/:id`) trả thêm `currentCv`.
+  Ứng viên tải CV mới sau khi nộp thì HR thấy CV mới (ghi vào hướng phát triển nếu cần lưu CV theo đơn).
 - helmet, CORS theo CORS_ORIGIN, JWT_SECRET >= 32 ký tự.
 - Production: chỉ ẩn message của lỗi 500 không xác định; giữ message của lỗi đã định nghĩa (400/403/404/429/503).
 - Frontend: axiosClient gặp 401 thì xóa phiên, chỉ chuyển /login khi đang ở route cần đăng nhập.
@@ -164,18 +172,24 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 - `ChangePasswordForm` (từ T35e chỉ dùng ở trang Đổi mật khẩu riêng), `RequirementEvidenceMatrix` (props thuần, HR dùng lại),
   `ApplyAction`, `components/cv-export/` (buildCVData + 2 mẫu CV Cổ điển / Hiện đại),
   `components/dashboard/` (T35c: StatCard, BarChart vẽ bằng div + CSS).
-- utils: format.js (formatDateTime, formatDate, formatMonthYear, formatNumber, formatRelativeTime),
-  labels.js (có CV_STATUS_LABEL từ T35c), apiError.js, roles.js, validation.js.
+- utils: format.js (formatDateTime, formatDate, formatMonthYear, formatNumber, formatRelativeTime; T35f thêm
+  formatRelative, formatPostedAt), labels.js (có CV_STATUS_LABEL từ T35c), apiError.js, roles.js, validation.js,
+  pagination.js (D1; CARD_PAGE_SIZE từ T35f), cvFile.js, cvUpload.js, jobText.js (T35f).
 - api: auth, candidate, cv, job, matching, application (đã có getJobApplications, updateApplicationStatus cho HR),
   admin (T35: getUsers, updateUserStatus, updateUserRole, resetUserPassword, deleteUser, createRecruiter, getCompany),
   notification (T35b: getNotifications, getUnreadCount, markAsRead, markAllAsRead),
   getRecruiterDashboard (recruiter.api, T35c), getAdminDashboard (admin.api, T35c),
   getPublicCompany (company.api, T35d; từ T35e giữ kết quả trong bộ nhớ phiên, lỗi thì bỏ để gọi lại,
   updateMyCompany xóa bản lưu).
-- hooks: useAuth (thêm profileName, setProfileName ở T35e), usePublicCompany (T35e: footer, /privacy, /terms).
+- hooks: useAuth (thêm profileName, setProfileName ở T35e), usePublicCompany (T35e: footer, /privacy, /terms),
+  useDocumentTitle (T35f).
+- Component T35f: `components/job/` (JobCard, JobCardList, JobCardSkeleton), `components/matching/CoverageBar`,
+  `components/layout/` PageHeader + Panel (chỉ trang ứng viên), `components/cv/CvViewButton`,
+  `components/application/ApplicationProgress`.
 - appConfig.js: APP_NAME, CONTACT_EMAIL, CONTACT_PHONE (T35d), FACEBOOK_URL, YOUTUBE_URL (T35e), lấy từ
   VITE_CONTACT_EMAIL / VITE_CONTACT_PHONE / VITE_FACEBOOK_URL / VITE_YOUTUBE_URL, khai báo trong .env.example.
-- variables.css: thêm `--logo-mark-size: 28px` (T35e).
+- variables.css: thêm `--logo-mark-size: 28px` (T35e); T35f thêm `--text-4xl`, `--leading-4xl`, `--text-measure`,
+  `--control-height-lg`, `--touch-target`, `--aside-width`, `--duration-pulse` (ghi trong design.md).
 
 ## 6. Tiến độ (50 task)
 
@@ -184,7 +198,7 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 | 1–8 Backend | T01–T25, T22b | Xong |
 | 8b Gia cố & thống kê | G1–G6, G7 (công ty cố định theo COMPANY_NAME, seed an toàn) | Xong |
 | Kiểm thử backend | smoke / timeout / nlp-fail / real-mail | Xong |
-| 9 Frontend | T26, T27, T28, T29, T29b, T30, T31, T32, T33, T34, T35, T35b, T35c, T35d, T35e | Xong |
+| 9 Frontend | T26, T27, T28, T29, T29b, T30, T31, T32, T33, T34, T35, T35b, T35c, T35d, T35e, T35f | Xong |
 | 10 Đánh giá | **T36**–T38 | **Tiếp theo: T36** |
 
 ### Lưu ý cho các task còn lại
@@ -236,6 +250,23 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   điện thoại, email, website, Facebook / YouTube dạng link chữ, cột link, thanh dưới © + Chính sách bảo mật + Điều khoản);
   3 icon footer là ngoại lệ đã duyệt; trang `/privacy`, `/terms` nội dung tĩnh (câu cần chủ dự án duyệt đánh dấu
   `{/* CẦN CHỦ DỰ ÁN DUYỆT */}` trong JSX). API gợi ý việc làm không gọi Gemini (chỉ matcher đọc DB).
+- **T35f (đã xong, 2 lượt, chủ dự án tự commit)**: lượt 1 xem CV đã ứng tuyển (endpoint file CV ở mục 4.3) + luồng ứng tuyển:
+  khách bấm "Ứng tuyển ngay" -> /login -> quay lại `/jobs/:id?apply=1` tự mở hộp (bỏ ?apply=1 sau khi mở); hộp liệt kê CV
+  (Badge, "CV hiện tại", Xem), chưa có CV đã phân tích thì tải + phân tích ngay trong hộp; đã nộp -> "Đã ứng tuyển" khóa +
+  "Xem đơn"; tin đóng -> "Tin đã ngừng nhận hồ sơ". Trang Đơn có tiến trình 3 bước (`ApplicationProgress`), HR có cột "Xem CV".
+  Lượt 2 giao diện phía ứng viên (design.md mục 6):
+  trang chủ có khối mở đầu Xanh mực tràn bề ngang (câu dẫn + tên công ty serif 48px + "N vị trí đang tuyển" + tìm theo
+  `keyword` / `location` của GET /jobs, trên URL), lưới thẻ 2 cột (`components/job/`: JobCard, JobCardList,
+  JobCardSkeleton), 10 thẻ/trang (`CARD_PAGE_SIZE`; bảng HR giữ `PAGE_SIZE` 9), dòng nhắc tải CV, khung xương khi tải,
+  "Xóa bộ lọc". Chi tiết tin: breadcrumb, 2 cột + khung ứng tuyển sticky (`ApplyAction variant="panel"`, coverage qua
+  `CoverageBar` tách từ tab Gợi ý), JD tách phần bằng `utils/jobText.js`, "Vị trí khác đang tuyển" 3 thẻ; route
+  `/jobs/:id` có key theo mã tin (JobDetailRoute). Dưới 900px nút ứng tuyển dính đáy. CV của tôi / Hồ sơ / Đơn ứng tuyển /
+  Đổi mật khẩu dùng `PageHeader` + `Panel` (components/layout), thẻ thay bảng, trạng thái rỗng có một hành động chính;
+  ChangePassword nhận `siteStyle` chỉ ở route ứng viên. SiteLayout: nền nội dung là Nền, `overflow-x: clip`, viền focus
+  mặc định, vùng bấm 44px dưới 900px. `useDocumentTitle` (hooks) đặt tiêu đề tab "<trang> | <tên hệ thống>".
+  format.js thêm `formatRelative`, `formatPostedAt`. variables.css thêm `--text-4xl`/`--leading-4xl`, `--text-measure`,
+  `--control-height-lg`, `--touch-target`, `--aside-width`, `--duration-pulse`. Modal thêm prop `closeButtonClassName`,
+  CvViewButton thêm `variant` (mặc định như cũ). Giao diện HR / Admin không đổi.
 - **T36–T38**: so sánh rule vs hybrid trên cùng bộ dữ liệu. Trước bảo vệ cần bộ **dữ liệu demo thật**
   (job đa ngành, JD đầy đủ, CV mẫu phân tích hybrid để ma trận có đủ xanh/vàng/đỏ).
 

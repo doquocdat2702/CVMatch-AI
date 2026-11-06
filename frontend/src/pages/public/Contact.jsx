@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getPublicCompany } from '../../api/company.api'
 import Loading from '../../components/common/Loading'
 import { CONTACT_EMAIL, CONTACT_PHONE } from '../../utils/appConfig'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import styles from './Contact.module.css'
 
 // tel: chỉ nhận chữ số và dấu +, bỏ khoảng trắng, dấu chấm hay gạch ngang trong số hiển thị
@@ -12,6 +13,7 @@ function toTelHref(phone) {
 // Trang Liên hệ "/contact" (công khai): email và số điện thoại lấy từ .env (VITE_CONTACT_EMAIL,
 // VITE_CONTACT_PHONE), địa chỉ lấy từ công ty. Dòng nào trống thì ẩn. Không có form liên hệ, không gửi mail
 function Contact() {
+  useDocumentTitle('Liên hệ')
   const [address, setAddress] = useState('')
   const [loading, setLoading] = useState(true)
 

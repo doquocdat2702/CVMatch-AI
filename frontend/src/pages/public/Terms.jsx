@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { usePublicCompany } from '../../hooks/usePublicCompany'
 import { APP_NAME } from '../../utils/appConfig'
 import { formatDate } from '../../utils/format'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import styles from './Legal.module.css'
 
 // Ngày cập nhật nội dung trang, sửa tay mỗi khi đổi nội dung (giờ địa phương, không có "Z" để không lệch ngày)
@@ -10,6 +11,7 @@ const LAST_UPDATED = '2026-10-31T00:00:00'
 // Trang Điều khoản sử dụng "/terms" (công khai, T35e). Nội dung tĩnh, chỉ nêu đúng những gì hệ thống đang làm.
 // Câu có đánh dấu "CẦN CHỦ DỰ ÁN DUYỆT" là cam kết của công ty mà code không kiểm chứng được
 function Terms() {
+  useDocumentTitle('Điều khoản sử dụng')
   const company = usePublicCompany()
   const companyName = (company && company.name) || APP_NAME
 

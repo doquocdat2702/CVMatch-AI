@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { closeJob, deleteJob, getMyJobs } from '../../api/job.api'
 import Badge from '../../components/common/Badge'
 import Button from '../../components/common/Button'
 import Loading from '../../components/common/Loading'
 import Modal from '../../components/common/Modal'
+import Pagination from '../../components/common/Pagination'
 import Table from '../../components/common/Table'
 import { getErrorMessage } from '../../utils/apiError'
+import { paginate, readPage, withPage } from '../../utils/pagination'
 import styles from './JobList.module.css'
 
 // Nội dung hộp thoại xác nhận cho từng thao tác
@@ -32,6 +34,9 @@ const CONFIRM = {
 // Tin do chính nhà tuyển dụng này đăng (GET /jobs/my). Sửa, đóng, xóa chỉ áp dụng cho tin của mình
 // (HR xem chung, sửa riêng): tin của đồng nghiệp xem ở bảng tin chung.
 function JobList() {
+  // GET /jobs/my trả cả danh sách: phân trang phía client, trang hiện tại trên URL (?page=)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const page = readPage(searchParams)
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -64,6 +69,11 @@ function JobList() {
     setError('')
     setLoading(true)
     setReloadKey((key) => key + 1)
+  }
+
+  function handlePageChange(nextPage) {
+    setSearchParams(withPage(searchParams, nextPage))
+    window.scrollTo(0, 0)
   }
 
   async function refreshList() {
@@ -180,9 +190,13 @@ function JobList() {
       </div>
     )
   } else {
+    const { pageItems, page: currentPage, totalPages } = paginate(jobs, page)
     content = (
       <>
-        <Table columns={columns} data={jobs} />
+        <Table columns={columns} data={pageItems} />
+        <div className={styles.pagination}>
+          <Pagination page={currentPage} totalPages={totalPages} onChange={handlePageChange} />
+        </div>
         <p className={styles.note}>Tin đã có đơn ứng tuyển không xóa được, chỉ đóng được.</p>
       </>
     )

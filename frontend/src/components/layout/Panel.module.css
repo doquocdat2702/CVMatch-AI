@@ -1,0 +1,26 @@
+.panel {
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+/* Hai khối liền nhau cách bằng khoảng giữa các mục */
+.panel + .panel {
+  margin-top: var(--space-5);
+}
+
+/* Bề ngang form cộng phần đệm hai bên, để ô nhập bên trong vẫn rộng đúng --form-max */
+.form {
+  max-width: calc(var(--form-max) + var(--space-5) * 2);
+}
+
+.title {
+  margin: 0 0 var(--space-4);
+}
+
+@media (max-width: 900px) {
+  .panel {
+    padding: var(--space-4);
+  }
+}

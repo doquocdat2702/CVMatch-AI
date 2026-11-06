@@ -3,12 +3,14 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { resetPassword } from '../../api/auth.api'
 import { getErrorMessage } from '../../utils/apiError'
 import { MIN_PASSWORD_LENGTH } from '../../utils/validation'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import styles from './Auth.module.css'
 
 const INVALID_LINK = 'Link không hợp lệ hoặc đã hết hạn'
 
 // Mở từ liên kết trong email: /reset-password?token=...
 function ResetPassword() {
+  useDocumentTitle('Đặt lại mật khẩu')
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token') || ''
   const navigate = useNavigate()

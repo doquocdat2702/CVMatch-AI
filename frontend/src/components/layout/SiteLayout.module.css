@@ -3,6 +3,16 @@
   flex-direction: column;
   min-height: 100vh;
   background-color: var(--color-surface);
+  /* Khối mở đầu trang chủ tràn hết bề ngang màn hình (T35f): cắt phần thừa dưới thanh cuộn thay vì cuộn ngang.
+     clip (không phải hidden) để position: sticky bên trong vẫn chạy */
+  overflow-x: clip;
+}
+
+/* Viền focus mặc định cho mọi phần tử bấm được chưa tự đặt (T35f). :where() giữ độ ưu tiên thấp nhất:
+   viền focus riêng của từng component (vd menu chính vẽ vào trong) vẫn thắng */
+.layout :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
 }
 
 /* Cùng viền dưới với Header của MainLayout */
@@ -140,9 +150,11 @@
 
 /* ===== Nội dung ===== */
 
+/* Nền trang công khai là Nền (docs/design.md mục 2): tờ Giấy viền mảnh (thẻ tin, khối nội dung) nổi lên trên */
 .content {
   flex: 1;
   padding: var(--space-6);
+  background-color: var(--color-bg);
 }
 
 /* Không có sidebar nên căn giữa vùng nội dung */
@@ -153,12 +165,13 @@
 
 /* Màn hình hẹp: header 2 hàng.
    Hàng 1 cao bằng header: Logo bên trái, chuông + tài khoản (hoặc Đăng nhập + Đăng ký) bên phải.
-   Hàng 2 cao bằng ô nhập: 3 mục chính nằm ngang, căn trái theo Logo. Link cao hơn hàng 1 viền
+   Hàng 2 cao bằng vùng bấm (44px): 3 mục chính nằm ngang, căn trái theo Logo. Link cao hơn hàng 1 viền
    để gạch chân vẫn đè lên viền dưới header như trên màn hình rộng */
 @media (max-width: 900px) {
   .bar {
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: var(--header-height) var(--control-height);
+    /* Hàng menu cao bằng vùng bấm tối thiểu trên điện thoại (T35f) */
+    grid-template-rows: var(--header-height) var(--touch-target);
     grid-template-areas:
       'brand actions'
       'nav nav';
@@ -168,7 +181,7 @@
   }
 
   .navLink {
-    height: calc(var(--control-height) + var(--border-width));
+    height: calc(var(--touch-target) + var(--border-width));
   }
 
   .actions {
@@ -177,5 +190,22 @@
 
   .content {
     padding: var(--space-4);
+  }
+
+  /* Vùng bấm tối thiểu 44px trên điện thoại (T35f) */
+  .loginLink,
+  .registerButton {
+    height: var(--touch-target);
+  }
+
+  /* Chuông, nút tài khoản (component dùng chung với Header của HR nên chỉ phóng to trong SiteLayout) */
+  .actions :global(button) {
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
+  }
+
+  /* Nút, ô nhập, ô chọn trong nội dung trang. Hộp thoại (Modal) gắn vào body nên không thuộc vùng này */
+  .content :where(button, select, input:not([type='checkbox']):not([type='radio'])) {
+    min-height: var(--touch-target);
   }
 }

@@ -4,12 +4,17 @@ import { getMyJobs } from '../../api/job.api'
 import { getRecommendedCandidates } from '../../api/matching.api'
 import Button from '../../components/common/Button'
 import Loading from '../../components/common/Loading'
+import Pagination from '../../components/common/Pagination'
 import Select from '../../components/common/Select'
 import Table from '../../components/common/Table'
 import CandidateMatrixModal from '../../components/matching/CandidateMatrixModal'
 import { getErrorMessage } from '../../utils/apiError'
 import { formatNumber } from '../../utils/format'
+import { paginate, readPage, withPage } from '../../utils/pagination'
 import styles from './RecommendedCandidates.module.css'
+
+// Lấy cả danh sách (mức tối đa API cho phép, recommend.service MAX_LIMIT) rồi phân trang phía client (D1)
+const RECOMMENDED_LIMIT = 50
 
 // "x/y yêu cầu có bằng chứng (z%)"
 function formatCoverage(supported, total, coverage) {
@@ -22,9 +27,10 @@ function jobOptionLabel(job) {
 }
 
 // Ứng viên gợi ý cho một tin của chính nhà tuyển dụng này.
-// Tin đang chọn nằm trên URL (?jobId=), tải lại trang vẫn giữ; không có thì lấy tin đầu danh sách.
+// Tin đang chọn và trang nằm trên URL (?jobId=&page=), tải lại trang vẫn giữ; không có thì lấy tin đầu danh sách.
 function RecommendedCandidates() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const page = readPage(searchParams)
 
   const [jobs, setJobs] = useState(null)
   const [jobsLoading, setJobsLoading] = useState(true)
@@ -63,7 +69,7 @@ function RecommendedCandidates() {
   useEffect(() => {
     if (!requestKey) return undefined
     let ignore = false
-    getRecommendedCandidates(jobId)
+    getRecommendedCandidates(jobId, RECOMMENDED_LIMIT)
       .then((response) => {
         if (!ignore) setResult({ key: requestKey, data: response.data, error: '' })
       })
@@ -83,8 +89,14 @@ function RecommendedCandidates() {
     setJobsReloadKey((key) => key + 1)
   }
 
+  // Đổi tin: URL chỉ còn jobId nên ?page= bị bỏ, về trang 1
   function handleJobChange(event) {
     setSearchParams({ jobId: event.target.value }, { replace: true })
+  }
+
+  function handlePageChange(nextPage) {
+    setSearchParams(withPage(searchParams, nextPage))
+    window.scrollTo(0, 0)
   }
 
   const columns = [
@@ -161,13 +173,17 @@ function RecommendedCandidates() {
     } else {
       // Mỗi ứng viên một hàng: dùng mã hồ sơ ứng viên làm key của hàng
       const rows = result.data.items.map((item) => ({ ...item, id: item.candidate.id }))
+      const { pageItems, page: currentPage, totalPages } = paginate(rows, page)
       candidates = (
         <>
           <Table
             columns={columns}
-            data={rows}
+            data={pageItems}
             emptyText="Chưa có ứng viên nào có CV đã phân tích xong."
           />
+          <div className={styles.pagination}>
+            <Pagination page={currentPage} totalPages={totalPages} onChange={handlePageChange} />
+          </div>
           {/* Coverage chỉ là chỉ số đối chiếu, luôn kèm câu nhắc của API */}
           {result.data.note && <p className={styles.note}>{result.data.note}</p>}
         </>
@@ -194,7 +210,7 @@ function RecommendedCandidates() {
     <>
       <h1>Ứng viên gợi ý</h1>
       <p className={styles.intro}>
-        Ứng viên đã có CV phân tích xong, sắp theo số yêu cầu của tin có bằng chứng trong hồ sơ (tối đa 10 người). Danh
+        Ứng viên đã có CV phân tích xong, sắp theo số yêu cầu của tin có bằng chứng trong hồ sơ (tối đa 50 người). Danh
         sách chỉ hỗ trợ đối chiếu, không phải xếp hạng năng lực; quyết định tuyển dụng do bạn đưa ra.
       </p>
 

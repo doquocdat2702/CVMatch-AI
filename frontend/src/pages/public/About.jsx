@@ -4,6 +4,7 @@ import { getPublicCompany } from '../../api/company.api'
 import Button from '../../components/common/Button'
 import Loading from '../../components/common/Loading'
 import { getErrorMessage } from '../../utils/apiError'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import styles from './About.module.css'
 
 // Website lưu tự do: chỉ biến thành link khi bắt đầu bằng http(s), tránh link lạ như "javascript:"
@@ -15,6 +16,7 @@ function isWebLink(value) {
 // Trang Giới thiệu "/about" (công khai): thông tin công ty duy nhất, chỉ các trường có trong bảng Company.
 // Trường trống thì ẩn cả dòng
 function About() {
+  useDocumentTitle('Giới thiệu')
   const [company, setCompany] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')

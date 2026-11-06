@@ -7,6 +7,7 @@ import ApplyAction from '../../components/application/ApplyAction'
 import Button from '../../components/common/Button'
 import Loading from '../../components/common/Loading'
 import RequirementEvidenceMatrix from '../../components/matching/RequirementEvidenceMatrix'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import { getErrorMessage } from '../../utils/apiError'
 import styles from './MatchingDetail.module.css'
 
@@ -24,6 +25,8 @@ function MatchingDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+
+  useDocumentTitle(detail ? `Đối chiếu: ${detail.job.title}` : 'Chi tiết đối chiếu')
 
   useEffect(() => {
     let ignore = false
@@ -90,7 +93,7 @@ function MatchingDetail() {
         </div>
 
         {/* Khối Ứng tuyển dùng chung với trang Chi tiết công việc */}
-        <ApplyAction jobId={job.id} isOpen={job.isOpen} />
+        <ApplyAction jobId={job.id} jobTitle={job.title} isOpen={job.isOpen} />
       </div>
 
       <section className={styles.section}>

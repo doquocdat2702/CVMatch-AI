@@ -1,16 +1,22 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { getApplicationDetail, getMyApplications, withdrawApplication } from '../../api/application.api'
+import { getCVs } from '../../api/cv.api'
+import ApplicationProgress from '../../components/application/ApplicationProgress'
 import Badge from '../../components/common/Badge'
 import Button from '../../components/common/Button'
 import Loading from '../../components/common/Loading'
 import Modal from '../../components/common/Modal'
+import Pagination from '../../components/common/Pagination'
 import Select from '../../components/common/Select'
-import Table from '../../components/common/Table'
+import CvViewButton from '../../components/cv/CvViewButton'
+import PageHeader from '../../components/layout/PageHeader'
 import RequirementEvidenceMatrix from '../../components/matching/RequirementEvidenceMatrix'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import { getErrorMessage } from '../../utils/apiError'
-import { formatDate, formatNumber } from '../../utils/format'
+import { formatDate, formatNumber, formatRelative } from '../../utils/format'
 import { APPLICATION_STATUS_LABEL } from '../../utils/labels'
+import { paginate, readPage, withPage } from '../../utils/pagination'
 import styles from './MyApplications.module.css'
 
 const STATUSES = ['APPLIED', 'REVIEWING', 'ACCEPTED', 'REJECTED']
@@ -96,6 +102,10 @@ function MatrixModal({ application, onClose }) {
 }
 
 function MyApplications() {
+  useDocumentTitle('Đơn ứng tuyển')
+  // API trả cả danh sách đơn: phân trang phía client (D1), trang hiện tại trên URL (?page=)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const page = readPage(searchParams)
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -110,6 +120,25 @@ function MyApplications() {
   const [withdrawTarget, setWithdrawTarget] = useState(null)
   const [withdrawing, setWithdrawing] = useState(false)
   const [withdrawError, setWithdrawError] = useState('')
+
+  // CV hiện tại (CV mới nhất đã phân tích): đơn không lưu riêng CV, nhà tuyển dụng xem CV này (T35f).
+  // undefined = đang tải, null = không còn CV đã phân tích (vd đã xóa sau khi ứng tuyển)
+  const [currentCv, setCurrentCv] = useState(undefined)
+
+  useEffect(() => {
+    let ignore = false
+    getCVs()
+      .then((result) => {
+        if (!ignore) setCurrentCv(result.data.find((cv) => cv.status === 'COMPLETED') || null)
+      })
+      .catch(() => {
+        // Không tải được thì ẩn khối CV hiện tại, danh sách đơn vẫn hiện
+        if (!ignore) setCurrentCv(undefined)
+      })
+    return () => {
+      ignore = true
+    }
+  }, [reloadKey])
 
   useEffect(() => {
     let ignore = false
@@ -132,6 +161,23 @@ function MyApplications() {
     setError('')
     setLoading(true)
     setReloadKey((key) => key + 1)
+  }
+
+  // Đổi trạng thái lọc thì về trang 1
+  function handleStatusChange(event) {
+    setStatusFilter(event.target.value)
+    setSearchParams(withPage(searchParams, 1), { replace: true })
+  }
+
+  // Lọc ra rỗng: nút "Xem tất cả đơn" bỏ lọc, về trang 1
+  function clearStatusFilter() {
+    setStatusFilter('')
+    setSearchParams(withPage(searchParams, 1), { replace: true })
+  }
+
+  function handlePageChange(nextPage) {
+    setSearchParams(withPage(searchParams, nextPage))
+    window.scrollTo(0, 0)
   }
 
   // Lấy lại danh sách sau khi rút đơn để trạng thái luôn khớp với backend
@@ -172,92 +218,85 @@ function MyApplications() {
     }
   }
 
-  // ===== Bảng =====
+  // ===== Thẻ đơn (T35f, thay cho bảng: điện thoại không phải cuộn ngang) =====
 
-  const columns = [
-    {
-      key: 'job',
-      title: 'Vị trí',
-      render: (application) => (
-        // Khung có độ rộng tối thiểu: màn hình hẹp không bẻ tên vị trí thành từng mẩu chữ
-        <div className={styles.jobCell}>
-          <Link className={styles.jobLink} to={`/jobs/${application.job.id}`}>
-            {application.job.title}
-          </Link>
+  function renderCard(application) {
+    return (
+      <li key={application.id} className={styles.card}>
+        <div className={styles.cardHead}>
+          <div className={styles.cardInfo}>
+            <h2 className={styles.jobTitle}>
+              <Link className={styles.jobLink} to={`/jobs/${application.job.id}`}>
+                {application.job.title}
+              </Link>
+            </h2>
+            <p className={styles.cardMeta}>
+              Nộp ngày {formatDate(application.appliedAt)} ({formatRelative(application.appliedAt)})
+            </p>
+          </div>
+          <Badge status={application.status}>
+            {APPLICATION_STATUS_LABEL[application.status] || application.status}
+          </Badge>
         </div>
-      ),
-    },
-    { key: 'company', title: 'Công ty', render: (application) => application.job.companyName },
-    { key: 'appliedAt', title: 'Ngày nộp', render: (application) => formatDate(application.appliedAt) },
-    {
-      key: 'status',
-      title: 'Trạng thái',
-      render: (application) => (
-        <Badge status={application.status}>
-          {APPLICATION_STATUS_LABEL[application.status] || application.status}
-        </Badge>
-      ),
-    },
-    {
-      key: 'coverage',
-      title: 'Coverage lúc nộp',
-      align: 'right',
-      // Backend chỉ lưu % lúc nộp (không lưu số yêu cầu), xem đủ "x/y" trong ma trận
-      render: (application) =>
-        application.coverage === null || application.coverage === undefined ? (
-          <span className={styles.muted}>Chưa có yêu cầu</span>
-        ) : (
-          `${formatNumber(application.coverage)}%`
-        ),
-    },
-    {
-      key: 'actions',
-      title: 'Thao tác',
-      align: 'right',
-      render: (application) => (
-        <div className={styles.rowActions}>
-          <Button variant="ghost" size="sm" onClick={() => setMatrixTarget(application)}>
-            Xem ma trận
-          </Button>
-          <Link className={styles.actionLink} to={`/candidate/recommended-jobs/${application.job.id}`}>
-            Chi tiết đối chiếu
-          </Link>
+
+        <div className={styles.cardBody}>
+          <ApplicationProgress status={application.status} />
+          {/* Backend chỉ lưu % lúc nộp (không lưu số yêu cầu), xem đủ "x/y" trong ma trận */}
+          <p className={styles.coverage}>
+            {application.coverage === null || application.coverage === undefined
+              ? 'Lúc nộp: tin chưa có yêu cầu để đối chiếu'
+              : `Lúc nộp: ${formatNumber(application.coverage)}% yêu cầu có bằng chứng`}
+          </p>
+        </div>
+
+        <div className={styles.cardActions}>
+          <div className={styles.actionGroup}>
+            <Button variant="secondary" size="sm" onClick={() => setMatrixTarget(application)}>
+              Xem ma trận
+            </Button>
+            <Link className={styles.linkButton} to={`/candidate/recommended-jobs/${application.job.id}`}>
+              Chi tiết đối chiếu
+            </Link>
+          </div>
           {/* Chỉ rút được khi nhà tuyển dụng chưa xem xét */}
           {application.status === 'APPLIED' && (
             <Button variant="ghost" size="sm" onClick={() => openWithdraw(application)}>
-              Rút đơn
+              Rút đơn<span className={styles.srOnly}> {application.job.title}</span>
             </Button>
           )}
         </div>
-      ),
-    },
-  ]
+      </li>
+    )
+  }
 
   let content
   if (loading) {
     content = <Loading text="Đang tải đơn ứng tuyển..." />
   } else if (error) {
     content = (
-      <>
+      <div className={styles.state}>
         <p className={styles.alertError} role="alert">
           {error}
         </p>
         <Button variant="secondary" onClick={handleRetry}>
           Thử lại
         </Button>
-      </>
+      </div>
     )
   } else if (data.items.length === 0) {
+    // Trạng thái rỗng: một câu + một hành động chính
     content = (
       <div className={styles.empty}>
-        <p className={styles.emptyText}>Bạn chưa ứng tuyển vị trí nào.</p>
-        <Link className={styles.jobLink} to="/">
-          Xem việc làm đang tuyển
+        <p className={styles.emptyTitle}>Bạn chưa ứng tuyển vị trí nào.</p>
+        <p className={styles.emptyText}>Đơn bạn gửi sẽ hiện ở đây cùng trạng thái xét duyệt.</p>
+        <Link className={styles.primaryLink} to="/">
+          Xem việc làm
         </Link>
       </div>
     )
   } else {
     const items = statusFilter ? data.items.filter((item) => item.status === statusFilter) : data.items
+    const { pageItems, page: currentPage, totalPages } = paginate(items, page)
     const countOf = (status) => data.items.filter((item) => item.status === status).length
     const filterOptions = [
       { value: '', label: `Tất cả (${data.items.length})` },
@@ -266,16 +305,50 @@ function MyApplications() {
 
     content = (
       <>
-        <div className={styles.filter}>
-          <Select
-            label="Lọc theo trạng thái"
-            name="status"
-            options={filterOptions}
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-          />
+        <div className={styles.toolbar}>
+          {/* CV nhà tuyển dụng xem được khi xét đơn: CV hiện tại của hồ sơ, chung cho mọi đơn */}
+          {currentCv !== undefined && (
+            <div className={styles.currentCv}>
+              <span className={styles.currentCvLabel}>CV nhà tuyển dụng xem được:</span>
+              {currentCv ? (
+                <>
+                  <span className={styles.currentCvName}>{currentCv.fileName}</span>
+                  <CvViewButton cv={currentCv} />
+                </>
+              ) : (
+                <>
+                  <CvViewButton cv={null} />
+                  <Link className={styles.inlineLink} to="/candidate/cvs">
+                    Đến CV của tôi
+                  </Link>
+                </>
+              )}
+            </div>
+          )}
+          <div className={styles.filter}>
+            <Select
+              label="Lọc theo trạng thái"
+              name="status"
+              options={filterOptions}
+              value={statusFilter}
+              onChange={handleStatusChange}
+            />
+          </div>
         </div>
-        <Table columns={columns} data={items} emptyText="Không có đơn nào ở trạng thái này." />
+
+        {pageItems.length === 0 ? (
+          <div className={styles.empty}>
+            <p className={styles.emptyTitle}>Không có đơn nào ở trạng thái này.</p>
+            <Button variant="secondary" onClick={clearStatusFilter}>
+              Xem tất cả đơn
+            </Button>
+          </div>
+        ) : (
+          <ul className={styles.list}>{pageItems.map(renderCard)}</ul>
+        )}
+        <div className={styles.pagination}>
+          <Pagination page={currentPage} totalPages={totalPages} onChange={handlePageChange} />
+        </div>
         {/* Coverage chỉ là chỉ số đối chiếu, luôn kèm câu nhắc của API */}
         {data.note && <p className={styles.note}>{data.note}</p>}
       </>
@@ -284,7 +357,7 @@ function MyApplications() {
 
   return (
     <>
-      <h1>Đơn ứng tuyển</h1>
+      <PageHeader title="Đơn ứng tuyển" description="Theo dõi trạng thái các đơn bạn đã gửi." />
 
       {notice && (
         <p className={styles.alertSuccess} role="status">

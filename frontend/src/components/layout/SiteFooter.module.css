@@ -201,8 +201,10 @@
     justify-self: start;
   }
 
+  /* Link đã cao 44px nên bỏ khoảng cách giữa các dòng */
   .navList {
     align-items: flex-start;
+    gap: 0;
   }
 
   .bottom {
@@ -213,5 +215,13 @@
 
   .separator {
     display: none;
+  }
+
+  /* Vùng bấm tối thiểu 44px trên điện thoại (T35f). Link trong câu (email, website) giữ dạng chữ */
+  .navLink,
+  .bottomLink {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--touch-target);
   }
 }

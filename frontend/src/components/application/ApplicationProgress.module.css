@@ -1,0 +1,31 @@
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: calc(var(--sidebar-width) * 0.6);
+}
+
+/* 3 đoạn bằng nhau, khe nhỏ giữa các đoạn */
+.bar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-1);
+}
+
+/* Đoạn chưa tới: Viền; đoạn đã qua: Xanh mực (thành phần giao diện, 5.69:1 trên Giấy) */
+.segment {
+  height: var(--space-1);
+  background-color: var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.done {
+  background-color: var(--color-primary);
+}
+
+.caption {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}

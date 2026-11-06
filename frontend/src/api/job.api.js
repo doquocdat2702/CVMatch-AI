@@ -6,10 +6,13 @@ export async function getJobDetail(id) {
   return response.data
 }
 
-// Danh sách tin đang mở (API công khai), mới đăng trước: { page, limit }
-// data: { items: [{ id, title, location, createdAt, company: { id, name } }], pagination: { page, limit, total, totalPages } }
-export async function getJobs({ page, limit } = {}) {
-  const response = await axiosClient.get('/jobs', { params: { page, limit } })
+// Danh sách tin đang mở (API công khai), mới đăng trước: { page, limit, keyword, location }.
+// keyword lọc theo tiêu đề tin, location lọc theo địa điểm (đều là "chứa chuỗi"); bỏ trống thì không lọc.
+// data: { items: [{ id, title, description, location, createdAt, company: { id, name } }], pagination: { page, limit, total, totalPages } }
+export async function getJobs({ page, limit, keyword, location } = {}) {
+  const response = await axiosClient.get('/jobs', {
+    params: { page, limit, keyword: keyword || undefined, location: location || undefined },
+  })
   return response.data
 }
 

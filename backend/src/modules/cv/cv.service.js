@@ -116,6 +116,52 @@ async function getCvDetail(userId, cvId) {
   return findOwnedCv(userId, cvId);
 }
 
+// File CV gốc cho GET /cvs/:id/file (T35f). user = req.user { userId, role }.
+// Được xem: chủ CV; RECRUITER / ADMIN chỉ khi ứng viên đã nộp ít nhất một đơn vào công ty (HR xem chung).
+// Đơn không lưu CV nào được dùng để nộp nên quyền xét theo ứng viên, không theo từng đơn.
+// Không đủ quyền cũng trả 404 như CV không tồn tại, để không lộ CV nào có thật
+async function getCvFile(user, cvId) {
+  const notFound = createError('Không tìm thấy CV', 404);
+  const id = Number(cvId);
+  if (!Number.isInteger(id) || id <= 0) {
+    throw notFound;
+  }
+
+  const cv = await prisma.cV.findUnique({
+    where: { id },
+    select: {
+      fileName: true,
+      filePath: true,
+      fileType: true,
+      candidateProfile: { select: { userId: true, _count: { select: { applications: true } } } },
+    },
+  });
+  if (!cv) {
+    throw notFound;
+  }
+
+  const isOwner = user.role === 'CANDIDATE' && cv.candidateProfile.userId === user.userId;
+  const isStaff = user.role === 'RECRUITER' || user.role === 'ADMIN';
+  if (!isOwner && !(isStaff && cv.candidateProfile._count.applications > 0)) {
+    throw notFound;
+  }
+
+  // Chỉ đọc file nằm trong thư mục upload: filePath lạ (vd "../.env") coi như không có file
+  const fileMissing = createError('Không tìm thấy file CV', 404);
+  const uploadRoot = path.resolve(process.cwd(), env.UPLOAD_DIR);
+  const absolutePath = path.resolve(process.cwd(), cv.filePath);
+  if (!absolutePath.startsWith(uploadRoot + path.sep)) {
+    throw fileMissing;
+  }
+  try {
+    await fs.promises.access(absolutePath, fs.constants.R_OK);
+  } catch {
+    throw fileMissing;
+  }
+
+  return { absolutePath, fileName: cv.fileName, fileType: cv.fileType };
+}
+
 async function deleteCv(userId, cvId) {
   const cv = await findOwnedCv(userId, cvId);
 
@@ -373,6 +419,7 @@ module.exports = {
   createCv,
   listMyCvs,
   getCvDetail,
+  getCvFile,
   deleteCv,
   extractCvText,
   parseCvToProfile,

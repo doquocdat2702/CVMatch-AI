@@ -1,0 +1,167 @@
+/* Lưới thẻ: 1 cột đến 900px, 2 cột từ 901px (mốc bố cục chung 900px, docs/design.md mục 6) */
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 901px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .grid3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Tờ Giấy viền mảnh, không đổ bóng. position: relative để link ở tiêu đề phủ kín thẻ */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: border-color var(--duration-base) ease;
+}
+
+/* Rê chuột: viền Xanh mực (thành phần giao diện 5.69:1 trên Giấy), không bóng */
+.card:hover {
+  border-color: var(--color-primary);
+}
+
+/* Tiêu đề tin: serif như tiêu đề hồ sơ. Cỡ 18px để 2 cột vẫn đủ chỗ cho tên vị trí dài */
+.title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  line-height: var(--leading-lg);
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.link {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+/* Lớp phủ kín thẻ: bấm chỗ nào trong thẻ cũng mở tin */
+.link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-md);
+}
+
+/* Focus bàn phím: viền focus bao cả thẻ (vẽ trên lớp phủ) thay vì chỉ quanh chữ */
+.link:focus-visible {
+  outline: none;
+}
+
+.link:focus-visible::after {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.meta {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+}
+
+/* Đoạn đầu JD, tối đa 2 dòng, phần thừa thành "..." */
+.summary {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+/* Chân thẻ đẩy xuống đáy để ngày đăng của các thẻ cùng hàng thẳng nhau */
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-2);
+}
+
+.posted {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+/* ===== Khung xương khi đang tải ===== */
+
+/* Thẻ giả không đổi viền khi rê chuột */
+.skeletonCard:hover {
+  border-color: var(--color-border);
+}
+
+/* Thanh xám mờ - rõ chậm. prefers-reduced-motion (index.css) tắt nhịp, thanh đứng yên */
+.bone {
+  display: block;
+  height: var(--space-3);
+  background-color: var(--color-hover);
+  border-radius: var(--radius-sm);
+  animation: pulse var(--duration-pulse) ease-in-out infinite alternate;
+}
+
+.boneTitle {
+  width: 70%;
+  height: var(--space-5);
+}
+
+.boneMeta {
+  width: 35%;
+}
+
+.boneLine {
+  width: 100%;
+}
+
+.boneLineShort {
+  width: 80%;
+}
+
+.boneFooter {
+  width: 30%;
+  margin-top: var(--space-2);
+}
+
+@keyframes pulse {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.5;
+  }
+}
+
+/* Chỉ dành cho trình đọc màn hình */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

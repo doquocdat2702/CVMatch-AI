@@ -6,6 +6,10 @@ const uploadSingleFile = require('../../middleware/upload.middleware');
 
 const router = express.Router();
 
+// Xem file CV gốc (T35f): khai báo TRƯỚC dòng chỉ cho CANDIDATE bên dưới, vì HR / Admin cũng được xem
+// CV của ứng viên đã nộp đơn. Quyền chi tiết kiểm ở cv.service getCvFile
+router.get('/:id/file', authenticate, authorize('CANDIDATE', 'RECRUITER', 'ADMIN'), cvController.file);
+
 router.use(authenticate, authorize('CANDIDATE'));
 
 router.post('/upload', uploadSingleFile, cvController.upload);

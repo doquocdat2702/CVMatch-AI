@@ -6,7 +6,8 @@ import styles from './Modal.module.css'
 // open: hiện / ẩn. onClose: gọi khi bấm Esc, nút "Đóng" hoặc bấm ra lớp phủ.
 // footer: các nút hành động ở chân modal (vd Hủy, Lưu).
 // wide: modal rộng hơn cho nội dung dạng bảng (vd ma trận đối chiếu), mặc định tắt.
-function Modal({ open, onClose, title, children, footer, wide = false }) {
+// closeButtonClassName: class thêm cho nút "Đóng" ở đầu modal (T35f: hộp ứng tuyển cho nút cao 44px trên điện thoại)
+function Modal({ open, onClose, title, children, footer, wide = false, closeButtonClassName = '' }) {
   const titleId = useId()
   const dialogRef = useRef(null)
   // Giữ onClose mới nhất trong ref để effect bên dưới chỉ chạy lại khi open đổi.
@@ -62,7 +63,7 @@ function Modal({ open, onClose, title, children, footer, wide = false }) {
               {title}
             </h2>
           )}
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button variant="ghost" size="sm" className={closeButtonClassName} onClick={onClose}>
             Đóng
           </Button>
         </div>

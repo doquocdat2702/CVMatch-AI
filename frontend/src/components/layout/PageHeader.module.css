@@ -1,0 +1,29 @@
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.text {
+  min-width: 0;
+}
+
+/* h1 dùng style chung (serif 24px, index.css), chỉ bỏ lề dưới để sát câu mô tả */
+.title {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.description {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}

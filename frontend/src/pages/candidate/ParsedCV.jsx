@@ -20,6 +20,7 @@ import Textarea from '../../components/common/Textarea'
 import CVExportModal from '../../components/cv-export/CVExportModal'
 import { getErrorMessage } from '../../utils/apiError'
 import { formatMonthYear, toMonthInput } from '../../utils/format'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import styles from './ParsedCV.module.css'
 
 // Mục chưa xác nhận dùng màu vàng của Badge (nhóm "chưa chắc chắn")
@@ -204,6 +205,7 @@ function ItemContent({ group, item }) {
 }
 
 function ParsedCV() {
+  useDocumentTitle('Kết quả phân tích CV')
   const [data, setData] = useState(EMPTY_DATA)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')

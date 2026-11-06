@@ -7,6 +7,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "seed": "node prisma/seed.js",
+    "seed:demo-jobs": "node scripts/seed-demo-jobs.js",
     "start:test": "node --env-file=.env.test src/server.js",
     "test:smoke": "node --env-file=.env.test scripts/smoke-test.js --reset",
     "test:timeout": "node --env-file=.env.test scripts/test-timeout.js",

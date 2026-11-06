@@ -6,12 +6,15 @@ import Badge from '../../components/common/Badge'
 import Button from '../../components/common/Button'
 import Loading from '../../components/common/Loading'
 import Modal from '../../components/common/Modal'
+import Pagination from '../../components/common/Pagination'
 import Select from '../../components/common/Select'
 import Table from '../../components/common/Table'
+import CvViewButton from '../../components/cv/CvViewButton'
 import CandidateMatrixModal from '../../components/matching/CandidateMatrixModal'
 import { getErrorMessage } from '../../utils/apiError'
 import { formatDate, formatNumber } from '../../utils/format'
 import { APPLICATION_STATUS_LABEL } from '../../utils/labels'
+import { paginate, readPage, withPage } from '../../utils/pagination'
 import styles from './Applications.module.css'
 
 const STATUSES = ['APPLIED', 'REVIEWING', 'ACCEPTED', 'REJECTED']
@@ -42,9 +45,11 @@ function jobOptionLabel(job) {
 }
 
 // Đơn ứng tuyển vào tin của chính nhà tuyển dụng này.
-// Tin và trạng thái lọc nằm trên URL (?jobId=&status=), tải lại trang vẫn giữ.
+// Tin, trạng thái lọc và trang nằm trên URL (?jobId=&status=&page=), tải lại trang vẫn giữ.
+// API trả cả danh sách đơn của tin: phân trang phía client (D1)
 function Applications() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const page = readPage(searchParams)
 
   const [jobs, setJobs] = useState(null)
   const [jobsLoading, setJobsLoading] = useState(true)
@@ -111,12 +116,18 @@ function Applications() {
     setJobsReloadKey((key) => key + 1)
   }
 
+  // Đổi tin hoặc trạng thái lọc: dựng lại URL chỉ gồm jobId, status nên ?page= bị bỏ, về trang 1
   function updateParams(changes) {
     const next = { jobId, status: statusFilter, ...changes }
     // Bỏ tham số rỗng cho URL gọn
     const params = Object.fromEntries(Object.entries(next).filter(([, value]) => value))
     setNotice(null)
     setSearchParams(params, { replace: true })
+  }
+
+  function handlePageChange(nextPage) {
+    setSearchParams(withPage(searchParams, nextPage))
+    window.scrollTo(0, 0)
   }
 
   // Lấy lại danh sách sau khi đổi trạng thái (kể cả khi lỗi) để luôn khớp với backend
@@ -175,6 +186,12 @@ function Applications() {
       ),
     },
     { key: 'appliedAt', title: 'Ngày nộp', render: (application) => formatDate(application.appliedAt) },
+    {
+      // CV hiện tại của ứng viên (mới nhất đã phân tích): đơn không lưu riêng CV lúc nộp (T35f)
+      key: 'cv',
+      title: 'CV',
+      render: (application) => <CvViewButton cv={application.currentCv} />,
+    },
     {
       key: 'coverage',
       title: 'Coverage lúc nộp',
@@ -263,17 +280,21 @@ function Applications() {
         </>
       )
     } else {
+      const { pageItems, page: currentPage, totalPages } = paginate(result.data.items, page)
       list = (
         <>
           <Table
             columns={columns}
-            data={result.data.items}
+            data={pageItems}
             emptyText={
               statusFilter
                 ? `Không có đơn nào ở trạng thái "${statusLabel(statusFilter)}".`
                 : 'Tin này chưa có đơn ứng tuyển nào.'
             }
           />
+          <div className={styles.pagination}>
+            <Pagination page={currentPage} totalPages={totalPages} onChange={handlePageChange} />
+          </div>
           {/* Coverage chỉ là chỉ số đối chiếu, luôn kèm câu nhắc của API */}
           {result.data.note && <p className={styles.note}>{result.data.note}</p>}
         </>

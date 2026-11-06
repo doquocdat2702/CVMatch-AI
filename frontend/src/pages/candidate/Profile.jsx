@@ -3,7 +3,10 @@ import { getMyProfile, updateMyProfile } from '../../api/candidate.api'
 import Button from '../../components/common/Button'
 import Input from '../../components/common/Input'
 import Loading from '../../components/common/Loading'
+import PageHeader from '../../components/layout/PageHeader'
+import Panel from '../../components/layout/Panel'
 import { useAuth } from '../../hooks/useAuth'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import { getErrorMessage } from '../../utils/apiError'
 import styles from './Profile.module.css'
 
@@ -22,6 +25,8 @@ const FIELDS = [
 
 const EMPTY_FORM = { fullName: '', phone: '', address: '', headline: '' }
 
+const PAGE_DESCRIPTION = 'Nhà tuyển dụng xem các thông tin này khi bạn ứng tuyển.'
+
 // Chỉ lấy 4 trường cần dùng, null đổi thành chuỗi rỗng để đưa vào ô nhập
 function pickFields(profile) {
   return {
@@ -33,6 +38,7 @@ function pickFields(profile) {
 }
 
 function Profile() {
+  useDocumentTitle('Hồ sơ')
   // Họ tên trên nút tài khoản (AccountMenu) lấy từ AuthContext: lưu xong thì cập nhật để nút đổi tên ngay
   const { setProfileName } = useAuth()
   const [profile, setProfile] = useState(EMPTY_FORM)
@@ -129,7 +135,7 @@ function Profile() {
   if (loadError) {
     return (
       <>
-        <h1>Hồ sơ</h1>
+        <PageHeader title="Hồ sơ" description={PAGE_DESCRIPTION} />
         <p className={styles.alertError} role="alert">
           {loadError}
         </p>
@@ -142,8 +148,7 @@ function Profile() {
 
   return (
     <>
-      <h1>Hồ sơ</h1>
-      <p className={styles.intro}>Nhà tuyển dụng xem các thông tin này khi bạn ứng tuyển.</p>
+      <PageHeader title="Hồ sơ" description={PAGE_DESCRIPTION} />
 
       {saved && (
         <p className={styles.alertSuccess} role="status">
@@ -151,55 +156,58 @@ function Profile() {
         </p>
       )}
 
-      {editing ? (
-        <form className={styles.form} onSubmit={handleSubmit} noValidate>
-          {saveError && (
-            <p className={styles.alertError} role="alert">
-              {saveError}
-            </p>
-          )}
+      {/* Khối Giấy viền mảnh rộng bằng form (T35f) */}
+      <Panel width="form">
+        {editing ? (
+          <form className={styles.form} onSubmit={handleSubmit} noValidate>
+            {saveError && (
+              <p className={styles.alertError} role="alert">
+                {saveError}
+              </p>
+            )}
 
-          {FIELDS.map((field) => (
-            <Input
-              key={field.name}
-              label={field.label}
-              name={field.name}
-              type={field.type || 'text'}
-              required={field.required}
-              maxLength={field.maxLength}
-              autoComplete={field.autoComplete}
-              hint={field.hint}
-              value={form[field.name]}
-              onChange={handleChange}
-              error={fieldErrors[field.name]}
-              disabled={saving}
-            />
-          ))}
-
-          <div className={styles.actions}>
-            <Button type="submit" loading={saving}>
-              {saving ? 'Đang lưu...' : 'Lưu'}
-            </Button>
-            <Button variant="secondary" onClick={cancelEdit} disabled={saving}>
-              Hủy
-            </Button>
-          </div>
-        </form>
-      ) : (
-        <>
-          <dl className={styles.details}>
             {FIELDS.map((field) => (
-              <div key={field.name}>
-                <dt className={styles.term}>{field.label}</dt>
-                <dd className={styles.value}>
-                  {profile[field.name] || <span className={styles.empty}>Chưa cập nhật</span>}
-                </dd>
-              </div>
+              <Input
+                key={field.name}
+                label={field.label}
+                name={field.name}
+                type={field.type || 'text'}
+                required={field.required}
+                maxLength={field.maxLength}
+                autoComplete={field.autoComplete}
+                hint={field.hint}
+                value={form[field.name]}
+                onChange={handleChange}
+                error={fieldErrors[field.name]}
+                disabled={saving}
+              />
             ))}
-          </dl>
-          <Button onClick={startEdit}>Sửa hồ sơ</Button>
-        </>
-      )}
+
+            <div className={styles.actions}>
+              <Button type="submit" loading={saving}>
+                {saving ? 'Đang lưu...' : 'Lưu'}
+              </Button>
+              <Button variant="secondary" onClick={cancelEdit} disabled={saving}>
+                Hủy
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <dl className={styles.details}>
+              {FIELDS.map((field) => (
+                <div key={field.name}>
+                  <dt className={styles.term}>{field.label}</dt>
+                  <dd className={styles.value}>
+                    {profile[field.name] || <span className={styles.empty}>Chưa cập nhật</span>}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <Button onClick={startEdit}>Sửa hồ sơ</Button>
+          </>
+        )}
+      </Panel>
     </>
   )
 }

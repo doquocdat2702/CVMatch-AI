@@ -236,7 +236,22 @@ async function listApplicationsForJob(userId, jobId, { status } = {}) {
     // MySQL xếp NULL cuối khi sắp DESC: đơn nộp lúc job chưa phân tích JD nằm cuối danh sách.
     // Bằng coverage thì đơn nộp trước đứng trước.
     orderBy: [{ coverage: 'desc' }, { appliedAt: 'asc' }, { id: 'asc' }],
-    include: { candidateProfile: { select: { id: true, fullName: true } } },
+    include: {
+      candidateProfile: {
+        select: {
+          id: true,
+          fullName: true,
+          // CV hiện tại của ứng viên (mới nhất đã phân tích) để HR bấm "Xem CV" (T35f).
+          // Đơn không lưu CV nào được dùng để nộp, nên lấy CV hiện tại thay vì CV lúc nộp
+          cvs: {
+            where: { status: 'COMPLETED' },
+            orderBy: [{ uploadedAt: 'desc' }, { id: 'desc' }],
+            take: 1,
+            select: { id: true, fileName: true, fileType: true },
+          },
+        },
+      },
+    },
   });
 
   return {
@@ -250,6 +265,7 @@ async function listApplicationsForJob(userId, jobId, { status } = {}) {
         id: application.candidateProfile.id,
         fullName: application.candidateProfile.fullName,
       },
+      currentCv: application.candidateProfile.cvs[0] || null,
     })),
     note: COVERAGE_NOTE,
   };

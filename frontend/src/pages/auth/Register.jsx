@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { getErrorMessage } from '../../utils/apiError'
 import { getRoleHome } from '../../utils/roles'
 import { MIN_PASSWORD_LENGTH, isValidEmail } from '../../utils/validation'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import styles from './Auth.module.css'
 
 const EMPTY_FORM = { fullName: '', email: '', password: '', confirmPassword: '' }
@@ -31,6 +32,7 @@ function validate(form) {
 
 // Đăng ký chỉ dành cho ứng viên
 function Register() {
+  useDocumentTitle('Đăng ký')
   const { isAuthenticated, role, loading } = useAuth()
   const navigate = useNavigate()
   // Trang cần quay lại sau khi đăng nhập (vd job vừa bấm Ứng tuyển), chỉ chuyển tiếp cho trang Đăng nhập

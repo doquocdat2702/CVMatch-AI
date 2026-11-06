@@ -44,6 +44,13 @@ function PublicPagesLayout() {
   return isAuthenticated && role !== ROLES.CANDIDATE ? <MainLayout /> : <SiteLayout />
 }
 
+// Chi tiết tin công khai: key theo mã tin để bấm sang tin khác (mục "Vị trí khác đang tuyển", T35f)
+// là một lần mount mới, không hiện nội dung, coverage của tin trước trong lúc tải tin mới
+function JobDetailRoute() {
+  const { id } = useParams()
+  return <JobDetail key={id} />
+}
+
 // Sửa tin: key theo mã tin để chuyển từ tin này sang tin khác (hoặc từ "tạo mới" sang "sửa")
 // luôn là một lần mount mới, không giữ state của tin trước
 function EditJobRoute() {
@@ -68,7 +75,7 @@ function AppRouter() {
               ứng viên có thêm tab "Gợi ý theo CV của bạn" ở /?view=recommended) */}
           <Route element={<PublicPagesLayout />}>
             <Route path="/" element={<JobBoard />} />
-            <Route path="/jobs/:id" element={<JobDetail />} />
+            <Route path="/jobs/:id" element={<JobDetailRoute />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/privacy" element={<Privacy />} />
@@ -94,7 +101,7 @@ function AppRouter() {
               <Route path="cvs/parsed" element={<ParsedCV />} />
               <Route path="profile" element={<Profile />} />
               <Route path="applications" element={<MyApplications />} />
-              <Route path="change-password" element={<ChangePassword />} />
+              <Route path="change-password" element={<ChangePassword siteStyle />} />
             </Route>
           </Route>
 

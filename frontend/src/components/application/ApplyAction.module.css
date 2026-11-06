@@ -42,3 +42,186 @@
   background-color: var(--color-danger-bg);
   border: var(--border-width) solid var(--color-danger-border);
 }
+
+/* Tin đã đóng: câu chữ Chì thay cho nút */
+.closed {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
+
+.link {
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+}
+
+.link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* ===== Hộp ứng tuyển (T35f) ===== */
+
+.intro {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
+
+.inlineState {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+/* Danh sách CV: mỗi CV một dòng, ngăn bằng đường kẻ Viền, không card */
+.cvList {
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.cvItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.cvInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.cvName {
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.cvMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+/* Nhãn "CV hiện tại": chữ trên nền Xanh nhạt (6.98:1) */
+.currentTag {
+  padding: 0 var(--space-1);
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary-soft-text);
+  background-color: var(--color-primary-soft);
+  border-radius: var(--radius-sm);
+}
+
+/* Vùng tải CV ngay trong hộp: nền Nền, viền Viền */
+.uploadBox {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  background-color: var(--color-bg);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.uploadText {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+}
+
+/* Ô chọn file thật bị ẩn, bấm qua nút "Chọn file CV" */
+.fileInput {
+  display: none;
+}
+
+.stepText {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
+
+/* Gửi đơn thành công */
+.done {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.doneTitle {
+  margin: 0;
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+  font-weight: var(--weight-semibold);
+  color: var(--color-success-text);
+}
+
+.doneText {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
+
+/* ===== Khung ứng tuyển của trang chi tiết tin (variant="panel", T35f) ===== */
+
+.panelBox {
+  align-items: stretch;
+  max-width: none;
+}
+
+.fullButton {
+  width: 100%;
+}
+
+/* Trạng thái đơn bên trái, "Xem đơn" bên phải, cùng một dòng */
+.statusRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.cvAction {
+  flex: none;
+}
+
+/* Vùng bấm tối thiểu 44px trên điện thoại. Hộp thoại gắn vào body (ngoài SiteLayout) nên tự đặt ở đây */
+@media (max-width: 900px) {
+  .touch,
+  .cvAction :global(button),
+  .link {
+    min-height: var(--touch-target);
+  }
+
+  .link {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Khung dính ở đáy màn hình: bỏ dòng giờ nộp cho khung thấp (trang Đơn ứng tuyển vẫn có ngày nộp) */
+  .panelBox .meta {
+    display: none;
+  }
+}

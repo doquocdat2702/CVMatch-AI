@@ -55,4 +55,45 @@ async function parse(req, res, next) {
   }
 }
 
-module.exports = { upload, list, detail, remove, extract, parse };
+const MIME_BY_TYPE = {
+  PDF: 'application/pdf',
+  DOCX: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+};
+
+// Content-Disposition có tên file tiếng Việt: filename* mã hóa UTF-8 theo RFC 5987 / 6266,
+// kèm filename ASCII dự phòng (bỏ dấu, thay ký tự lạ) cho trình duyệt cũ.
+// encodeURIComponent chừa lại ' ( ) * nên mã hóa thêm cho đúng attr-char
+function contentDisposition(type, fileName) {
+  const ascii =
+    String(fileName)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D')
+      .replace(/[^\x20-\x7e]|["\\]/g, '_') || 'cv';
+  const encoded = encodeURIComponent(fileName).replace(
+    /['()*]/g,
+    (ch) => `%${ch.charCodeAt(0).toString(16).toUpperCase()}`
+  );
+  return `${type}; filename="${ascii}"; filename*=UTF-8''${encoded}`;
+}
+
+// GET /cvs/:id/file: PDF xem ngay trên trình duyệt (inline), DOCX tải về (attachment).
+// Không phục vụ thư mục upload dạng file tĩnh; mọi lần đọc file đều qua kiểm tra quyền ở service
+async function file(req, res, next) {
+  try {
+    const { absolutePath, fileName, fileType } = await cvService.getCvFile(req.user, req.params.id);
+    const isPdf = fileType === 'PDF';
+    res.setHeader('Content-Type', MIME_BY_TYPE[fileType] || 'application/octet-stream');
+    res.setHeader('Content-Disposition', contentDisposition(isPdf ? 'inline' : 'attachment', fileName));
+    // CV là dữ liệu cá nhân: không cho trình duyệt / proxy lưu đệm
+    res.setHeader('Cache-Control', 'private, no-store');
+    return res.sendFile(absolutePath, (err) => {
+      if (err && !res.headersSent) next(err);
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+module.exports = { upload, list, detail, file, remove, extract, parse };

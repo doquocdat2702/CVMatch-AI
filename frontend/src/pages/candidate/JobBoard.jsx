@@ -1,40 +1,146 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { getMyApplications } from '../../api/application.api'
+import { getPublicCompany } from '../../api/company.api'
+import { getCVs } from '../../api/cv.api'
 import { getJobs } from '../../api/job.api'
 import { getRecommendedJobs } from '../../api/matching.api'
 import Button from '../../components/common/Button'
-import Loading from '../../components/common/Loading'
 import Pagination from '../../components/common/Pagination'
+import JobCard from '../../components/job/JobCard'
+import JobCardList from '../../components/job/JobCardList'
+import JobCardSkeleton from '../../components/job/JobCardSkeleton'
 import { useAuth } from '../../hooks/useAuth'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import { getErrorMessage } from '../../utils/apiError'
-import { formatDate } from '../../utils/format'
+import { APP_NAME } from '../../utils/appConfig'
+import { CARD_PAGE_SIZE, readPage, withPage } from '../../utils/pagination'
 import { ROLES } from '../../utils/roles'
 import RecommendedJobsPanel from './RecommendedJobsPanel'
 import styles from './JobBoard.module.css'
-
-// 9 tin mỗi trang: vừa 3 hàng của lưới 3 cột
-const PAGE_SIZE = 9
 
 // Tab nằm trên URL: "/" là Tất cả, "/?view=recommended" là Gợi ý theo CV
 const VIEW_ALL = 'all'
 const VIEW_RECOMMENDED = 'recommended'
 
+// Gợi ý: lấy cả danh sách (mức tối đa API cho phép, recommend.service MAX_LIMIT) rồi phân trang phía client
+const RECOMMENDED_LIMIT = 50
+
+// Ô tìm kiếm nhận tối đa bằng độ dài cột title / location của Job
+const SEARCH_MAX_LENGTH = 255
+
+// "“kế toán” tại “Hà Nội”" cho câu kết quả tìm kiếm
+function describeFilter(keyword, location) {
+  if (keyword && location) return `“${keyword}” tại “${location}”`
+  if (keyword) return `“${keyword}”`
+  return `địa điểm “${location}”`
+}
+
+// Khối mở đầu trang chủ (T35f), chung cho khách và ứng viên: nền Xanh mực đặc, tên công ty serif lớn,
+// số vị trí đang tuyển và ô tìm theo tên vị trí + địa điểm (đúng 2 tham số keyword, location của GET /jobs).
+// Form không điều khiển (defaultValue) và đổi key theo URL: bấm Back / Xóa bộ lọc thì ô nhập lấy lại giá trị trên URL.
+//   companyName: undefined khi đang tải (giữ chỗ để chữ không nhảy); openTotal: null khi chưa có số
+//   contained: HR / Admin xem trang này trong MainLayout (có Sidebar) nên khối không tràn hết bề ngang
+function SearchHero({ companyName, openTotal, keyword, location, onSearch, contained }) {
+  const keywordId = useId()
+  const locationId = useId()
+
+  function handleSubmit(event) {
+    event.preventDefault()
+    const form = new FormData(event.currentTarget)
+    onSearch(String(form.get('keyword')).trim(), String(form.get('location')).trim())
+  }
+
+  let countText = ' '
+  if (openTotal === 0) countText = 'Hiện chưa có vị trí đang tuyển'
+  else if (openTotal !== null) countText = `${openTotal} vị trí đang tuyển`
+
+  return (
+    <section className={contained ? `${styles.hero} ${styles.heroContained}` : styles.hero}>
+      <div className={styles.heroInner}>
+        <h1 className={styles.heroTitle}>
+          <span className={styles.heroLead}>Cơ hội nghề nghiệp tại</span>{' '}
+          <span className={styles.heroCompany}>{companyName === undefined ? ' ' : companyName}</span>
+        </h1>
+        <p className={styles.heroCount}>{countText}</p>
+
+        <form key={`${keyword}\n${location}`} className={styles.search} role="search" onSubmit={handleSubmit}>
+          <div className={styles.field}>
+            <label className={styles.srOnly} htmlFor={keywordId}>
+              Tên vị trí
+            </label>
+            <input
+              id={keywordId}
+              className={styles.input}
+              type="search"
+              name="keyword"
+              defaultValue={keyword}
+              placeholder="Tên vị trí, ví dụ: Kế toán"
+              maxLength={SEARCH_MAX_LENGTH}
+              autoComplete="off"
+            />
+          </div>
+          <div className={styles.field}>
+            <label className={styles.srOnly} htmlFor={locationId}>
+              Địa điểm
+            </label>
+            <input
+              id={locationId}
+              className={styles.input}
+              type="search"
+              name="location"
+              defaultValue={location}
+              placeholder="Địa điểm, ví dụ: Hà Nội"
+              maxLength={SEARCH_MAX_LENGTH}
+              autoComplete="off"
+            />
+          </div>
+          <button type="submit" className={styles.searchButton}>
+            Tìm
+          </button>
+        </form>
+      </div>
+    </section>
+  )
+}
+
 // Bảng tin việc làm, trang chủ công khai "/": ai cũng xem được, không cần đăng nhập.
-// Ứng viên có thêm tab "Gợi ý theo CV của bạn" (T35d, thay cho trang /candidate/recommended-jobs)
+// Ứng viên có thêm tab "Gợi ý theo CV của bạn" (T35d, thay cho trang /candidate/recommended-jobs).
+// Tìm kiếm (T35f) nằm trên URL (?keyword=&location=) và chỉ áp cho tab Tất cả: tìm thì về tab Tất cả,
+// sang tab Gợi ý thì bỏ bộ lọc (danh sách gợi ý là toàn bộ tin đã xếp theo coverage)
 function JobBoard() {
   const { isAuthenticated, role } = useAuth()
   const isCandidate = isAuthenticated && role === ROLES.CANDIDATE
+  // Khách và ứng viên xem trong SiteLayout; HR / Admin vào "/" thì trang nằm trong MainLayout
+  const inSiteLayout = !isAuthenticated || isCandidate
+
+  useDocumentTitle('Việc làm')
 
   const [searchParams, setSearchParams] = useSearchParams()
   // Trang hiện tại nằm trên URL (?page=2): tải lại trang hoặc bấm Back vẫn đúng trang
-  const page = Math.max(1, Number(searchParams.get('page')) || 1)
+  const page = readPage(searchParams)
   // Khách, HR, Admin không có tab: luôn xem Tất cả, kể cả khi URL có ?view=recommended
   const view = isCandidate && searchParams.get('view') === VIEW_RECOMMENDED ? VIEW_RECOMMENDED : VIEW_ALL
+  // ?page= thuộc về tab đang mở; tab còn lại luôn ở trang 1 (đổi tab là về trang 1)
+  const jobsPage = view === VIEW_ALL ? page : 1
+  const recommendedPage = view === VIEW_RECOMMENDED ? page : 1
+  const keyword = (searchParams.get('keyword') || '').trim()
+  const location = (searchParams.get('location') || '').trim()
+  const filterActive = Boolean(keyword || location)
 
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  // Kết quả gắn với đúng truy vấn đã gửi: truy vấn trên URL đổi (đổi trang, tìm kiếm, bấm Back) thì
+  // key khác nhau nghĩa là đang tải, không phải tự bật / tắt cờ loading ở từng chỗ
   const [reloadKey, setReloadKey] = useState(0)
+  const queryKey = JSON.stringify([jobsPage, keyword, location, reloadKey])
+  const [jobsResult, setJobsResult] = useState({ key: null, data: null, error: '' })
+  const loading = jobsResult.key !== queryKey
+  const data = loading ? null : jobsResult.data
+  const error = loading ? '' : jobsResult.error
+
+  // Tổng số tin đang mở (không lọc) cho dòng "N vị trí đang tuyển" của khối mở đầu
+  const [openTotal, setOpenTotal] = useState(null)
+  // undefined = đang tải tên công ty; lỗi thì dùng tên hệ thống
+  const [companyName, setCompanyName] = useState(undefined)
 
   // Gợi ý theo CV: tải ngay khi vào trang (kể cả đang ở tab Tất cả) để tab hiện được số tin
   const [recommended, setRecommended] = useState(null)
@@ -42,31 +148,84 @@ function JobBoard() {
   const [recommendedError, setRecommendedError] = useState('')
   const [recommendedReloadKey, setRecommendedReloadKey] = useState(0)
 
+  // Mã các tin ứng viên đã nộp đơn: lấy MỘT lần khi vào trang (không gọi theo từng tin) để gắn nhãn "Đã ứng tuyển"
+  const [appliedJobIds, setAppliedJobIds] = useState(() => new Set())
+  // CV của ứng viên cho dòng nhắc phía trên danh sách: 'none' chưa có CV, 'unanalysed' chưa có CV đã phân tích,
+  // 'ready' đã có; null khi chưa biết (đang tải hoặc lỗi thì không nhắc)
+  const [cvState, setCvState] = useState(null)
+
   const tabsId = useId()
   const tabRefs = { [VIEW_ALL]: useRef(null), [VIEW_RECOMMENDED]: useRef(null) }
+  // Đổi trang thì cuộn tới đầu danh sách (dưới khối mở đầu), không cuộn lên tận đầu trang
+  const resultsRef = useRef(null)
 
   useEffect(() => {
     let ignore = false
-    getJobs({ page, limit: PAGE_SIZE })
+    getPublicCompany()
       .then((result) => {
-        if (!ignore) setData(result.data)
+        if (!ignore) setCompanyName(result.data.name || APP_NAME)
       })
-      .catch((err) => {
-        if (!ignore) setError(getErrorMessage(err, 'Không tải được danh sách việc làm'))
+      .catch(() => {
+        if (!ignore) setCompanyName(APP_NAME)
       })
-      .finally(() => {
-        if (!ignore) setLoading(false)
+    getJobs({ page: 1, limit: 1 })
+      .then((result) => {
+        if (!ignore) setOpenTotal(result.data.pagination.total)
+      })
+      .catch(() => {
+        // Không có số thì khối mở đầu chỉ bỏ dòng này
       })
     return () => {
       ignore = true
     }
-  }, [page, reloadKey])
+  }, [])
+
+  useEffect(() => {
+    if (!isCandidate) return undefined
+    let ignore = false
+    getMyApplications()
+      .then((result) => {
+        if (!ignore) setAppliedJobIds(new Set(result.data.items.map((item) => item.job.id)))
+      })
+      .catch(() => {
+        // Không tải được thì chỉ thiếu nhãn, bảng tin vẫn hiện bình thường
+      })
+    getCVs()
+      .then((result) => {
+        if (ignore) return
+        if (result.data.length === 0) setCvState('none')
+        else setCvState(result.data.some((cv) => cv.status === 'COMPLETED') ? 'ready' : 'unanalysed')
+      })
+      .catch(() => {
+        // Không biết tình trạng CV thì không nhắc
+      })
+    return () => {
+      ignore = true
+    }
+  }, [isCandidate])
+
+  useEffect(() => {
+    let ignore = false
+    const key = queryKey
+    getJobs({ page: jobsPage, limit: CARD_PAGE_SIZE, keyword, location })
+      .then((result) => {
+        if (!ignore) setJobsResult({ key, data: result.data, error: '' })
+      })
+      .catch((err) => {
+        if (!ignore) {
+          setJobsResult({ key, data: null, error: getErrorMessage(err, 'Không tải được danh sách việc làm') })
+        }
+      })
+    return () => {
+      ignore = true
+    }
+  }, [queryKey, jobsPage, keyword, location])
 
   // Chỉ ứng viên mới gọi API gợi ý (API chỉ cho role CANDIDATE)
   useEffect(() => {
     if (!isCandidate) return undefined
     let ignore = false
-    getRecommendedJobs()
+    getRecommendedJobs(RECOMMENDED_LIMIT)
       .then((result) => {
         if (!ignore) setRecommended(result.data)
       })
@@ -81,12 +240,14 @@ function JobBoard() {
     }
   }, [isCandidate, recommendedReloadKey])
 
-  // Giữ các tham số khác trên URL (vd ?page=2) khi đổi tab, quay lại Tất cả vẫn đúng trang cũ
+  // Đổi tab thì về trang 1 của tab mới (D1). Sang tab Gợi ý thì bỏ bộ lọc tìm kiếm (chỉ áp cho tab Tất cả)
   function selectView(nextView) {
     if (nextView === view) return
-    const params = new URLSearchParams(searchParams)
+    const params = withPage(searchParams, 1)
     if (nextView === VIEW_RECOMMENDED) {
       params.set('view', VIEW_RECOMMENDED)
+      params.delete('keyword')
+      params.delete('location')
     } else {
       params.delete('view')
     }
@@ -109,21 +270,37 @@ function JobBoard() {
     tabRefs[nextView].current.focus()
   }
 
-  function handlePageChange(nextPage) {
-    setLoading(true)
-    const params = new URLSearchParams(searchParams)
-    if (nextPage === 1) {
-      params.delete('page')
-    } else {
-      params.set('page', String(nextPage))
-    }
+  // Tìm: về tab Tất cả, trang 1. Ô để trống thì bỏ tham số đó khỏi URL
+  function handleSearch(nextKeyword, nextLocation) {
+    const params = withPage(searchParams, 1)
+    params.delete('view')
+    if (nextKeyword) params.set('keyword', nextKeyword)
+    else params.delete('keyword')
+    if (nextLocation) params.set('location', nextLocation)
+    else params.delete('location')
     setSearchParams(params)
-    window.scrollTo(0, 0)
+  }
+
+  function clearFilter() {
+    handleSearch('', '')
+  }
+
+  function scrollToResults() {
+    if (resultsRef.current) resultsRef.current.scrollIntoView({ block: 'start' })
+  }
+
+  function handlePageChange(nextPage) {
+    setSearchParams(withPage(searchParams, nextPage))
+    scrollToResults()
+  }
+
+  // Tab Gợi ý phân trang phía client: dữ liệu đã có sẵn, chỉ đổi ?page=
+  function handleRecommendedPageChange(nextPage) {
+    setSearchParams(withPage(searchParams, nextPage))
+    scrollToResults()
   }
 
   function handleRetry() {
-    setError('')
-    setLoading(true)
     setReloadKey((key) => key + 1)
   }
 
@@ -135,70 +312,116 @@ function JobBoard() {
 
   let content
   if (loading) {
-    content = <Loading text="Đang tải việc làm..." />
+    content = <JobCardSkeleton count={4} />
   } else if (error) {
     content = (
-      <>
+      <div className={styles.state}>
         <p className={styles.alertError} role="alert">
           {error}
         </p>
         <Button variant="secondary" onClick={handleRetry}>
           Thử lại
         </Button>
-      </>
+      </div>
+    )
+  } else if (data.pagination.total === 0 && filterActive) {
+    content = (
+      <div className={styles.empty}>
+        <p className={styles.emptyTitle}>Không có vị trí nào khớp với {describeFilter(keyword, location)}.</p>
+        <p className={styles.emptyText}>Thử tên vị trí ngắn hơn hoặc bỏ địa điểm.</p>
+        <Button variant="secondary" onClick={clearFilter}>
+          Xóa bộ lọc
+        </Button>
+      </div>
     )
   } else if (data.pagination.total === 0) {
-    content = <p className={styles.empty}>Hiện chưa có vị trí tuyển dụng</p>
+    content = (
+      <div className={styles.empty}>
+        <p className={styles.emptyTitle}>Hiện chưa có vị trí đang tuyển.</p>
+        <p className={styles.emptyText}>Tin mới sẽ hiện ở đây ngay khi được đăng.</p>
+      </div>
+    )
   } else if (data.items.length === 0) {
     // Có tin nhưng số trang trên URL vượt quá số trang thật (vd ?page=99)
     content = (
-      <p className={styles.empty}>
-        Trang này không có tin nào.{' '}
-        <Link className={styles.link} to="/">
+      <div className={styles.empty}>
+        <p className={styles.emptyTitle}>Trang này không có tin nào.</p>
+        <Button variant="secondary" onClick={() => handlePageChange(1)}>
           Về trang đầu
-        </Link>
-      </p>
+        </Button>
+      </div>
     )
   } else {
     content = (
       <>
-        <ul className={styles.grid}>
+        <JobCardList>
           {data.items.map((job) => (
-            <li key={job.id} className={styles.card}>
-              <h2 className={styles.jobTitle}>{job.title}</h2>
-              {job.company && <p className={styles.company}>{job.company.name}</p>}
-              {job.location && <p className={styles.meta}>{job.location}</p>}
-              <p className={styles.meta}>Đăng ngày {formatDate(job.createdAt)}</p>
-              <div className={styles.footer}>
-                <Link className={styles.button} to={`/jobs/${job.id}`}>
-                  Xem chi tiết
-                </Link>
-              </div>
-            </li>
+            // Khách: thẻ nằm dưới h2 "Vị trí đang tuyển"; ứng viên: dưới cụm tab, thẻ là h2
+            <JobCard key={job.id} job={job} applied={appliedJobIds.has(job.id)} headingLevel={isCandidate ? 2 : 3} />
           ))}
-        </ul>
+        </JobCardList>
         <div className={styles.pagination}>
-          <Pagination page={page} totalPages={data.pagination.totalPages} onChange={handlePageChange} />
+          <Pagination page={jobsPage} totalPages={data.pagination.totalPages} onChange={handlePageChange} />
         </div>
       </>
     )
   }
 
+  // Câu kết quả khi đang lọc, kèm nút bỏ lọc (danh sách rỗng thì khối rỗng đã có nút này)
+  const filterSummary = filterActive && data && data.pagination.total > 0 && (
+    <div className={styles.filterSummary}>
+      <p className={styles.filterText} role="status">
+        {data.pagination.total} vị trí khớp với {describeFilter(keyword, location)}
+      </p>
+      <Button variant="ghost" size="sm" onClick={clearFilter}>
+        Xóa bộ lọc
+      </Button>
+    </div>
+  )
+
+  // Ứng viên chưa có CV đã phân tích: một dòng nhắc gọn phía trên danh sách
+  let cvReminder = null
+  if (isCandidate && (cvState === 'none' || cvState === 'unanalysed')) {
+    cvReminder = (
+      <p className={styles.reminder}>
+        {cvState === 'none'
+          ? 'Tải CV để ứng tuyển nhanh và xem gợi ý việc làm theo hồ sơ.'
+          : 'Phân tích CV để ứng tuyển nhanh và xem gợi ý việc làm theo hồ sơ.'}{' '}
+        <Link className={styles.reminderLink} to="/candidate/cvs">
+          {cvState === 'none' ? 'Tải CV lên' : 'Đến CV của tôi'}
+        </Link>
+      </p>
+    )
+  }
+
   const allPanel = (
     <>
-      {data && data.pagination.total > 0 && !loading && (
-        <p className={styles.intro}>Có {data.pagination.total} vị trí đang tuyển, tin mới đăng ở trước.</p>
-      )}
+      {cvReminder}
+      {filterSummary}
       {content}
     </>
   )
 
-  // Khách, HR, Admin: chỉ danh sách như trước T35d
+  const hero = (
+    <SearchHero
+      companyName={companyName}
+      openTotal={openTotal}
+      keyword={keyword}
+      location={location}
+      onSearch={handleSearch}
+      contained={!inSiteLayout}
+    />
+  )
+
+  // Khách, HR, Admin: chỉ danh sách, không tab
   if (!isCandidate) {
     return (
       <>
-        <h1>Việc làm đang tuyển</h1>
-        {allPanel}
+        {hero}
+        <div ref={resultsRef} className={styles.results}>
+          <h2 className={styles.resultsTitle}>Vị trí đang tuyển</h2>
+          {allPanel}
+        </div>
       </>
     )
   }
@@ -214,53 +437,58 @@ function JobBoard() {
 
   return (
     <>
-      <h1>Việc làm</h1>
-      <div className={styles.tabs} role="tablist" aria-label="Danh sách việc làm">
-        {tabs.map((tab) => {
-          const selected = tab.view === view
-          return (
-            <button
-              key={tab.view}
-              ref={tabRefs[tab.view]}
-              id={`${tabsId}-tab-${tab.view}`}
-              type="button"
-              role="tab"
-              className={selected ? `${styles.tab} ${styles.tabSelected}` : styles.tab}
-              aria-selected={selected}
-              aria-controls={`${tabsId}-panel-${tab.view}`}
-              // Chỉ tab đang chọn nằm trong thứ tự Tab, chuyển tab bằng mũi tên
-              tabIndex={selected ? 0 : -1}
-              onClick={() => selectView(tab.view)}
-              onKeyDown={handleTabKeyDown}
-            >
-              {tab.label}
-              {tab.count !== null && ` (${tab.count})`}
-            </button>
-          )
-        })}
-      </div>
+      {hero}
+      <div ref={resultsRef} className={styles.results}>
+        <div className={styles.tabs} role="tablist" aria-label="Danh sách việc làm">
+          {tabs.map((tab) => {
+            const selected = tab.view === view
+            return (
+              <button
+                key={tab.view}
+                ref={tabRefs[tab.view]}
+                id={`${tabsId}-tab-${tab.view}`}
+                type="button"
+                role="tab"
+                className={selected ? `${styles.tab} ${styles.tabSelected}` : styles.tab}
+                aria-selected={selected}
+                aria-controls={`${tabsId}-panel-${tab.view}`}
+                // Chỉ tab đang chọn nằm trong thứ tự Tab, chuyển tab bằng mũi tên
+                tabIndex={selected ? 0 : -1}
+                onClick={() => selectView(tab.view)}
+                onKeyDown={handleTabKeyDown}
+              >
+                {tab.label}
+                {tab.count !== null && ` (${tab.count})`}
+              </button>
+            )
+          })}
+        </div>
 
-      {/* Cả 2 panel luôn nằm trong trang (panel không chọn bị ẩn) để đổi tab không phải tải lại */}
-      <div
-        id={`${tabsId}-panel-${VIEW_ALL}`}
-        role="tabpanel"
-        aria-labelledby={`${tabsId}-tab-${VIEW_ALL}`}
-        hidden={view !== VIEW_ALL}
-      >
-        {allPanel}
-      </div>
-      <div
-        id={`${tabsId}-panel-${VIEW_RECOMMENDED}`}
-        role="tabpanel"
-        aria-labelledby={`${tabsId}-tab-${VIEW_RECOMMENDED}`}
-        hidden={view !== VIEW_RECOMMENDED}
-      >
-        <RecommendedJobsPanel
-          data={recommended}
-          loading={recommendedLoading}
-          error={recommendedError}
-          onRetry={handleRecommendedRetry}
-        />
+        {/* Cả 2 panel luôn nằm trong trang (panel không chọn bị ẩn) để đổi tab không phải tải lại */}
+        <div
+          id={`${tabsId}-panel-${VIEW_ALL}`}
+          role="tabpanel"
+          aria-labelledby={`${tabsId}-tab-${VIEW_ALL}`}
+          hidden={view !== VIEW_ALL}
+        >
+          {allPanel}
+        </div>
+        <div
+          id={`${tabsId}-panel-${VIEW_RECOMMENDED}`}
+          role="tabpanel"
+          aria-labelledby={`${tabsId}-tab-${VIEW_RECOMMENDED}`}
+          hidden={view !== VIEW_RECOMMENDED}
+        >
+          <RecommendedJobsPanel
+            data={recommended}
+            loading={recommendedLoading}
+            error={recommendedError}
+            onRetry={handleRecommendedRetry}
+            page={recommendedPage}
+            onPageChange={handleRecommendedPageChange}
+            appliedJobIds={appliedJobIds}
+          />
+        </div>
       </div>
     </>
   )
