@@ -35,6 +35,8 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   Recruiter & Company | Job & JD | Application | Admin.
 - 14 entity: User, Role, Company, RecruiterProfile, CandidateProfile, CV, CandidateSkill,
   CandidateExperience, CandidateEducation, Skill, Job, JobRequirement, Application, Notification.
+- **Ngoại lệ trường DB đã duyệt (T35g): `Application.cvId Int?`** (quan hệ tới CV, `onDelete: Restrict`, index cvId),
+  migration `20261106201202_add_application_cv`. Ngoài trường này không thêm trường nào.
 - 4 enum: CvStatus (UPLOADED, PROCESSING, COMPLETED, FAILED) | RequirementType (REQUIRED, PREFERRED, OPTIONAL) |
   MatchStatus (SUPPORTED, UNCERTAIN, NOT_FOUND) | ApplicationStatus (APPLIED, REVIEWING, ACCEPTED, REJECTED).
 - Luồng cốt lõi:
@@ -57,9 +59,9 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   Đổi tên công ty = sửa COMPANY_NAME rồi khởi động lại server.
 - Tạo recruiter không nhận companyId/companyName, tự gán công ty duy nhất. Đã bỏ GET /admin/companies.
   Admin đọc tên công ty (chỉ đọc) qua GET /admin/company (thêm ở T35, đã duyệt).
-- HR sửa thông tin công ty qua PUT /companies/me, **trừ tên** (G7: trường name bị bỏ qua; chỉ gửi name thì 400
-  "Không có thông tin nào để cập nhật"). Trang /recruiter/company hiện tên chỉ đọc kèm "Tên công ty được cấu hình
-  bởi hệ thống"; Hồ sơ HR chỉ hiện tên công ty (ghi chú "Do quản trị viên gán" chỉ còn khi chưa được gán).
+- HR sửa thông tin công ty qua PUT /companies/me, **trừ tên** (G7: trường name bị bỏ qua; chỉ gửi name thì 400 "Chưa có
+  thay đổi nào để lưu."). Trang /recruiter/company hiện tên chỉ đọc kèm "Tên công ty được thiết lập sẵn, không sửa tại
+  đây"; Hồ sơ HR chỉ hiện tên công ty (chưa có thì "Chưa được gán"), không ghi chú.
 - Seed (`npm run seed`, G7): kiểm COMPANY_NAME, ADMIN_EMAIL, ADMIN_PASSWORD ngay đầu, thiếu thì dừng trước khi ghi.
   Thứ tự roles -> company (dùng chung ensureSingleCompany) -> admin -> skills. Admin theo ADMIN_EMAIL đã có thì
   **bỏ qua, không đổi mật khẩu / role / isActive** ("Admin đã tồn tại, bỏ qua"); chỉ tạo khi chưa có.
@@ -84,17 +86,27 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 - Quên mật khẩu qua email CHỈ cho ứng viên: token JWT ký bằng JWT_SECRET + mật khẩu đã băm, hạn 15 phút,
   dùng một lần, luôn trả câu chung (không lộ email nào tồn tại). Giới hạn 5 lần / 15 phút.
 - HR/Admin quên mật khẩu: admin đặt lại (PATCH /admin/users/:id/password).
-  Admin duy nhất quên: `node scripts/reset-admin-password.js`.
+  Admin duy nhất quên: `node scripts/reset-admin-password.js` (ghi ở README.md mục Vận hành; trang Hồ sơ admin chỉ ghi
+  "Nếu quên mật khẩu, liên hệ bộ phận kỹ thuật để đặt lại.", không hiện lệnh).
 - Upload: tên file UUID, kiểm magic bytes (%PDF / PK), tối đa 5MB, `defParamCharset: 'utf8'` cho tên tiếng Việt.
   Thư mục upload KHÔNG phục vụ dạng file tĩnh.
-- Xem file CV gốc (T35f, endpoint đã duyệt): `GET /api/cvs/:id/file`, cần đăng nhập. Ứng viên chỉ xem CV của mình;
-  RECRUITER / ADMIN chỉ xem CV của ứng viên đã nộp ít nhất 1 đơn (xem chung). Không có quyền hoặc mã sai -> 404
-  "Không tìm thấy CV" (không lộ CV có tồn tại); file mất trên đĩa hoặc filePath ra ngoài UPLOAD_DIR -> 404
-  "Không tìm thấy file CV". PDF `inline`, DOCX `attachment`, tên file RFC 5987, `Cache-Control: private, no-store`.
+- Xem file CV gốc (T35f, endpoint đã duyệt; quyền đổi ở T35g): `GET /api/cvs/:id/file`, cần đăng nhập. Ứng viên chỉ
+  xem CV của mình; RECRUITER / ADMIN xem được khi CV đó là `cvId` của ít nhất một đơn (xem chung), và với đơn cũ
+  `cvId` null thì xem được CV hiện tại của ứng viên đó (đúng CV trang Đơn đang hiện). Không có quyền hoặc mã sai -> 404
+  "Không tìm thấy CV." (không lộ CV có tồn tại); file mất trên đĩa hoặc filePath ra ngoài UPLOAD_DIR -> 404
+  "Không tìm thấy file CV.". PDF `inline`, DOCX `attachment`, tên file RFC 5987, `Cache-Control: private, no-store`.
   Frontend `openCvFile` (utils/cvFile.js) tải blob qua axios: PDF mở tab mới bằng object URL, DOCX tải về.
-- Application KHÔNG có cvId (chủ dự án chọn không đổi schema, T35f): "CV đã ứng tuyển" = **CV hiện tại**
-  (CV mới nhất đã phân tích, status COMPLETED). Danh sách đơn của HR (`GET /applications/job/:id`) trả thêm `currentCv`.
-  Ứng viên tải CV mới sau khi nộp thì HR thấy CV mới (ghi vào hướng phát triển nếu cần lưu CV theo đơn).
+- CV gửi kèm đơn (T35g): `POST /applications` nhận `{ jobId, cvId }`, `cvId` bắt buộc với đơn mới; CV phải thuộc chính
+  ứng viên và còn file, sai -> 400 ("Vui lòng chọn CV gửi kèm đơn ứng tuyển." / "Mã CV không hợp lệ." / "Không tìm thấy
+  CV đã chọn. Vui lòng chọn CV khác." / "File của CV đã chọn không còn trên hệ thống. Vui lòng chọn CV khác."). Vẫn cần
+  ít nhất một CV đã phân tích (COMPLETED) như trước. Đơn trả `cv { id, fileName, fileType } | null` + `cvLegacy` (cả
+  `GET /applications/my` và `GET /applications/job/:id`); đơn cũ `cvId` null thì `cv` là CV hiện tại (mới nhất
+  COMPLETED) và `cvLegacy = true`, giao diện ghi "Đang hiển thị CV hiện tại của bạn" (HR: "... của ứng viên"). Đã bỏ
+  trường `currentCv`.
+- Xóa CV đang là `cvId` của một đơn -> 400 "CV này đã được gửi kèm đơn ứng tuyển nên không thể xóa." (kiểm trước,
+  khóa ngoại Restrict chặn dự phòng). `GET /cvs` trả thêm `applicationCount` mỗi CV. Rút đơn xong thì CV đó xóa được.
+- **Đối chiếu vẫn dùng hồ sơ hiện tại** (lần phân tích CV gần nhất + chỉnh sửa của ứng viên), không đọc file CV của đơn.
+  Mô tả chi tiết cách phân tích và đối chiếu: `docs/cach-phan-tich-va-doi-chieu.md`.
 - helmet, CORS theo CORS_ORIGIN, JWT_SECRET >= 32 ký tự.
 - Production: chỉ ẩn message của lỗi 500 không xác định; giữ message của lỗi đã định nghĩa (400/403/404/429/503).
 - Frontend: axiosClient gặp 401 thì xóa phiên, chỉ chuyển /login khi đang ở route cần đăng nhập.
@@ -150,6 +162,9 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   chi tiết đối chiếu giữ `/candidate/recommended-jobs/:jobId`). Trong AccountMenu: Hồ sơ (`/candidate/profile`),
   CV của tôi (`/candidate/cvs`, kết quả phân tích `/candidate/cvs/parsed`), Đơn ứng tuyển (`/candidate/applications`),
   Đổi mật khẩu (`/candidate/change-password`, T35e). Không còn mục menu "Việc làm gợi ý". Đăng nhập xong vào `/`.
+  4 trang Hồ sơ / CV của tôi / Đơn ứng tuyển / Đổi mật khẩu nằm trong khu **"Tài khoản của tôi"** (`AccountLayout`, T35g:
+  cột tóm tắt + menu bên trái); `/candidate/cvs/parsed` và `/candidate/recommended-jobs/:jobId` giữ bố cục riêng.
+  Trang chủ chỉ tìm theo tên vị trí (`?keyword=`), **đã bỏ ô / lọc địa điểm** (T35g; địa điểm vẫn hiện trên thẻ tin).
 - HR: `/recruiter/dashboard`, `/recruiter/profile`, `/recruiter/change-password` (T35e), `/recruiter/company`,
   `/recruiter/jobs` (+ `/new`, `/:id/edit`, `/:id/requirements`), `/recruiter/recommended-candidates`, `/recruiter/applications`.
   Đăng nhập xong vào `/recruiter/dashboard` (từ T35c).
@@ -198,13 +213,13 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 | 1–8 Backend | T01–T25, T22b | Xong |
 | 8b Gia cố & thống kê | G1–G6, G7 (công ty cố định theo COMPANY_NAME, seed an toàn) | Xong |
 | Kiểm thử backend | smoke / timeout / nlp-fail / real-mail | Xong |
-| 9 Frontend | T26, T27, T28, T29, T29b, T30, T31, T32, T33, T34, T35, T35b, T35c, T35d, T35e, T35f | Xong |
+| 9 Frontend | T26, T27, T28, T29, T29b, T30, T31, T32, T33, T34, T35, T35b, T35c, T35d, T35e, T35f, T35g, T35h | Xong |
 | 10 Đánh giá | **T36**–T38 | **Tiếp theo: T36** |
 
 ### Lưu ý cho các task còn lại
 - **T33**: Profile HR đặt `<ChangePasswordForm />`; trang Công ty sửa công ty duy nhất; JobList dùng GET /jobs/my,
   sửa/đóng/xóa chỉ tin của mình; parse JD đọc `data.requirements`, mode rule + unresolvedCount > 0 thì nhắc
-  "X yêu cầu chưa phân loại chắc chắn, đang để Ưu tiên, vui lòng kiểm tra lại".
+  "X yêu cầu chưa phân loại chắc chắn, đang để Ưu tiên. Vui lòng kiểm tra lại."
 - **T33 (đã xong)**: Badge có thêm status OPEN (xanh lá); tạo tin xong chuyển sang /recruiter/jobs/:id/edit;
   trang sửa có bảng yêu cầu CHỈ ĐỌC và nút Phân tích JD.
 - **T34 (đã xong)**: ParsedJD tại /recruiter/jobs/:id/requirements; thêm menu HR "Ứng viên gợi ý"
@@ -213,7 +228,7 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   lựa chọn tin + bộ lọc giữ trên URL (?jobId=&status=); chuyển đơn sang Đã chấp nhận/Đã từ chối có hộp xác nhận.
 - **T35**: CreateRecruiter không chọn công ty (hiện tên công ty chỉ đọc); AccountList có nút "Đặt lại mật khẩu"
   (ẩn với chính admin đang đăng nhập); Hồ sơ admin có ChangePasswordForm.
-- **T35 (đã xong)**: chủ dự án duyệt thêm GET /admin/company (tên công ty chỉ đọc ở trang Tạo Recruiter) và
+- **T35 (đã xong)**: chủ dự án duyệt thêm GET /admin/company (tên công ty chỉ đọc ở trang Tạo nhà tuyển dụng) và
   trang Hồ sơ admin `/admin/profile` (email, vai trò, ChangePasswordForm; menu "Hồ sơ" cuối menu admin).
   Tài khoản và Phân quyền: lọc vai trò + tìm email + trang giữ trên URL (?role=&email=&page=), 10 dòng/trang.
   Dòng của chính admin ẩn mọi thao tác. Khóa và xóa có hộp xác nhận, mở khóa chạy ngay.
@@ -226,9 +241,9 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   -> /recruiter/applications?jobId=; đơn đã rút (applicationId null) -> /recruiter/applications.
   APPLICATION_STATUS_CHANGED -> /candidate/applications. Không sửa backend.
   variables.css thêm `--popover-width`, `--z-dropdown`.
-- **T35c (đã xong)**: 2 trang Tổng quan dùng API G6. HR có nút "Job của tôi / Toàn công ty" (?scope=all trên URL),
+- **T35c (đã xong)**: 2 trang Tổng quan dùng API G6. HR có nút "Tin của tôi / Toàn công ty" (?scope=all trên URL),
   3 StatCard, BarChart đơn theo trạng thái, theo ngày (30 cột), phân bố coverage (kèm câu
-  "Coverage là mức đáp ứng yêu cầu, không phải điểm năng lực." và note của API). Admin: StatCard theo role,
+  "Tỉ lệ có bằng chứng chỉ cho biết mức đáp ứng yêu cầu, không phải điểm năng lực." và note của API). Admin: StatCard theo role,
   bị khóa, tin, đơn, tỷ lệ xử lý CV thành công (chưa có CV xử lý xong thì "Chưa có dữ liệu");
   BarChart người dùng mới theo tháng, CV theo trạng thái. Không tự làm mới số liệu.
   "Tổng quan" đứng đầu menu HR và Admin; /recruiter và /admin chuyển tới dashboard. Đã xóa UnderConstruction.
@@ -252,11 +267,11 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   `{/* CẦN CHỦ DỰ ÁN DUYỆT */}` trong JSX). API gợi ý việc làm không gọi Gemini (chỉ matcher đọc DB).
 - **T35f (đã xong, 2 lượt, chủ dự án tự commit)**: lượt 1 xem CV đã ứng tuyển (endpoint file CV ở mục 4.3) + luồng ứng tuyển:
   khách bấm "Ứng tuyển ngay" -> /login -> quay lại `/jobs/:id?apply=1` tự mở hộp (bỏ ?apply=1 sau khi mở); hộp liệt kê CV
-  (Badge, "CV hiện tại", Xem), chưa có CV đã phân tích thì tải + phân tích ngay trong hộp; đã nộp -> "Đã ứng tuyển" khóa +
-  "Xem đơn"; tin đóng -> "Tin đã ngừng nhận hồ sơ". Trang Đơn có tiến trình 3 bước (`ApplicationProgress`), HR có cột "Xem CV".
+  (Badge, "CV hiện tại", Xem; T35g đổi thành radio chọn CV gửi kèm), chưa có CV đã phân tích thì tải + phân tích ngay trong hộp; đã nộp -> "Đã ứng tuyển" khóa +
+  "Xem đơn ứng tuyển"; tin đóng -> "Tin tuyển dụng đã ngừng nhận đơn". Trang Đơn có tiến trình 3 bước (`ApplicationProgress`), HR có cột "Xem CV".
   Lượt 2 giao diện phía ứng viên (design.md mục 6):
   trang chủ có khối mở đầu Xanh mực tràn bề ngang (câu dẫn + tên công ty serif 48px + "N vị trí đang tuyển" + tìm theo
-  `keyword` / `location` của GET /jobs, trên URL), lưới thẻ 2 cột (`components/job/`: JobCard, JobCardList,
+  `keyword` / `location` của GET /jobs, trên URL; T35g bỏ ô địa điểm), lưới thẻ 2 cột (`components/job/`: JobCard, JobCardList,
   JobCardSkeleton), 10 thẻ/trang (`CARD_PAGE_SIZE`; bảng HR giữ `PAGE_SIZE` 9), dòng nhắc tải CV, khung xương khi tải,
   "Xóa bộ lọc". Chi tiết tin: breadcrumb, 2 cột + khung ứng tuyển sticky (`ApplyAction variant="panel"`, coverage qua
   `CoverageBar` tách từ tab Gợi ý), JD tách phần bằng `utils/jobText.js`, "Vị trí khác đang tuyển" 3 thẻ; route
@@ -267,6 +282,28 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   format.js thêm `formatRelative`, `formatPostedAt`. variables.css thêm `--text-4xl`/`--leading-4xl`, `--text-measure`,
   `--control-height-lg`, `--touch-target`, `--aside-width`, `--duration-pulse`. Modal thêm prop `closeButtonClassName`,
   CvViewButton thêm `variant` (mặc định như cũ). Giao diện HR / Admin không đổi.
+- **T35g (đã xong, chủ dự án tự commit)**: lưu CV đã nộp (`Application.cvId`, mục 3 và 4.3); hộp ứng tuyển chọn CV bằng
+  radio (chọn sẵn CV mới nhất, "Xem" từng CV, "Tải CV mới" tải + phân tích rồi tự chọn), dòng ghi chú màu Chì về file
+  gửi kèm và hồ sơ đối chiếu, thêm câu "Lưu ý: hồ sơ của bạn chưa được cập nhật từ CV này." khi CV đang chọn khác CV có
+  `parsedAt` mới nhất. Khu Tài khoản (`components/layout/AccountLayout`): tóm tắt (chữ viết tắt, họ tên, email,
+  "Hồ sơ đã có x/7 mục" + thanh trung tính; không có "Tham gia" vì API không trả createdAt) + menu NavLink; dưới 900px
+  tóm tắt một dòng, menu thành tab cuộn ngang. Hồ sơ chia Thông tin cá nhân (email chỉ đọc) / Kỹ năng (chip, nhãn nguồn)
+  / Kinh nghiệm / Học vấn (dòng thời gian, chỉ đọc). Đổi mật khẩu: `ChangePasswordForm enhanced` (Hiện / Ẩn,
+  aria-pressed, danh sách 3 điều kiện có sẵn: 6 ký tự, khác mật khẩu cũ, xác nhận khớp); HR / Admin giữ form cũ.
+  Trang Kết quả phân tích có khung "Cách hệ thống đọc CV của bạn" (mở sẵn lần đầu, localStorage), nhãn nguồn
+  Từ điển / AI / Tự nhập (`PROFILE_SOURCE_LABEL` trong labels.js) + Đã / Chưa xác nhận; Chi tiết đối chiếu có chú thích
+  3 trạng thái theo đúng matcher. Bỏ ô địa điểm ở trang chủ. Tài liệu `docs/cach-phan-tich-va-doi-chieu.md`.
+  variables.css thêm `--account-mark-size`. Smoke test (file local) đã gửi `cvId` và có ca mới cho cvId / xóa CV / quyền xem.
+  **DB thật chưa có migration `add_application_cv`**: trước khi chạy `npm run dev` trên cvmatch, sao lưu DB rồi chạy
+  `npx prisma migrate deploy` (thư mục backend, dùng `.env`); Prisma client đã sinh lại theo schema mới nên chưa migrate
+  thì mọi truy vấn Application trên cvmatch lỗi thiếu cột.
+- **T35h (đã xong, chủ dự án tự commit)**: chỉ viết lại câu chữ hiển thị (frontend, message API backend, email quên mật
+  khẩu), không đổi logic / route / API / mã HTTP. Quy ước từ đây: gọi ứng viên là "bạn", HR / Admin trung tính; không
+  "chúng tôi" (trừ Giới thiệu, Chính sách, Điều khoản); câu trọn vẹn có dấu chấm, nhãn / nút / tiêu đề không chấm; lỗi
+  nói chuyện gì xảy ra + làm gì tiếp; viết hoa đầu câu. Thuật ngữ: Tin tuyển dụng, Đơn ứng tuyển, Rút đơn, Nhà tuyển dụng,
+  Quản trị viên, "mô tả công việc" thay JD, "tỉ lệ (yêu cầu) có bằng chứng" thay coverage trên giao diện; trạng thái đơn
+  Đã ứng tuyển / Đang xem xét / Đã chấp nhận / Đã từ chối; CV Đang phân tích / Phân tích lỗi. Message test trên máy
+  (smoke, test-timeout, test-nlp-fail, test-real-mail) đã đổi theo câu mới.
 - **T36–T38**: so sánh rule vs hybrid trên cùng bộ dữ liệu. Trước bảo vệ cần bộ **dữ liệu demo thật**
   (job đa ngành, JD đầy đủ, CV mẫu phân tích hybrid để ma trận có đủ xanh/vàng/đỏ).
 
@@ -274,7 +311,8 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 
 - DB test: `cv_matching_test`, cấu hình trong `backend/.env.test` (PORT 5001, NLP_MODE=rule). DB thật: `cvmatch`.
 - Lệnh (thư mục backend, 1 terminal, cổng 5001 phải trống):
-  - `npm run test:smoke` — reset DB test + chạy toàn bộ kịch bản (tự bật server ở chế độ rule)
+  - `npm run test:smoke` — reset DB test + chạy toàn bộ kịch bản (tự bật server ở chế độ rule).
+    Không reset (chạy trên dữ liệu hiện có, hậu tố riêng): `node --env-file=.env.test scripts/smoke-test.js`
   - `npm run test:timeout`, `npm run test:nlp-fail`
   - `node --env-file=.env.test scripts/test-real-mail.js <email>` — gửi mail thật, dán link khi được hỏi
 - Script tự dừng nếu DATABASE_URL không chứa `_test`.

@@ -30,13 +30,6 @@
   color: var(--color-text-muted);
 }
 
-/* Ghi chú cho trường chỉ đọc (công ty) */
-.readonlyNote {
-  font-size: var(--text-xs);
-  line-height: var(--leading-xs);
-  color: var(--color-text-muted);
-}
-
 /* Chế độ sửa */
 .form {
   display: flex;

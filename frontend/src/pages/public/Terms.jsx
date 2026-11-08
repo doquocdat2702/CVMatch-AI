@@ -26,7 +26,7 @@ function Terms() {
         <h2>1. Phạm vi sử dụng</h2>
         <p>
           Hệ thống phục vụ hoạt động tuyển dụng của {companyName}. Ứng viên dùng hệ thống để xem tin tuyển dụng, tạo hồ
-          sơ, tải CV và ứng tuyển. Tài khoản nhân viên tuyển dụng do quản trị viên của công ty cấp. Không dùng hệ thống
+          sơ, tải CV và ứng tuyển. Tài khoản nhà tuyển dụng do quản trị viên của công ty cấp. Không dùng hệ thống
           cho mục đích khác.
         </p>
       </section>
@@ -41,10 +41,10 @@ function Terms() {
       </section>
 
       <section className={styles.section}>
-        <h2>3. Tệp tải lên</h2>
+        <h2>3. File tải lên</h2>
         <p>
-          Hệ thống chỉ nhận CV dạng PDF hoặc DOCX, tối đa 5MB, và từ chối tệp không đúng định dạng. Không tải lên tệp chứa
-          mã độc, tệp giả mạo hoặc tài liệu không phải CV của bạn.
+          Hệ thống chỉ nhận CV dạng PDF hoặc DOCX, tối đa 5 MB, và từ chối file không đúng định dạng. Không tải lên file chứa
+          mã độc, file giả mạo hoặc tài liệu không phải CV của bạn.
         </p>
       </section>
 
@@ -59,8 +59,8 @@ function Terms() {
       <section className={styles.section}>
         <h2>5. Kết quả phân tích và đối chiếu</h2>
         <p>
-          Hệ thống dùng quy tắc và AI để bóc tách nội dung CV và đối chiếu hồ sơ với yêu cầu của từng vị trí. Kết quả bóc
-          tách có thể chưa chính xác, bạn nên kiểm tra và sửa lại hồ sơ. Kết quả đối chiếu chỉ mang tính tham khảo: đó
+          Hệ thống dùng quy tắc và AI để đọc nội dung CV và đối chiếu hồ sơ với yêu cầu của từng vị trí. Kết quả đọc CV
+          có thể chưa chính xác, bạn nên kiểm tra và sửa lại hồ sơ. Kết quả đối chiếu chỉ mang tính tham khảo: đó
           là số yêu cầu có bằng chứng trong hồ sơ, không phải điểm năng lực, và không quyết định việc tuyển dụng. Xem
           thêm cách dữ liệu được xử lý ở trang{' '}
           <Link className={styles.link} to="/privacy">

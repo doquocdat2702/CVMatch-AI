@@ -12,7 +12,7 @@ async function extractText(filePath, fileType) {
     return extractFromDocx(filePath);
   }
 
-  const err = new Error('Chỉ hỗ trợ trích xuất file PDF hoặc DOCX');
+  const err = new Error('Chỉ đọc được file PDF hoặc DOCX.');
   err.statusCode = 400;
   throw err;
 }

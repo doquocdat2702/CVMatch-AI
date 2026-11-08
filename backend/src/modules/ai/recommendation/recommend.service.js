@@ -12,9 +12,9 @@ const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 50;
 
 const MESSAGE_NO_PROFILE_DATA =
-  'Hồ sơ của bạn chưa có dữ liệu kỹ năng, kinh nghiệm hay học vấn. ' +
-  'Hãy tải CV lên, trích xuất và phân tích CV để nhận gợi ý việc làm.';
-const MESSAGE_JOB_NOT_PARSED = 'Job chưa được phân tích JD';
+  'Hồ sơ của bạn chưa có kỹ năng, kinh nghiệm hay học vấn. ' +
+  'Tải CV lên và phân tích để nhận gợi ý việc làm.';
+const MESSAGE_JOB_NOT_PARSED = 'Tin tuyển dụng chưa có yêu cầu để đối chiếu.';
 
 function createError(message, statusCode) {
   const err = new Error(message);
@@ -25,7 +25,7 @@ function createError(message, statusCode) {
 function parseId(value, label) {
   const id = Number(value);
   if (!Number.isInteger(id) || id <= 0) {
-    throw createError(`${label} không hợp lệ`, 400);
+    throw createError(`${label} không hợp lệ.`, 400);
   }
   return id;
 }
@@ -83,7 +83,7 @@ async function recommendJobsForCandidate(candidateProfileId, limit = DEFAULT_LIM
     },
   });
   if (!candidate) {
-    throw createError('Không tìm thấy hồ sơ ứng viên', 404);
+    throw createError('Không tìm thấy hồ sơ ứng viên.', 404);
   }
 
   const base = {
@@ -130,7 +130,7 @@ async function recommendCandidatesForJob(jobId, limit = DEFAULT_LIMIT) {
     },
   });
   if (!job) {
-    throw createError('Không tìm thấy tin tuyển dụng', 404);
+    throw createError('Không tìm thấy tin tuyển dụng.', 404);
   }
 
   const base = {

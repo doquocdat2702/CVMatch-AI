@@ -113,6 +113,7 @@
   --popover-width: 360px; /* dropdown thông báo trên Header (T35b) */
   --logo-mark-size: 28px; /* ô chữ cái của Logo (T35e) */
   --aside-width: 320px; /* khung ứng tuyển dính bên phải trang chi tiết tin (T35f) */
+  --account-mark-size: 56px; /* ô chữ viết tắt họ tên ở khung tóm tắt khu Tài khoản (T35g) */
 
   /* ===== Chuyển động ===== */
   --duration-fast: 120ms;

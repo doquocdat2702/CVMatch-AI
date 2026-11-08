@@ -3,7 +3,7 @@ import styles from './JobCard.module.css'
 // Khung xương thay cho chữ "Đang tải" khi danh sách tin đang tải (T35f): cùng lưới và cỡ với thẻ thật nên
 // tải xong trang không nhảy. Các thanh chỉ để nhìn (aria-hidden); trình đọc màn hình đọc dòng chữ ẩn.
 //   count: số thẻ giả; text: câu cho trình đọc màn hình
-function JobCardSkeleton({ count = 4, columns = 2, text = 'Đang tải việc làm...' }) {
+function JobCardSkeleton({ count = 4, columns = 2, text = 'Đang tải tin tuyển dụng...' }) {
   return (
     <div role="status" aria-busy="true">
       <span className={styles.srOnly}>{text}</span>

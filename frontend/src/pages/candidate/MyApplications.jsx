@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { getApplicationDetail, getMyApplications, withdrawApplication } from '../../api/application.api'
-import { getCVs } from '../../api/cv.api'
 import ApplicationProgress from '../../components/application/ApplicationProgress'
 import Badge from '../../components/common/Badge'
 import Button from '../../components/common/Button'
@@ -23,7 +22,7 @@ const STATUSES = ['APPLIED', 'REVIEWING', 'ACCEPTED', 'REJECTED']
 
 // "x/y yêu cầu có bằng chứng (z%)"; job chưa có yêu cầu thì nói rõ thay vì "0/0 (0%)"
 function formatCoverage(supported, total, coverage) {
-  if (!total) return 'Tin chưa có yêu cầu để đối chiếu'
+  if (!total) return 'Tin tuyển dụng chưa có yêu cầu để đối chiếu'
   return `${supported}/${total} yêu cầu có bằng chứng (${formatNumber(coverage)}%)`
 }
 
@@ -41,7 +40,7 @@ function MatrixModal({ application, onClose }) {
         if (!ignore) setDetail(result.data)
       })
       .catch((err) => {
-        if (!ignore) setError(getErrorMessage(err, 'Không tải được ma trận đối chiếu'))
+        if (!ignore) setError(getErrorMessage(err, 'Không tải được kết quả đối chiếu.'))
       })
       .finally(() => {
         if (!ignore) setLoading(false)
@@ -81,13 +80,13 @@ function MatrixModal({ application, onClose }) {
               Hiện tại: {formatCoverage(detail.supported, detail.total, detail.coverage)}
             </p>
             <p className={styles.muted}>
-              Lúc nộp:{' '}
+              Lúc ứng tuyển:{' '}
               {detail.coverageAtApply === null || detail.coverageAtApply === undefined
-                ? 'tin chưa có yêu cầu để đối chiếu'
+                ? 'tin tuyển dụng chưa có yêu cầu để đối chiếu'
                 : `${formatNumber(detail.coverageAtApply)}% yêu cầu có bằng chứng`}
             </p>
             <p className={styles.muted}>
-              Ma trận tính lại theo hồ sơ hiện tại của bạn, nên có thể khác lúc nộp đơn.
+              Kết quả tính theo hồ sơ hiện tại của bạn nên có thể khác lúc ứng tuyển.
             </p>
           </div>
           <RequirementEvidenceMatrix
@@ -121,25 +120,6 @@ function MyApplications() {
   const [withdrawing, setWithdrawing] = useState(false)
   const [withdrawError, setWithdrawError] = useState('')
 
-  // CV hiện tại (CV mới nhất đã phân tích): đơn không lưu riêng CV, nhà tuyển dụng xem CV này (T35f).
-  // undefined = đang tải, null = không còn CV đã phân tích (vd đã xóa sau khi ứng tuyển)
-  const [currentCv, setCurrentCv] = useState(undefined)
-
-  useEffect(() => {
-    let ignore = false
-    getCVs()
-      .then((result) => {
-        if (!ignore) setCurrentCv(result.data.find((cv) => cv.status === 'COMPLETED') || null)
-      })
-      .catch(() => {
-        // Không tải được thì ẩn khối CV hiện tại, danh sách đơn vẫn hiện
-        if (!ignore) setCurrentCv(undefined)
-      })
-    return () => {
-      ignore = true
-    }
-  }, [reloadKey])
-
   useEffect(() => {
     let ignore = false
     getMyApplications()
@@ -147,7 +127,7 @@ function MyApplications() {
         if (!ignore) setData(result.data)
       })
       .catch((err) => {
-        if (!ignore) setError(getErrorMessage(err, 'Không tải được danh sách đơn ứng tuyển'))
+        if (!ignore) setError(getErrorMessage(err, 'Không tải được danh sách đơn ứng tuyển.'))
       })
       .finally(() => {
         if (!ignore) setLoading(false)
@@ -211,7 +191,7 @@ function MyApplications() {
       setWithdrawTarget(null)
     } catch (err) {
       // Vd nhà tuyển dụng vừa chuyển đơn sang "Đang xem xét": không rút được nữa
-      setWithdrawError(getErrorMessage(err, 'Rút đơn thất bại, vui lòng thử lại'))
+      setWithdrawError(getErrorMessage(err, 'Chưa rút được đơn. Vui lòng thử lại.'))
     } finally {
       setWithdrawing(false)
       await refreshList()
@@ -231,7 +211,7 @@ function MyApplications() {
               </Link>
             </h2>
             <p className={styles.cardMeta}>
-              Nộp ngày {formatDate(application.appliedAt)} ({formatRelative(application.appliedAt)})
+              Ứng tuyển ngày {formatDate(application.appliedAt)} ({formatRelative(application.appliedAt)})
             </p>
           </div>
           <Badge status={application.status}>
@@ -239,20 +219,30 @@ function MyApplications() {
           </Badge>
         </div>
 
+        {/* CV gửi kèm đơn (T35g). Đơn cũ chưa lưu CV: hiện CV hiện tại kèm ghi chú; không còn CV thì "CV đã bị xóa" */}
+        <div className={styles.cvLine}>
+          <span className={styles.cvLabel}>CV gửi kèm:</span>
+          {application.cv && <span className={styles.cvName}>{application.cv.fileName}</span>}
+          {application.cv && application.cvLegacy && (
+            <span className={styles.cvLegacy}>Đang hiển thị CV hiện tại của bạn</span>
+          )}
+          <CvViewButton cv={application.cv} />
+        </div>
+
         <div className={styles.cardBody}>
           <ApplicationProgress status={application.status} />
           {/* Backend chỉ lưu % lúc nộp (không lưu số yêu cầu), xem đủ "x/y" trong ma trận */}
           <p className={styles.coverage}>
             {application.coverage === null || application.coverage === undefined
-              ? 'Lúc nộp: tin chưa có yêu cầu để đối chiếu'
-              : `Lúc nộp: ${formatNumber(application.coverage)}% yêu cầu có bằng chứng`}
+              ? 'Lúc ứng tuyển: tin tuyển dụng chưa có yêu cầu để đối chiếu'
+              : `Lúc ứng tuyển: ${formatNumber(application.coverage)}% yêu cầu có bằng chứng`}
           </p>
         </div>
 
         <div className={styles.cardActions}>
           <div className={styles.actionGroup}>
             <Button variant="secondary" size="sm" onClick={() => setMatrixTarget(application)}>
-              Xem ma trận
+              Xem bảng đối chiếu
             </Button>
             <Link className={styles.linkButton} to={`/candidate/recommended-jobs/${application.job.id}`}>
               Chi tiết đối chiếu
@@ -306,25 +296,6 @@ function MyApplications() {
     content = (
       <>
         <div className={styles.toolbar}>
-          {/* CV nhà tuyển dụng xem được khi xét đơn: CV hiện tại của hồ sơ, chung cho mọi đơn */}
-          {currentCv !== undefined && (
-            <div className={styles.currentCv}>
-              <span className={styles.currentCvLabel}>CV nhà tuyển dụng xem được:</span>
-              {currentCv ? (
-                <>
-                  <span className={styles.currentCvName}>{currentCv.fileName}</span>
-                  <CvViewButton cv={currentCv} />
-                </>
-              ) : (
-                <>
-                  <CvViewButton cv={null} />
-                  <Link className={styles.inlineLink} to="/candidate/cvs">
-                    Đến CV của tôi
-                  </Link>
-                </>
-              )}
-            </div>
-          )}
           <div className={styles.filter}>
             <Select
               label="Lọc theo trạng thái"

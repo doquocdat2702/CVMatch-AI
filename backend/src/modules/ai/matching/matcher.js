@@ -17,7 +17,7 @@ const STATUS_BY_MATCH_TYPE = {
   NONE: 'NOT_FOUND',
 };
 
-const MESSAGE_NOT_PARSED = 'Job chưa được phân tích JD';
+const MESSAGE_NOT_PARSED = 'Tin tuyển dụng chưa có yêu cầu để đối chiếu.';
 
 function createError(message, statusCode) {
   const err = new Error(message);
@@ -28,7 +28,7 @@ function createError(message, statusCode) {
 function parseId(value, label) {
   const id = Number(value);
   if (!Number.isInteger(id) || id <= 0) {
-    throw createError(`${label} không hợp lệ`, 400);
+    throw createError(`${label} không hợp lệ.`, 400);
   }
   return id;
 }
@@ -101,10 +101,10 @@ async function matchJobWithCandidate(jobId, candidateProfileId) {
   ]);
 
   if (!job) {
-    throw createError('Không tìm thấy tin tuyển dụng', 404);
+    throw createError('Không tìm thấy tin tuyển dụng.', 404);
   }
   if (!candidate) {
-    throw createError('Không tìm thấy hồ sơ ứng viên', 404);
+    throw createError('Không tìm thấy hồ sơ ứng viên.', 404);
   }
 
   const matrix = job.requirements.map((requirement) => {

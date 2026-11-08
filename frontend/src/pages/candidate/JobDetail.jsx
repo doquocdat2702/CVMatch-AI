@@ -106,7 +106,7 @@ function JobDetail() {
         if (!ignore) setJob(result.data)
       })
       .catch((err) => {
-        if (!ignore) setError(getErrorMessage(err, 'Không tải được tin tuyển dụng'))
+        if (!ignore) setError(getErrorMessage(err, 'Không tải được tin tuyển dụng.'))
       })
       .finally(() => {
         if (!ignore) setLoading(false)
@@ -204,7 +204,7 @@ function JobDetail() {
         <p className={styles.hint}>Đăng nhập để gửi CV và theo dõi đơn ứng tuyển.</p>
       </>
     ) : (
-      <p className={styles.closedText}>Tin đã ngừng nhận hồ sơ</p>
+      <p className={styles.closedText}>Tin tuyển dụng đã ngừng nhận đơn</p>
     )
   } else if (isCandidate) {
     applyBlock = (
@@ -235,7 +235,7 @@ function JobDetail() {
           </Link>
         </>
       ) : (
-        <p className={styles.hint}>Tin chưa có yêu cầu để đối chiếu.</p>
+        <p className={styles.hint}>Tin tuyển dụng chưa có yêu cầu để đối chiếu.</p>
       )}
     </div>
   )
@@ -263,7 +263,7 @@ function JobDetail() {
           </p>
           {!job.isOpen && (
             <span className={styles.closed}>
-              <Badge status="CLOSED">Vị trí đã đóng</Badge>
+              <Badge status="CLOSED">Đã đóng</Badge>
             </span>
           )}
         </header>

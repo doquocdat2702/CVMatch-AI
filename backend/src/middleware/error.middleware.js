@@ -16,7 +16,7 @@ function errorMiddleware(err, req, res, next) {
   // giữ nguyên message để người dùng biết chuyện gì xảy ra.
   const isDefinedError = Number.isInteger(err.statusCode || err.status) && statusCode !== 500;
   if (env.NODE_ENV === 'production' && statusCode >= 500 && !isDefinedError) {
-    message = 'Lỗi hệ thống, vui lòng thử lại sau';
+    message = 'Đã có lỗi xảy ra. Vui lòng thử lại sau.';
   }
 
   return res.status(statusCode).json({

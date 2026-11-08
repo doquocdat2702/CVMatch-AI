@@ -15,7 +15,7 @@ function createError(message, statusCode) {
 function parseId(value, label) {
   const id = Number(value);
   if (!Number.isInteger(id) || id <= 0) {
-    throw createError(`${label} không hợp lệ`, 400);
+    throw createError(`${label} không hợp lệ.`, 400);
   }
   return id;
 }
@@ -26,7 +26,7 @@ async function ensureCanViewMatching(user, jobId, candidateId) {
   if (user.role === 'CANDIDATE') {
     const profile = await prisma.candidateProfile.findUnique({ where: { userId: user.userId } });
     if (!profile || profile.id !== candidateId) {
-      throw createError('Bạn chỉ được xem kết quả đối chiếu của chính mình', 403);
+      throw createError('Bạn chỉ xem được kết quả đối chiếu của chính mình.', 403);
     }
     return;
   }
@@ -34,19 +34,19 @@ async function ensureCanViewMatching(user, jobId, candidateId) {
   if (user.role === 'RECRUITER') {
     const profile = await prisma.recruiterProfile.findUnique({ where: { userId: user.userId } });
     if (!profile) {
-      throw createError('Không tìm thấy hồ sơ nhà tuyển dụng', 404);
+      throw createError('Không tìm thấy thông tin nhà tuyển dụng.', 404);
     }
     const job = await prisma.job.findUnique({ where: { id: jobId }, select: { companyId: true } });
     if (!job) {
-      throw createError('Không tìm thấy tin tuyển dụng', 404);
+      throw createError('Không tìm thấy tin tuyển dụng.', 404);
     }
     if (job.companyId !== profile.companyId) {
-      throw createError('Bạn không có quyền với tin tuyển dụng này', 403);
+      throw createError('Không có quyền thao tác trên tin tuyển dụng này.', 403);
     }
     return;
   }
 
-  throw createError('Bạn không có quyền truy cập', 403);
+  throw createError('Không có quyền thực hiện thao tác này.', 403);
 }
 
 async function getMatching(req, res, next) {
@@ -71,11 +71,11 @@ async function getRecommendedJobs(req, res, next) {
       select: { id: true },
     });
     if (!profile) {
-      throw createError('Không tìm thấy hồ sơ ứng viên', 404);
+      throw createError('Không tìm thấy hồ sơ ứng viên.', 404);
     }
 
     const data = await recommendJobsForCandidate(profile.id, req.query.limit);
-    return success(res, data, data.message || 'Lấy danh sách job gợi ý thành công');
+    return success(res, data, data.message || 'Lấy danh sách việc làm gợi ý thành công.');
   } catch (err) {
     return next(err);
   }

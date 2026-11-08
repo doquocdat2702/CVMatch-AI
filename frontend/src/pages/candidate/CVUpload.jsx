@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useOutletContext } from 'react-router-dom'
 import { deleteCV, extractCV, getCVs, parseCV, uploadCV } from '../../api/cv.api'
 import Badge from '../../components/common/Badge'
 import Button from '../../components/common/Button'
@@ -20,14 +20,17 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024
 
 const STATUS_LABEL = {
   UPLOADED: 'Chưa phân tích',
-  PROCESSING: 'Đang xử lý',
+  PROCESSING: 'Đang phân tích',
   COMPLETED: 'Đã phân tích',
-  FAILED: 'Lỗi',
+  FAILED: 'Phân tích lỗi',
 }
+
+// Cùng câu với backend (cv.service.js deleteCv): CV đã gửi kèm đơn ứng tuyển thì không xóa được (T35g)
+const MESSAGE_CV_IN_USE = 'CV này đã được gửi kèm đơn ứng tuyển nên không thể xóa.'
 
 // "Phân tích CV" gồm 2 bước gọi tuần tự 2 endpoint của backend
 const STEP_TEXT = {
-  extract: 'Bước 1/2: Đang trích xuất nội dung...',
+  extract: 'Bước 1/2: Đang đọc nội dung CV...',
   parse: 'Bước 2/2: Đang phân tích...',
 }
 
@@ -35,10 +38,10 @@ const STEP_TEXT = {
 function validateFile(file) {
   const name = file.name.toLowerCase()
   if (!ALLOWED_EXTENSIONS.some((ext) => name.endsWith(ext))) {
-    return 'Chỉ nhận file PDF (.pdf) hoặc Word (.docx)'
+    return 'Chỉ nhận file PDF hoặc DOCX.'
   }
   if (file.size > MAX_FILE_SIZE) {
-    return 'File vượt quá 5MB'
+    return 'File vượt quá 5 MB. Vui lòng chọn file nhỏ hơn.'
   }
   return ''
 }
@@ -69,6 +72,12 @@ function CVUpload() {
 
   // Hộp Xuất CV mới (T35f): chỉ render khi mở, mỗi lần mở lấy lại hồ sơ
   const [exportOpen, setExportOpen] = useState(false)
+  // Thẻ CV vừa bấm Xóa nhưng CV đã gửi kèm đơn (T35g): hiện câu báo ngay trong thẻ đó
+  const [blockedDeleteId, setBlockedDeleteId] = useState(null)
+  // Chế độ phân tích của lần bấm "Phân tích CV" gần nhất, chuyển sang trang Kết quả phân tích
+  const [lastMode, setLastMode] = useState(null)
+  // Khung tóm tắt của khu Tài khoản (AccountLayout): phân tích / xóa CV xong thì đếm lại mục hồ sơ
+  const account = useOutletContext()
 
   // Đang tải lên hoặc đang phân tích thì khóa các thao tác khác
   const busy = uploading || processing !== null
@@ -80,7 +89,7 @@ function CVUpload() {
         if (!ignore) setCvs(result.data)
       })
       .catch((err) => {
-        if (!ignore) setLoadError(getErrorMessage(err, 'Không tải được danh sách CV'))
+        if (!ignore) setLoadError(getErrorMessage(err, 'Không tải được danh sách CV.'))
       })
       .finally(() => {
         if (!ignore) setLoading(false)
@@ -123,11 +132,11 @@ function CVUpload() {
       await uploadCV(file)
       setUploadMessage({
         type: 'success',
-        text: `Đã tải lên "${file.name}". Bấm "Phân tích CV" để hệ thống đọc nội dung.`,
+        text: `Đã tải lên "${file.name}". Bấm "Phân tích CV" để cập nhật hồ sơ.`,
       })
       await refreshList()
     } catch (err) {
-      setUploadMessage({ type: 'error', text: getErrorMessage(err, 'Tải CV lên thất bại') })
+      setUploadMessage({ type: 'error', text: getErrorMessage(err, 'Tải CV lên thất bại. Vui lòng thử lại.') })
     } finally {
       setUploading(false)
     }
@@ -158,7 +167,7 @@ function CVUpload() {
 
     const files = event.dataTransfer.files
     if (files.length > 1) {
-      setUploadMessage({ type: 'error', text: 'Mỗi lần chỉ tải lên một file' })
+      setUploadMessage({ type: 'error', text: 'Mỗi lần chỉ tải lên được một file.' })
       return
     }
     if (files.length === 1) handleFile(files[0])
@@ -176,10 +185,13 @@ function CVUpload() {
       await extractCV(cv.id)
       step = 'parse'
       setProcessing({ cvId: cv.id, fileName: cv.fileName, step })
-      await parseCV(cv.id)
+      const parsed = await parseCV(cv.id)
+      // Chế độ vừa dùng (rule / hybrid) chuyển sang trang Kết quả phân tích để giải thích cách phân tích (T35g)
+      setLastMode(parsed.data.mode || null)
       setNotice({ type: 'success', text: `Đã phân tích xong CV "${cv.fileName}".`, showResultLink: true })
+      if (account) account.refreshProfile()
     } catch (err) {
-      const prefix = step === 'extract' ? 'Trích xuất nội dung thất bại' : 'Phân tích thất bại'
+      const prefix = step === 'extract' ? 'Đọc nội dung CV thất bại' : 'Phân tích CV thất bại'
       setNotice({ type: 'error', text: `${prefix}: ${getErrorMessage(err)}` })
     } finally {
       // Lấy status mới trước rồi mới bỏ trạng thái "Đang xử lý", để dòng không nháy về status cũ
@@ -194,6 +206,12 @@ function CVUpload() {
     setUploadMessage(null)
     setNotice(null)
     setDeleteError('')
+    // CV đã gửi kèm đơn ứng tuyển (T35g): báo ngay trong thẻ, không mở hộp xác nhận
+    if (cv.applicationCount > 0) {
+      setBlockedDeleteId(cv.id)
+      return
+    }
+    setBlockedDeleteId(null)
     setDeleteTarget(cv)
   }
 
@@ -210,8 +228,17 @@ function CVUpload() {
       setNotice({ type: 'success', text: `Đã xóa CV "${deleteTarget.fileName}".` })
       setDeleteTarget(null)
       await refreshList()
+      if (account) account.refreshProfile()
     } catch (err) {
-      setDeleteError(getErrorMessage(err, 'Xóa CV thất bại'))
+      const message = getErrorMessage(err, 'Chưa xóa được CV. Vui lòng thử lại.')
+      if (message === MESSAGE_CV_IN_USE) {
+        // CV vừa được gửi kèm đơn ở tab khác: đóng hộp, báo trong thẻ như khi bấm Xóa, không hỏi lại
+        setBlockedDeleteId(deleteTarget.id)
+        setDeleteTarget(null)
+        await refreshList()
+      } else {
+        setDeleteError(message)
+      }
     } finally {
       setDeleting(false)
     }
@@ -219,18 +246,21 @@ function CVUpload() {
 
   // ===== Danh sách thẻ CV =====
 
-  // CV hiện tại = CV mới nhất đã phân tích (API trả mới nhất trước): nhà tuyển dụng xem CV này khi xét đơn (T35f).
-  // Kết quả phân tích và Xuất CV mới thuộc hồ sơ chung nên chỉ đặt trên thẻ của CV hiện tại
-  const currentCv = cvs.find((cv) => cv.status === 'COMPLETED') || null
+  // CV đã dùng để phân tích hồ sơ = CV đã phân tích có lần phân tích gần nhất (cùng cách tính với hộp ứng tuyển).
+  // Kết quả phân tích và Xuất CV mới thuộc hồ sơ chung nên chỉ đặt trên thẻ của CV này
+  const analysedCv =
+    cvs
+      .filter((cv) => cv.status === 'COMPLETED')
+      .sort((a, b) => new Date(b.parsedAt || b.uploadedAt) - new Date(a.parsedAt || a.uploadedAt))[0] || null
 
   function renderCard(cv) {
     // Thẻ đang phân tích hiện "Đang xử lý" ngay, không chờ backend
     const status = processing && processing.cvId === cv.id ? 'PROCESSING' : cv.status
     const isProcessing = status === 'PROCESSING'
     const isDone = cv.status === 'COMPLETED'
-    const isCurrent = currentCv !== null && cv.id === currentCv.id
+    const isCurrent = analysedCv !== null && cv.id === analysedCv.id
     let analyzeLabel = 'Phân tích CV'
-    if (isProcessing) analyzeLabel = 'Đang xử lý'
+    if (isProcessing) analyzeLabel = 'Đang phân tích'
     else if (isDone) analyzeLabel = 'Phân tích lại'
 
     return (
@@ -241,7 +271,10 @@ function CVUpload() {
             <p className={styles.cardMeta}>Tải lên {formatDateTime(cv.uploadedAt)}</p>
           </div>
           <div className={styles.cardTags}>
-            {isCurrent && <span className={styles.currentTag}>CV hiện tại</span>}
+            {isCurrent && <span className={styles.currentTag}>Dùng cho hồ sơ</span>}
+            {cv.applicationCount > 0 && (
+              <span className={styles.usedTag}>Đã gửi kèm {cv.applicationCount} đơn</span>
+            )}
             <Badge status={status}>{STATUS_LABEL[status] || status}</Badge>
           </div>
         </div>
@@ -262,7 +295,7 @@ function CVUpload() {
             </Button>
             {isCurrent && (
               <>
-                <Link className={styles.linkButton} to="/candidate/cvs/parsed">
+                <Link className={styles.linkButton} to="/candidate/cvs/parsed" state={lastMode ? { mode: lastMode } : undefined}>
                   Xem kết quả
                 </Link>
                 <Button size="sm" variant="secondary" onClick={() => setExportOpen(true)} disabled={busy}>
@@ -275,6 +308,11 @@ function CVUpload() {
             Xóa<span className={styles.srOnly}> CV {cv.fileName}</span>
           </Button>
         </div>
+        {blockedDeleteId === cv.id && (
+          <p className={styles.blockedText} role="alert">
+            {MESSAGE_CV_IN_USE}
+          </p>
+        )}
       </li>
     )
   }
@@ -314,7 +352,7 @@ function CVUpload() {
     <>
       <PageHeader
         title="CV của tôi"
-        description="Tải CV lên rồi phân tích để hệ thống đọc kỹ năng, kinh nghiệm và học vấn vào hồ sơ."
+        description="Tải CV lên và phân tích để cập nhật kỹ năng, kinh nghiệm, học vấn vào hồ sơ."
         actions={
           <Link className={styles.linkButton} to="/candidate/cvs/parsed">
             Kết quả phân tích CV
@@ -332,7 +370,7 @@ function CVUpload() {
               <Button variant="secondary" onClick={() => fileInputRef.current.click()} disabled={busy}>
                 Chọn file từ máy
               </Button>
-              <p className={styles.dropHint}>Chỉ nhận PDF hoặc DOCX, tối đa 5MB</p>
+              <p className={styles.dropHint}>Chỉ nhận PDF hoặc DOCX, tối đa 5 MB</p>
             </>
           )}
           {/* Ô chọn file thật được ẩn, nút "Chọn file từ máy" mở nó */}
@@ -355,7 +393,7 @@ function CVUpload() {
           <div className={styles.progress}>
             <p className={styles.progressTitle}>Đang phân tích CV "{processing.fileName}"</p>
             <Loading text={STEP_TEXT[processing.step]} />
-            <p className={styles.progressNote}>Bước phân tích có thể mất vài chục giây, vui lòng không đóng trang.</p>
+            <p className={styles.progressNote}>Quá trình này có thể mất vài chục giây. Vui lòng không đóng trang.</p>
           </div>
         )}
 
@@ -368,7 +406,7 @@ function CVUpload() {
             {notice.showResultLink && (
               <>
                 {' '}
-                <Link className={styles.link} to="/candidate/cvs/parsed">
+                <Link className={styles.link} to="/candidate/cvs/parsed" state={lastMode ? { mode: lastMode } : undefined}>
                   Xem kết quả phân tích
                 </Link>
               </>

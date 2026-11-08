@@ -18,7 +18,7 @@ const RECOMMENDED_LIMIT = 50
 
 // "x/y yêu cầu có bằng chứng (z%)"
 function formatCoverage(supported, total, coverage) {
-  if (!total) return 'Tin chưa có yêu cầu để đối chiếu'
+  if (!total) return 'Tin tuyển dụng chưa có yêu cầu để đối chiếu'
   return `${supported}/${total} yêu cầu có bằng chứng (${formatNumber(coverage)}%)`
 }
 
@@ -50,7 +50,7 @@ function RecommendedCandidates() {
         if (!ignore) setJobs(response.data)
       })
       .catch((err) => {
-        if (!ignore) setJobsError(getErrorMessage(err, 'Không tải được danh sách tin tuyển dụng'))
+        if (!ignore) setJobsError(getErrorMessage(err, 'Không tải được danh sách tin tuyển dụng.'))
       })
       .finally(() => {
         if (!ignore) setJobsLoading(false)
@@ -75,7 +75,7 @@ function RecommendedCandidates() {
       })
       .catch((err) => {
         if (!ignore) {
-          setResult({ key: requestKey, data: null, error: getErrorMessage(err, 'Không tải được ứng viên gợi ý') })
+          setResult({ key: requestKey, data: null, error: getErrorMessage(err, 'Không tải được ứng viên gợi ý.') })
         }
       })
     return () => {
@@ -116,7 +116,7 @@ function RecommendedCandidates() {
       align: 'right',
       render: (item) => (
         <Button variant="ghost" size="sm" onClick={() => setMatrixTarget(item.candidate)}>
-          Xem ma trận
+          Xem đối chiếu
         </Button>
       ),
     },
@@ -139,7 +139,7 @@ function RecommendedCandidates() {
   } else if (jobs.length === 0) {
     content = (
       <div className={styles.empty}>
-        <p className={styles.emptyText}>Bạn chưa đăng tin tuyển dụng nào.</p>
+        <p className={styles.emptyText}>Chưa có tin tuyển dụng nào.</p>
         <Link className={styles.link} to="/recruiter/jobs/new">
           Đăng tin tuyển dụng
         </Link>
@@ -166,7 +166,7 @@ function RecommendedCandidates() {
         <div className={styles.empty}>
           <p className={styles.emptyText}>{result.data.message}.</p>
           <Link className={styles.link} to={`/recruiter/jobs/${jobId}/requirements`}>
-            Phân tích JD hoặc thêm yêu cầu
+            Phân tích hoặc thêm yêu cầu
           </Link>
         </div>
       )
@@ -179,7 +179,7 @@ function RecommendedCandidates() {
           <Table
             columns={columns}
             data={pageItems}
-            emptyText="Chưa có ứng viên nào có CV đã phân tích xong."
+            emptyText="Chưa có ứng viên nào có CV đã phân tích."
           />
           <div className={styles.pagination}>
             <Pagination page={currentPage} totalPages={totalPages} onChange={handlePageChange} />
@@ -210,8 +210,8 @@ function RecommendedCandidates() {
     <>
       <h1>Ứng viên gợi ý</h1>
       <p className={styles.intro}>
-        Ứng viên đã có CV phân tích xong, sắp theo số yêu cầu của tin có bằng chứng trong hồ sơ (tối đa 50 người). Danh
-        sách chỉ hỗ trợ đối chiếu, không phải xếp hạng năng lực; quyết định tuyển dụng do bạn đưa ra.
+        Ứng viên có CV đã phân tích, xếp theo số yêu cầu có bằng chứng trong hồ sơ, tối đa 50 người. Danh sách chỉ hỗ
+        trợ đối chiếu, không phải xếp hạng năng lực.
       </p>
 
       {content}

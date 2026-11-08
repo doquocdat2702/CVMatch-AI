@@ -36,7 +36,7 @@ function RecommendedJobsPanel({ data, loading, error, onRetry, page = 1, onPageC
     return (
       <div className={styles.empty}>
         <p className={styles.emptyTitle}>Bạn chưa có CV đã phân tích.</p>
-        <p className={styles.emptyText}>Tải CV lên để xem tin có yêu cầu khớp với hồ sơ.</p>
+        <p className={styles.emptyText}>Tải CV lên và phân tích để xem việc làm gợi ý.</p>
         <Link className={styles.primaryLink} to="/candidate/cvs">
           Đến CV của tôi
         </Link>
@@ -47,7 +47,7 @@ function RecommendedJobsPanel({ data, loading, error, onRetry, page = 1, onPageC
   if (data.items.length === 0) {
     return (
       <div className={styles.empty}>
-        <p className={styles.emptyTitle}>Hiện chưa có tin đang mở nào đã được phân tích yêu cầu.</p>
+        <p className={styles.emptyTitle}>Chưa có tin tuyển dụng nào để gợi ý.</p>
       </div>
     )
   }
@@ -57,7 +57,7 @@ function RecommendedJobsPanel({ data, loading, error, onRetry, page = 1, onPageC
   return (
     <>
       <p className={styles.intro}>
-        Các tin đang mở, xếp theo tỉ lệ yêu cầu của tin có bằng chứng trong hồ sơ của bạn (nhiều nhất 50 tin).
+        Tin đang tuyển, xếp theo tỉ lệ yêu cầu có bằng chứng trong hồ sơ của bạn. Hiển thị tối đa 50 tin.
       </p>
       <ul className={styles.list}>
         {pageItems.map((item) => (

@@ -14,18 +14,18 @@ const EMPTY_FORM = { fullName: '', email: '', password: '', confirmPassword: '' 
 function validate(form) {
   const errors = {}
   if (!form.fullName.trim()) {
-    errors.fullName = 'Vui lòng nhập họ và tên'
+    errors.fullName = 'Vui lòng nhập họ và tên.'
   }
   if (!form.email.trim()) {
-    errors.email = 'Vui lòng nhập email'
+    errors.email = 'Vui lòng nhập email.'
   } else if (!isValidEmail(form.email.trim())) {
-    errors.email = 'Email không đúng định dạng'
+    errors.email = 'Email không đúng định dạng.'
   }
   if (form.password.length < MIN_PASSWORD_LENGTH) {
-    errors.password = `Mật khẩu phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự`
+    errors.password = `Mật khẩu cần có ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`
   }
   if (form.confirmPassword !== form.password) {
-    errors.confirmPassword = 'Mật khẩu xác nhận không khớp'
+    errors.confirmPassword = 'Mật khẩu xác nhận chưa khớp.'
   }
   return errors
 }
@@ -73,9 +73,9 @@ function Register() {
         fullName: form.fullName.trim(),
       })
       // API đăng ký không trả token, chuyển sang đăng nhập kèm thông báo
-      navigate('/login', { state: { notice: 'Đăng ký thành công, vui lòng đăng nhập', from } })
+      navigate('/login', { state: { notice: 'Đã tạo tài khoản. Vui lòng đăng nhập.', from } })
     } catch (err) {
-      setError(getErrorMessage(err, 'Đăng ký thất bại, vui lòng thử lại'))
+      setError(getErrorMessage(err, 'Chưa tạo được tài khoản. Vui lòng thử lại.'))
     } finally {
       setSubmitting(false)
     }
@@ -108,7 +108,7 @@ function Register() {
   return (
     <main className={styles.page}>
       <div className={styles.card}>
-        <h1 className={styles.title}>Đăng ký ứng viên</h1>
+        <h1 className={styles.title}>Đăng ký tài khoản ứng viên</h1>
         <p className={styles.subtitle}>Tạo tài khoản để tải CV và ứng tuyển vào các vị trí đang mở.</p>
 
         {error && (

@@ -71,7 +71,7 @@ function RequirementEvidenceMatrix({ matrix = [], note, emptyText = 'Tin tuyển
       <Table columns={COLUMNS} data={rows} emptyText={emptyText} />
       {rows.length > 0 && (
         <p className={styles.summary}>
-          {supported}/{rows.length} yêu cầu được hỗ trợ
+          {supported}/{rows.length} yêu cầu có bằng chứng
         </p>
       )}
       {note && <p className={styles.note}>{note}</p>}

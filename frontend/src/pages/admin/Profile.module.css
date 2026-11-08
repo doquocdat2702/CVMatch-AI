@@ -32,11 +32,3 @@
   line-height: var(--leading-xs);
   color: var(--color-text-muted);
 }
-
-/* Giữ font giao diện (design.md chỉ dùng 2 font), đậm để tách lệnh khỏi câu */
-.code {
-  font-family: inherit;
-  font-size: inherit;
-  font-weight: var(--weight-semibold);
-  overflow-wrap: anywhere;
-}

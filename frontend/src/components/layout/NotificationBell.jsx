@@ -123,7 +123,7 @@ function NotificationBell({ role }) {
       const result = await getNotifications({ page: 1, limit: LIST_LIMIT })
       setList({ loading: false, items: result.data.items, total: result.data.pagination.total, error: '' })
     } catch (err) {
-      setList({ ...EMPTY_LIST, error: getErrorMessage(err, 'Không tải được thông báo') })
+      setList({ ...EMPTY_LIST, error: getErrorMessage(err, 'Không tải được thông báo.') })
     }
   }
 
@@ -172,7 +172,7 @@ function NotificationBell({ role }) {
       setList((prev) => ({ ...prev, items: prev.items.map((item) => ({ ...item, isRead: true })) }))
       setUnreadCount(0)
     } catch (err) {
-      setActionError(getErrorMessage(err, 'Không đánh dấu được, vui lòng thử lại'))
+      setActionError(getErrorMessage(err, 'Chưa đánh dấu được. Vui lòng thử lại.'))
     } finally {
       setBusy(false)
     }
@@ -220,7 +220,7 @@ function NotificationBell({ role }) {
             </li>
           ))}
         </ul>
-        {list.total > LIST_LIMIT && <p className={styles.footer}>Đang hiện {LIST_LIMIT} thông báo mới nhất.</p>}
+        {list.total > LIST_LIMIT && <p className={styles.footer}>Đang hiển thị {LIST_LIMIT} thông báo mới nhất.</p>}
       </>
     )
   }

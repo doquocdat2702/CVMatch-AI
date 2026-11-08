@@ -20,7 +20,7 @@ async function getMyProfile(userId) {
   });
 
   if (!profile) {
-    throw createError('Không tìm thấy hồ sơ ứng viên', 404);
+    throw createError('Không tìm thấy hồ sơ ứng viên.', 404);
   }
 
   return profile;
@@ -29,7 +29,7 @@ async function getMyProfile(userId) {
 async function updateMyProfile(userId, { fullName, phone, address, headline }) {
   const profile = await prisma.candidateProfile.findUnique({ where: { userId } });
   if (!profile) {
-    throw createError('Không tìm thấy hồ sơ ứng viên', 404);
+    throw createError('Không tìm thấy hồ sơ ứng viên.', 404);
   }
 
   const data = {};
@@ -37,7 +37,7 @@ async function updateMyProfile(userId, { fullName, phone, address, headline }) {
   if (fullName !== undefined) {
     const value = typeof fullName === 'string' ? fullName.trim() : '';
     if (!value) {
-      throw createError('Họ tên không được để trống', 400);
+      throw createError('Vui lòng nhập họ và tên.', 400);
     }
     data.fullName = value;
   }
@@ -52,7 +52,7 @@ async function updateMyProfile(userId, { fullName, phone, address, headline }) {
   }
 
   if (Object.keys(data).length === 0) {
-    throw createError('Không có thông tin nào để cập nhật', 400);
+    throw createError('Chưa có thay đổi nào để lưu.', 400);
   }
 
   return prisma.candidateProfile.update({
@@ -66,7 +66,7 @@ async function updateMyProfile(userId, { fullName, phone, address, headline }) {
 async function getProfileById(candidateProfileId) {
   const id = Number(candidateProfileId);
   if (!Number.isInteger(id) || id <= 0) {
-    throw createError('Mã hồ sơ ứng viên không hợp lệ', 400);
+    throw createError('Mã hồ sơ ứng viên không hợp lệ.', 400);
   }
 
   const profile = await prisma.candidateProfile.findUnique({
@@ -75,7 +75,7 @@ async function getProfileById(candidateProfileId) {
   });
 
   if (!profile) {
-    throw createError('Không tìm thấy hồ sơ ứng viên', 404);
+    throw createError('Không tìm thấy hồ sơ ứng viên.', 404);
   }
 
   return profile;

@@ -26,7 +26,7 @@ const MAIN_LINKS = [
 
 // Link mở tab mới: báo trước cho trình đọc màn hình
 function NewTabHint() {
-  return <span className={styles.srOnly}> (mở tab mới)</span>
+  return <span className={styles.srOnly}>, mở trong tab mới</span>
 }
 
 // Footer của SiteLayout (khách và ứng viên, T35e). HR / Admin dùng MainLayout nên không có footer.
@@ -46,7 +46,7 @@ function SiteFooter() {
   ].filter((item) => isWebLink(item.href))
   const footerLinks = [
     ...MAIN_LINKS,
-    isCandidate ? { to: '/candidate/cvs', label: 'CV của tôi' } : { to: '/register', label: 'Đăng ký ứng tuyển' },
+    isCandidate ? { to: '/candidate/cvs', label: 'CV của tôi' } : { to: '/register', label: 'Đăng ký tài khoản' },
   ]
 
   return (
@@ -103,7 +103,7 @@ function SiteFooter() {
 
             {socialLinks.length > 0 && (
               <p className={styles.social}>
-                <span className={styles.socialLabel}>Theo dõi chúng tôi</span>
+                <span className={styles.socialLabel}>Theo dõi</span>
                 {socialLinks.map((item) => (
                   <a key={item.label} className={styles.link} href={item.href} target="_blank" rel="noopener noreferrer">
                     {item.label}

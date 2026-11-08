@@ -61,7 +61,7 @@ function RoleManagement() {
       })
       .catch((err) => {
         if (!ignore) {
-          setResult({ key: requestKey, data: null, error: getErrorMessage(err, 'Không tải được danh sách tài khoản') })
+          setResult({ key: requestKey, data: null, error: getErrorMessage(err, 'Không tải được danh sách tài khoản.') })
         }
       })
     return () => {
@@ -127,7 +127,7 @@ function RoleManagement() {
       setConfirm(null)
     } catch (err) {
       // Vd tài khoản vừa được đổi ở nơi khác nên đã có vai trò này: giữ hộp, hiện câu của API
-      setConfirmError(getErrorMessage(err, 'Đổi vai trò thất bại, vui lòng thử lại'))
+      setConfirmError(getErrorMessage(err, 'Chưa đổi được vai trò. Vui lòng thử lại.'))
     } finally {
       setSaving(false)
       await refreshList()
@@ -162,7 +162,7 @@ function RoleManagement() {
       render: (user) => {
         // Backend chặn admin tự đổi vai trò của chính mình
         if (currentUser && user.id === currentUser.id) {
-          return <span className={styles.muted}>Không đổi được vai trò của chính mình</span>
+          return <span className={styles.muted}>Tài khoản đang đăng nhập</span>
         }
         // value luôn rỗng: vai trò thật ở cột bên cạnh, ô chọn chỉ để chọn vai trò mới rồi hỏi xác nhận
         return (
@@ -227,8 +227,7 @@ function RoleManagement() {
     <>
       <h1>Phân quyền</h1>
       <p className={styles.intro}>
-        Chọn tài khoản rồi chọn vai trò mới, hệ thống hỏi xác nhận trước khi lưu. Chỉ đổi qua lại giữa Nhà tuyển dụng và
-        Ứng viên: không nâng tài khoản lên Quản trị viên và không đổi vai trò của chính mình.
+        Chọn vai trò mới cho tài khoản rồi xác nhận để lưu. Chỉ đổi qua lại giữa Nhà tuyển dụng và Ứng viên.
       </p>
 
       {/* key theo email trên URL: bấm Back / Forward thì ô tìm kiếm hiện lại đúng email đang lọc */}
@@ -294,15 +293,14 @@ function RoleManagement() {
             </p>
             <ul className={styles.consequences}>
               <li>
-                Có hiệu lực ngay: tài khoản chỉ còn dùng được chức năng của vai trò mới. Người dùng tải lại trang hoặc
-                đăng nhập lại để thấy menu mới.
+                Thay đổi có hiệu lực ngay. Người dùng tải lại trang hoặc đăng nhập lại để thấy menu mới.
               </li>
               <li>
                 {confirm.role === ROLES.RECRUITER
-                  ? 'Chưa có hồ sơ nhà tuyển dụng thì hệ thống tự tạo hồ sơ tối thiểu, gán vào công ty duy nhất của hệ thống.'
-                  : 'Chưa có hồ sơ ứng viên thì hệ thống tự tạo hồ sơ tối thiểu.'}
+                  ? 'Nếu tài khoản chưa có thông tin nhà tuyển dụng, thông tin tối thiểu sẽ được tạo và gán vào công ty.'
+                  : 'Nếu tài khoản chưa có hồ sơ ứng viên, hồ sơ tối thiểu sẽ được tạo.'}
               </li>
-              <li>Dữ liệu cũ của tài khoản (hồ sơ, CV, tin tuyển dụng, đơn ứng tuyển) được giữ nguyên.</li>
+              <li>Hồ sơ, CV, tin tuyển dụng và đơn ứng tuyển cũ của tài khoản được giữ nguyên.</li>
             </ul>
             {confirmError && (
               <p className={styles.alertError} role="alert">

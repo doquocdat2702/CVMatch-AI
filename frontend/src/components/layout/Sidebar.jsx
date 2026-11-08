@@ -18,7 +18,7 @@ const MENU_BY_ROLE = {
   [ROLES.ADMIN]: [
     { to: '/admin/dashboard', label: 'Tổng quan' },
     { to: '/admin/users', label: 'Tài khoản' },
-    { to: '/admin/recruiters/new', label: 'Tạo Recruiter' },
+    { to: '/admin/recruiters/new', label: 'Tạo nhà tuyển dụng' },
     { to: '/admin/roles', label: 'Phân quyền' },
     { to: '/admin/profile', label: 'Hồ sơ' },
     { to: '/admin/change-password', label: 'Đổi mật khẩu' },

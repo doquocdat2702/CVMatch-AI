@@ -15,20 +15,20 @@ async function extractFromDocx(filePath) {
   try {
     buffer = await fs.promises.readFile(filePath);
   } catch (err) {
-    throw createError('Không đọc được file DOCX trên máy chủ');
+    throw createError('Không đọc được file CV. Vui lòng tải file lên lại.');
   }
 
   let result;
   try {
     result = await mammoth.extractRawText({ buffer });
   } catch (err) {
-    throw createError('File DOCX bị hỏng hoặc không đọc được nội dung');
+    throw createError('File Word bị hỏng hoặc không đọc được. Vui lòng chọn file khác.');
   }
 
   const text = cleanText(result && result.value);
 
   if (!hasUsableText(text)) {
-    throw createError('File DOCX không chứa văn bản');
+    throw createError('File Word không có nội dung chữ. Vui lòng chọn file khác.');
   }
 
   return text;

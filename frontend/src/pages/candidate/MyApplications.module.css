@@ -1,4 +1,4 @@
-/* ===== Thanh trên danh sách: CV hiện tại (trái) + ô lọc (phải) ===== */
+/* ===== Thanh trên danh sách: ô lọc trạng thái ===== */
 
 .toolbar {
   display: flex;
@@ -17,31 +17,6 @@
 .filter {
   flex: 0 1 calc(var(--form-max) / 2);
   min-width: 0;
-}
-
-/* CV hiện tại (T35f): một dòng chữ + nút Xem CV, tự xuống dòng trên màn hình hẹp */
-.currentCv {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-  font-size: var(--text-sm);
-  line-height: var(--leading-sm);
-}
-
-.currentCvLabel {
-  color: var(--color-text-muted);
-}
-
-.currentCvName {
-  font-weight: var(--weight-semibold);
-  overflow-wrap: anywhere;
-}
-
-.inlineLink {
-  font-weight: var(--weight-semibold);
-  color: var(--color-primary);
 }
 
 /* ===== Thẻ đơn (T35f) ===== */
@@ -103,6 +78,26 @@
   font-size: var(--text-sm);
   line-height: var(--leading-sm);
   color: var(--color-text-muted);
+}
+
+/* CV gửi kèm đơn (T35g): một dòng chữ + nút Xem CV, hẹp thì xuống dòng */
+.cvLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+}
+
+.cvLabel,
+.cvLegacy {
+  color: var(--color-text-muted);
+}
+
+.cvName {
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
 }
 
 /* Tiến trình 3 bước bên trái, coverage lúc nộp bên phải */

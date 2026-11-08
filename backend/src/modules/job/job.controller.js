@@ -4,7 +4,7 @@ const { success } = require('../../utils/response');
 async function create(req, res, next) {
   try {
     const data = await jobService.createJob(req.user.userId, req.body || {});
-    return success(res, data, 'Tạo tin tuyển dụng thành công', 201);
+    return success(res, data, 'Đã tạo tin tuyển dụng.', 201);
   } catch (err) {
     return next(err);
   }
@@ -48,8 +48,8 @@ async function update(req, res, next) {
       res,
       { ...job, requireReparse },
       requireReparse
-        ? 'Cập nhật tin tuyển dụng thành công, JD đã thay đổi nên cần trích xuất lại yêu cầu'
-        : 'Cập nhật tin tuyển dụng thành công'
+        ? 'Đã lưu tin tuyển dụng. Mô tả công việc đã thay đổi, vui lòng phân tích lại yêu cầu.'
+        : 'Đã lưu tin tuyển dụng.'
     );
   } catch (err) {
     return next(err);
@@ -59,7 +59,7 @@ async function update(req, res, next) {
 async function close(req, res, next) {
   try {
     const data = await jobService.closeJob(req.user, req.params.id);
-    return success(res, data, 'Đóng tin tuyển dụng thành công');
+    return success(res, data, 'Đã đóng tin tuyển dụng.');
   } catch (err) {
     return next(err);
   }
@@ -68,7 +68,7 @@ async function close(req, res, next) {
 async function remove(req, res, next) {
   try {
     const data = await jobService.deleteJob(req.user, req.params.id);
-    return success(res, data, 'Xóa tin tuyển dụng thành công');
+    return success(res, data, 'Đã xóa tin tuyển dụng.');
   } catch (err) {
     return next(err);
   }

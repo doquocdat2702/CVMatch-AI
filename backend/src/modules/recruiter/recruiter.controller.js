@@ -4,7 +4,7 @@ const { success } = require('../../utils/response');
 async function getMe(req, res, next) {
   try {
     const data = await recruiterService.getMyProfile(req.user.userId);
-    return success(res, data, 'Lấy hồ sơ nhà tuyển dụng thành công');
+    return success(res, data, 'Lấy hồ sơ nhà tuyển dụng thành công.');
   } catch (err) {
     return next(err);
   }
@@ -13,7 +13,7 @@ async function getMe(req, res, next) {
 async function updateMe(req, res, next) {
   try {
     const data = await recruiterService.updateMyProfile(req.user.userId, req.body || {});
-    return success(res, data, 'Cập nhật hồ sơ thành công');
+    return success(res, data, 'Đã cập nhật hồ sơ.');
   } catch (err) {
     return next(err);
   }
@@ -22,7 +22,7 @@ async function updateMe(req, res, next) {
 async function dashboard(req, res, next) {
   try {
     const data = await recruiterService.getDashboard(req.user.userId, req.query || {});
-    return success(res, data, 'Lấy số liệu tổng quan thành công');
+    return success(res, data, 'Lấy số liệu tổng quan thành công.');
   } catch (err) {
     return next(err);
   }

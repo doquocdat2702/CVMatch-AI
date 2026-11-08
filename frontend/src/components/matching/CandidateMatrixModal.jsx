@@ -11,7 +11,7 @@ import styles from './CandidateMatrixModal.module.css'
 
 // "x/y yêu cầu có bằng chứng (z%)"; job chưa có yêu cầu thì nói rõ thay vì "0/0 (0%)"
 function formatCoverage(supported, total, coverage) {
-  if (!total) return 'Tin chưa có yêu cầu để đối chiếu'
+  if (!total) return 'Tin tuyển dụng chưa có yêu cầu để đối chiếu'
   return `${supported}/${total} yêu cầu có bằng chứng (${formatNumber(coverage)}%)`
 }
 
@@ -33,7 +33,7 @@ function CandidateMatrixModal({ title, applicationId, jobId, candidateId, onClos
         if (!ignore) setDetail(result.data)
       })
       .catch((err) => {
-        if (!ignore) setError(getErrorMessage(err, 'Không tải được ma trận đối chiếu'))
+        if (!ignore) setError(getErrorMessage(err, 'Không tải được kết quả đối chiếu.'))
       })
       .finally(() => {
         if (!ignore) setLoading(false)
@@ -73,12 +73,12 @@ function CandidateMatrixModal({ title, applicationId, jobId, candidateId, onClos
             {fromApplication && (
               <>
                 <p className={styles.muted}>
-                  Lúc nộp:{' '}
+                  Lúc ứng tuyển:{' '}
                   {detail.coverageAtApply === null || detail.coverageAtApply === undefined
-                    ? 'tin chưa có yêu cầu để đối chiếu'
+                    ? 'tin tuyển dụng chưa có yêu cầu để đối chiếu'
                     : `${formatNumber(detail.coverageAtApply)}% yêu cầu có bằng chứng`}
                 </p>
-                <p className={styles.muted}>Ma trận tính lại theo hồ sơ hiện tại, nên có thể khác lúc nộp đơn.</p>
+                <p className={styles.muted}>Kết quả tính theo hồ sơ hiện tại nên có thể khác lúc ứng tuyển.</p>
               </>
             )}
           </div>

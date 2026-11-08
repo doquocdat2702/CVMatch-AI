@@ -4,9 +4,9 @@ const { success } = require('../../utils/response');
 async function parseJd(req, res, next) {
   try {
     const data = await requirementService.parseJobDescription(req.user, req.params.id);
-    let message = `Phân tích JD thành công, trích xuất được ${data.requirements.length} yêu cầu`;
+    let message = `Đã phân tích mô tả công việc, tìm được ${data.requirements.length} yêu cầu.`;
     if (data.mode === 'rule' && data.unresolvedCount > 0) {
-      message += `, ${data.unresolvedCount} yêu cầu rule chưa phân loại được nên tạm để PREFERRED`;
+      message += ` ${data.unresolvedCount} yêu cầu chưa phân loại chắc chắn, đang để Ưu tiên.`;
     }
     return success(res, data, message);
   } catch (err) {
@@ -17,7 +17,7 @@ async function parseJd(req, res, next) {
 async function list(req, res, next) {
   try {
     const data = await requirementService.listRequirements(req.params.id);
-    return success(res, data, 'Lấy danh sách yêu cầu thành công');
+    return success(res, data, 'Lấy danh sách yêu cầu thành công.');
   } catch (err) {
     return next(err);
   }
@@ -30,7 +30,7 @@ async function create(req, res, next) {
       req.params.id,
       req.body || {}
     );
-    return success(res, data, 'Thêm yêu cầu thành công', 201);
+    return success(res, data, 'Đã thêm yêu cầu.', 201);
   } catch (err) {
     return next(err);
   }
@@ -44,7 +44,7 @@ async function update(req, res, next) {
       req.params.reqId,
       req.body || {}
     );
-    return success(res, data, 'Cập nhật yêu cầu thành công');
+    return success(res, data, 'Đã cập nhật yêu cầu.');
   } catch (err) {
     return next(err);
   }
@@ -57,7 +57,7 @@ async function remove(req, res, next) {
       req.params.id,
       req.params.reqId
     );
-    return success(res, data, 'Xóa yêu cầu thành công');
+    return success(res, data, 'Đã xóa yêu cầu.');
   } catch (err) {
     return next(err);
   }

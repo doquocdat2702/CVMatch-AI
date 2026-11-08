@@ -35,7 +35,7 @@ function CvViewButton({ cv, label = 'Xem CV', missingText = 'CV đã bị xóa',
         onClick={handleClick}
         loading={opening}
         // Đọc kèm tên file để các nút "Xem" trong cùng danh sách phân biệt được với nhau
-        aria-label={`${label}: ${cv.fileName}${cv.fileType === 'PDF' ? ' (mở tab mới)' : ' (tải về)'}`}
+        aria-label={`${label}: ${cv.fileName}${cv.fileType === 'PDF' ? ', mở trong tab mới' : ', tải file về'}`}
       >
         {opening ? 'Đang mở...' : label}
       </Button>

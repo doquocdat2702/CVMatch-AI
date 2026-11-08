@@ -1,9 +1,10 @@
-/* Chế độ xem: nhãn nhỏ màu Chì, giá trị bên dưới */
+/* ===== Thông tin cá nhân ===== */
+
+/* Chế độ xem: nhãn nhỏ màu Chì, giá trị bên dưới; máy tính 2 cột */
 .details {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  max-width: var(--form-max);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4) var(--space-6);
   margin: 0 0 var(--space-5);
 }
 
@@ -31,6 +32,19 @@
   max-width: var(--form-max);
 }
 
+/* Email chỉ đọc trong form: nhãn + giá trị + gợi ý, cùng nhịp với ô nhập */
+.readonlyField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.readonlyHint {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -38,9 +52,150 @@
   margin-top: var(--space-2);
 }
 
+/* ===== Kỹ năng: chip chỉ đọc ===== */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+
+/* Chip viền mảnh bo nhỏ (không bo tròn viên thuốc), tên kỹ năng + nhãn nguồn màu Chì */
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  max-width: 100%;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  background-color: var(--color-bg);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.chipName {
+  font-weight: var(--weight-medium);
+  overflow-wrap: anywhere;
+}
+
+.chipSource {
+  flex: none;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+/* ===== Kinh nghiệm, Học vấn: dòng thời gian ===== */
+
+/* Vạch dọc Viền bên trái, mỗi mục có ô vuông nhỏ Xanh mực nằm trên vạch */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  margin: 0 0 var(--space-4);
+  padding: 0 0 0 var(--space-5);
+  list-style: none;
+  border-left: calc(var(--border-width) * 2) solid var(--color-border);
+}
+
+.timelineItem {
+  position: relative;
+  min-width: 0;
+}
+
+.timelineItem::before {
+  content: '';
+  position: absolute;
+  top: calc((var(--leading-md) - var(--space-2)) / 2);
+  left: calc(var(--space-5) * -1 - var(--border-width) - var(--space-2) / 2);
+  width: var(--space-2);
+  height: var(--space-2);
+  background-color: var(--color-primary);
+  border-radius: var(--radius-sm);
+}
+
+.itemTitle {
+  margin: 0;
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.itemSub {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  overflow-wrap: anywhere;
+}
+
+.itemPeriod {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+.itemText {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* ===== Khối rỗng và link ===== */
+
+.emptyGuide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.emptyText {
+  margin: 0;
+  max-width: var(--text-measure);
+  color: var(--color-text-muted);
+}
+
+/* Link dạng nút phụ (hành động chính của khối rỗng) */
+.guideLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  text-decoration: none;
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--duration-base) ease;
+}
+
+.guideLink:hover {
+  background-color: var(--color-hover);
+}
+
+.editLink {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+}
+
+/* ===== Thông báo ===== */
+
 .alertSuccess,
 .alertError {
-  max-width: var(--form-max);
   margin: 0 0 var(--space-4);
   padding: var(--space-3);
   font-size: var(--text-sm);
@@ -58,4 +213,15 @@
   color: var(--color-danger-text);
   background-color: var(--color-danger-bg);
   border: var(--border-width) solid var(--color-danger-border);
+}
+
+@media (max-width: 900px) {
+  .details {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .guideLink,
+  .editLink {
+    min-height: var(--touch-target);
+  }
 }

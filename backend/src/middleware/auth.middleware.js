@@ -10,12 +10,12 @@ async function authenticate(req, res, next) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
-    return error(res, 'Thiếu token xác thực', 401);
+    return error(res, 'Bạn cần đăng nhập để tiếp tục.', 401);
   }
 
   const [scheme, token] = authHeader.split(' ');
   if (scheme !== 'Bearer' || !token) {
-    return error(res, 'Định dạng token không hợp lệ, cần dạng: Bearer <token>', 401);
+    return error(res, 'Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.', 401);
   }
 
   let payload;
@@ -23,13 +23,13 @@ async function authenticate(req, res, next) {
     payload = verifyToken(token);
   } catch (err) {
     if (err instanceof jwt.TokenExpiredError) {
-      return error(res, 'Token đã hết hạn, vui lòng đăng nhập lại', 401);
+      return error(res, 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 401);
     }
-    return error(res, 'Token không hợp lệ', 401);
+    return error(res, 'Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.', 401);
   }
 
   if (!Number.isInteger(payload.userId)) {
-    return error(res, 'Token không hợp lệ', 401);
+    return error(res, 'Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.', 401);
   }
 
   let user;
@@ -43,10 +43,10 @@ async function authenticate(req, res, next) {
   }
 
   if (!user) {
-    return error(res, 'Tài khoản không còn tồn tại', 401);
+    return error(res, 'Tài khoản không còn tồn tại.', 401);
   }
   if (!user.isActive) {
-    return error(res, 'Tài khoản đã bị khóa', 403);
+    return error(res, 'Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.', 403);
   }
 
   req.user = { userId: user.id, role: user.role.name };

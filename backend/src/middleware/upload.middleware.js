@@ -48,7 +48,7 @@ async function verifyUploadedFile(req, res, next) {
 
   if (!isValid) {
     await fs.promises.unlink(req.file.path).catch(() => {});
-    return error(res, 'File không đúng định dạng PDF hoặc DOCX', 400);
+    return error(res, 'Nội dung file không phải PDF hoặc DOCX. Vui lòng chọn file khác.', 400);
   }
 
   return next();
@@ -61,7 +61,7 @@ function fileFilter(req, file, cb) {
 
   // Kiểm tra cả đuôi file lẫn mimetype
   if (!isValidExt || !isValidMime) {
-    const err = new Error('Chỉ chấp nhận file PDF hoặc DOCX');
+    const err = new Error('Chỉ nhận file PDF hoặc DOCX.');
     err.code = 'INVALID_FILE_TYPE';
     return cb(err);
   }
@@ -86,16 +86,16 @@ function uploadSingleFile(req, res, next) {
     }
 
     if (err.code === 'INVALID_FILE_TYPE') {
-      return error(res, 'Chỉ chấp nhận file PDF hoặc DOCX', 400);
+      return error(res, 'Chỉ nhận file PDF hoặc DOCX.', 400);
     }
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return error(res, 'File vượt quá 5MB', 400);
+        return error(res, 'File vượt quá 5 MB. Vui lòng chọn file nhỏ hơn.', 400);
       }
       if (err.code === 'LIMIT_UNEXPECTED_FILE') {
-        return error(res, 'Sai tên field, hãy dùng field "file"', 400);
+        return error(res, 'Không nhận được file. Vui lòng chọn lại file.', 400);
       }
-      return error(res, `Tải file thất bại: ${err.message}`, 400);
+      return error(res, `Tải file thất bại. Vui lòng thử lại.`, 400);
     }
 
     return next(err);

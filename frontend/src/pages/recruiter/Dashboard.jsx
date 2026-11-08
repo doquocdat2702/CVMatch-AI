@@ -12,11 +12,11 @@ import styles from './Dashboard.module.css'
 
 // Phạm vi số liệu, khớp ?scope=mine|all của GET /recruiters/dashboard
 const SCOPES = [
-  { value: 'mine', label: 'Job của tôi', intro: 'các tin do bạn đăng' },
+  { value: 'mine', label: 'Tin của tôi', intro: 'các tin do bạn đăng' },
   { value: 'all', label: 'Toàn công ty', intro: 'mọi tin của công ty' },
 ]
 
-const COVERAGE_CAPTION = 'Coverage là mức đáp ứng yêu cầu, không phải điểm năng lực.'
+const COVERAGE_CAPTION = 'Tỉ lệ có bằng chứng chỉ cho biết mức đáp ứng yêu cầu, không phải điểm năng lực.'
 
 // Biểu đồ 30 ngày quá dày để ghi hết ngày: chỉ ghi mỗi 5 ngày, tính lùi từ hôm nay (cột cuối luôn có nhãn)
 const DAY_LABEL_EVERY = 5
@@ -78,7 +78,7 @@ function RecruiterDashboard() {
         if (!ignore) setResult({ key: requestKey, data: response.data, error: '' })
       })
       .catch((err) => {
-        if (!ignore) setResult({ key: requestKey, data: null, error: getErrorMessage(err, 'Không tải được số liệu') })
+        if (!ignore) setResult({ key: requestKey, data: null, error: getErrorMessage(err, 'Không tải được số liệu.') })
       })
     return () => {
       ignore = true
@@ -126,25 +126,25 @@ function RecruiterDashboard() {
           </section>
 
           <section className={styles.chartSection}>
-            <h2>Phân bố coverage lúc nộp</h2>
+            <h2>Phân bố tỉ lệ có bằng chứng lúc ứng tuyển</h2>
             <BarChart
-              title="Phân bố coverage lúc nộp"
+              title="Phân bố tỉ lệ có bằng chứng lúc ứng tuyển"
               data={charts.coverage}
-              xLabel="Coverage lúc nộp"
+              xLabel="Tỉ lệ có bằng chứng"
               yLabel="Số đơn"
             />
             <p className={styles.caption}>{COVERAGE_CAPTION}</p>
             {/* Câu nhắc của API luôn đi kèm số liệu coverage */}
             {note && <p className={styles.note}>{note}</p>}
             <p className={styles.note}>
-              Đơn nộp lúc tin chưa có yêu cầu (chưa phân tích JD) không có coverage nên không nằm trong biểu đồ này.
+              Biểu đồ không tính đơn ứng tuyển vào tin chưa có yêu cầu.
             </p>
           </section>
 
           <section className={`${styles.chartSection} ${styles.wide}`}>
             <h2>Đơn theo ngày</h2>
             <p className={styles.sub}>30 ngày gần nhất, tính cả hôm nay. Rê chuột lên cột để xem số đơn của từng ngày.</p>
-            <BarChart title="Đơn theo ngày, 30 ngày gần nhất" data={charts.byDay} xLabel="Ngày nộp" yLabel="Số đơn" />
+            <BarChart title="Đơn theo ngày, 30 ngày gần nhất" data={charts.byDay} xLabel="Ngày ứng tuyển" yLabel="Số đơn" />
           </section>
         </div>
       </>

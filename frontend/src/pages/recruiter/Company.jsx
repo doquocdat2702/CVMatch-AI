@@ -53,7 +53,7 @@ function Company() {
         if (!ignore) setCompany(pickFields(result.data))
       })
       .catch((err) => {
-        if (!ignore) setLoadError(getErrorMessage(err, 'Không tải được thông tin công ty'))
+        if (!ignore) setLoadError(getErrorMessage(err, 'Không tải được thông tin công ty.'))
       })
       .finally(() => {
         if (!ignore) setLoading(false)
@@ -104,7 +104,7 @@ function Company() {
       setEditing(false)
       setSaved(true)
     } catch (err) {
-      setSaveError(getErrorMessage(err, 'Lưu thông tin công ty thất bại, vui lòng thử lại'))
+      setSaveError(getErrorMessage(err, 'Chưa lưu được thông tin công ty. Vui lòng thử lại.'))
     } finally {
       setSaving(false)
     }
@@ -147,7 +147,7 @@ function Company() {
       <dt className={styles.term}>Tên công ty</dt>
       <dd className={styles.value}>
         {company.name}
-        <span className={styles.readonlyNote}>Tên công ty được cấu hình bởi hệ thống</span>
+        <span className={styles.readonlyNote}>Tên công ty được thiết lập sẵn, không sửa tại đây</span>
       </dd>
     </div>
   )
@@ -206,7 +206,7 @@ function Company() {
 
           <div className={styles.actions}>
             <Button type="submit" loading={saving}>
-              {saving ? 'Đang lưu...' : 'Lưu'}
+              {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
             </Button>
             <Button variant="secondary" onClick={cancelEdit} disabled={saving}>
               Hủy

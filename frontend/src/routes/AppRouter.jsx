@@ -3,6 +3,7 @@ import { AuthProvider } from '../context/AuthContext'
 import ProtectedRoute from './ProtectedRoute'
 import MainLayout from '../components/layout/MainLayout'
 import SiteLayout from '../components/layout/SiteLayout'
+import AccountLayout from '../components/layout/AccountLayout'
 import { useAuth } from '../hooks/useAuth'
 import JobBoard from '../pages/candidate/JobBoard'
 import JobDetail from '../pages/candidate/JobDetail'
@@ -96,12 +97,16 @@ function AppRouter() {
             <Route element={<SiteLayout />}>
               {/* Chi tiết đối chiếu giữ đường dẫn cũ; nằm dưới /recommended-jobs/ nên mục "Việc làm" vẫn sáng */}
               <Route path="recommended-jobs/:jobId" element={<MatchingDetail />} />
-              <Route path="cvs" element={<CVUpload />} />
-              {/* Kết quả phân tích nằm dưới /cvs nên mục "CV của tôi" trong AccountMenu vẫn được đánh dấu */}
+              {/* Kết quả phân tích nằm dưới /cvs nên mục "CV của tôi" trong AccountMenu vẫn được đánh dấu.
+                  Giữ bố cục riêng, không nằm trong khu Tài khoản (T35g) */}
               <Route path="cvs/parsed" element={<ParsedCV />} />
-              <Route path="profile" element={<Profile />} />
-              <Route path="applications" element={<MyApplications />} />
-              <Route path="change-password" element={<ChangePassword siteStyle />} />
+              {/* Khu "Tài khoản của tôi" (T35g): cột tóm tắt + menu bên trái, trang bên phải */}
+              <Route element={<AccountLayout />}>
+                <Route path="profile" element={<Profile />} />
+                <Route path="cvs" element={<CVUpload />} />
+                <Route path="applications" element={<MyApplications />} />
+                <Route path="change-password" element={<ChangePassword siteStyle />} />
+              </Route>
             </Route>
           </Route>
 

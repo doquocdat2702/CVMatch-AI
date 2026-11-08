@@ -29,7 +29,7 @@ function About() {
         if (!ignore) setCompany(result.data)
       })
       .catch((err) => {
-        if (!ignore) setError(getErrorMessage(err, 'Không tải được thông tin công ty'))
+        if (!ignore) setError(getErrorMessage(err, 'Không tải được thông tin công ty.'))
       })
       .finally(() => {
         if (!ignore) setLoading(false)

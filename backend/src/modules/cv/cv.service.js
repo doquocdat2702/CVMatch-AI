@@ -40,14 +40,14 @@ async function removeFile(filePath) {
 async function getCandidateProfile(userId) {
   const profile = await prisma.candidateProfile.findUnique({ where: { userId } });
   if (!profile) {
-    throw createError('Không tìm thấy hồ sơ ứng viên', 404);
+    throw createError('Không tìm thấy hồ sơ ứng viên.', 404);
   }
   return profile;
 }
 
 async function createCv(userId, file, candidateProfileId) {
   if (!file) {
-    throw createError('Chưa chọn file CV để tải lên', 400);
+    throw createError('Vui lòng chọn file CV để tải lên.', 400);
   }
 
   const profileId = candidateProfileId || (await getCandidateProfile(userId)).id;
@@ -75,7 +75,7 @@ async function listMyCvs(userId) {
   const profile = await getCandidateProfile(userId);
 
   // Không trả rawText ở danh sách
-  return prisma.cV.findMany({
+  const cvs = await prisma.cV.findMany({
     where: { candidateProfileId: profile.id },
     orderBy: { uploadedAt: 'desc' },
     select: {
@@ -88,25 +88,29 @@ async function listMyCvs(userId) {
       errorMessage: true,
       uploadedAt: true,
       parsedAt: true,
+      _count: { select: { applications: true } },
     },
   });
+
+  // applicationCount: số đơn đã gửi kèm CV này (T35g). Lớn hơn 0 thì không xóa được CV
+  return cvs.map(({ _count, ...cv }) => ({ ...cv, applicationCount: _count.applications }));
 }
 
 // Lấy CV và kiểm tra quyền sở hữu
 async function findOwnedCv(userId, cvId) {
   const id = Number(cvId);
   if (!Number.isInteger(id) || id <= 0) {
-    throw createError('Mã CV không hợp lệ', 400);
+    throw createError('Mã CV không hợp lệ.', 400);
   }
 
   const cv = await prisma.cV.findUnique({ where: { id } });
   if (!cv) {
-    throw createError('Không tìm thấy CV', 404);
+    throw createError('Không tìm thấy CV.', 404);
   }
 
   const profile = await getCandidateProfile(userId);
   if (cv.candidateProfileId !== profile.id) {
-    throw createError('Bạn không có quyền truy cập CV này', 403);
+    throw createError('Bạn chỉ xem được CV của chính mình.', 403);
   }
 
   return cv;
@@ -116,12 +120,38 @@ async function getCvDetail(userId, cvId) {
   return findOwnedCv(userId, cvId);
 }
 
-// File CV gốc cho GET /cvs/:id/file (T35f). user = req.user { userId, role }.
-// Được xem: chủ CV; RECRUITER / ADMIN chỉ khi ứng viên đã nộp ít nhất một đơn vào công ty (HR xem chung).
-// Đơn không lưu CV nào được dùng để nộp nên quyền xét theo ứng viên, không theo từng đơn.
+// Đường dẫn tuyệt đối của file CV nếu file còn trên đĩa và nằm trong thư mục upload, không thì null.
+// filePath lạ (vd "../.env") coi như không có file. Dùng cho xem file và kiểm CV gửi kèm đơn (T35g)
+async function resolveCvFilePath(filePath) {
+  const uploadRoot = path.resolve(process.cwd(), env.UPLOAD_DIR);
+  const absolutePath = path.resolve(process.cwd(), String(filePath || ''));
+  if (!absolutePath.startsWith(uploadRoot + path.sep)) {
+    return null;
+  }
+  try {
+    await fs.promises.access(absolutePath, fs.constants.R_OK);
+    return absolutePath;
+  } catch {
+    return null;
+  }
+}
+
+// CV hiện tại của ứng viên: CV mới nhất đã phân tích (COMPLETED), không có thì null.
+// Đơn nộp trước T35g (cvId null) hiển thị và cho xem CV này thay cho CV lúc nộp
+async function findCurrentCv(candidateProfileId) {
+  return prisma.cV.findFirst({
+    where: { candidateProfileId, status: 'COMPLETED' },
+    orderBy: [{ uploadedAt: 'desc' }, { id: 'desc' }],
+    select: { id: true, fileName: true, fileType: true },
+  });
+}
+
+// File CV gốc cho GET /cvs/:id/file (T35f, quyền đổi ở T35g). user = req.user { userId, role }.
+// Được xem: chủ CV; RECRUITER / ADMIN khi CV này được gửi kèm ít nhất một đơn (Application.cvId).
+// Đơn cũ chưa lưu CV (cvId null): HR / Admin xem được CV hiện tại của ứng viên đó, đúng CV trang Đơn đang hiện.
 // Không đủ quyền cũng trả 404 như CV không tồn tại, để không lộ CV nào có thật
 async function getCvFile(user, cvId) {
-  const notFound = createError('Không tìm thấy CV', 404);
+  const notFound = createError('Không tìm thấy CV.', 404);
   const id = Number(cvId);
   if (!Number.isInteger(id) || id <= 0) {
     throw notFound;
@@ -130,10 +160,13 @@ async function getCvFile(user, cvId) {
   const cv = await prisma.cV.findUnique({
     where: { id },
     select: {
+      id: true,
+      candidateProfileId: true,
       fileName: true,
       filePath: true,
       fileType: true,
-      candidateProfile: { select: { userId: true, _count: { select: { applications: true } } } },
+      candidateProfile: { select: { userId: true } },
+      _count: { select: { applications: true } },
     },
   });
   if (!cv) {
@@ -142,30 +175,53 @@ async function getCvFile(user, cvId) {
 
   const isOwner = user.role === 'CANDIDATE' && cv.candidateProfile.userId === user.userId;
   const isStaff = user.role === 'RECRUITER' || user.role === 'ADMIN';
-  if (!isOwner && !(isStaff && cv.candidateProfile._count.applications > 0)) {
+  if (!isOwner && !(isStaff && (await staffCanViewCv(cv)))) {
     throw notFound;
   }
 
-  // Chỉ đọc file nằm trong thư mục upload: filePath lạ (vd "../.env") coi như không có file
-  const fileMissing = createError('Không tìm thấy file CV', 404);
-  const uploadRoot = path.resolve(process.cwd(), env.UPLOAD_DIR);
-  const absolutePath = path.resolve(process.cwd(), cv.filePath);
-  if (!absolutePath.startsWith(uploadRoot + path.sep)) {
-    throw fileMissing;
-  }
-  try {
-    await fs.promises.access(absolutePath, fs.constants.R_OK);
-  } catch {
-    throw fileMissing;
+  const absolutePath = await resolveCvFilePath(cv.filePath);
+  if (!absolutePath) {
+    throw createError('Không tìm thấy file CV.', 404);
   }
 
   return { absolutePath, fileName: cv.fileName, fileType: cv.fileType };
 }
 
+// HR / Admin: CV gửi kèm một đơn, hoặc CV hiện tại của ứng viên có đơn cũ chưa lưu CV
+async function staffCanViewCv(cv) {
+  if (cv._count.applications > 0) {
+    return true;
+  }
+  const legacyCount = await prisma.application.count({
+    where: { candidateProfileId: cv.candidateProfileId, cvId: null },
+  });
+  if (legacyCount === 0) {
+    return false;
+  }
+  const current = await findCurrentCv(cv.candidateProfileId);
+  return current !== null && current.id === cv.id;
+}
+
+const MESSAGE_CV_IN_USE = 'CV này đã được gửi kèm đơn ứng tuyển nên không thể xóa.';
+
 async function deleteCv(userId, cvId) {
   const cv = await findOwnedCv(userId, cvId);
 
-  await prisma.cV.delete({ where: { id: cv.id } });
+  // CV đã gửi kèm đơn ứng tuyển (T35g): nhà tuyển dụng cần xem lại đúng file này nên không cho xóa
+  const applicationCount = await prisma.application.count({ where: { cvId: cv.id } });
+  if (applicationCount > 0) {
+    throw createError(MESSAGE_CV_IN_USE, 400);
+  }
+
+  try {
+    await prisma.cV.delete({ where: { id: cv.id } });
+  } catch (err) {
+    // Đơn vừa được nộp kèm CV này giữa lúc kiểm tra và lúc xóa: khóa ngoại Restrict chặn lại
+    if (err.code === 'P2003') {
+      throw createError(MESSAGE_CV_IN_USE, 400);
+    }
+    throw err;
+  }
   await removeFile(cv.filePath);
 
   return { id: cv.id };
@@ -176,7 +232,7 @@ async function extractCvText(userId, cvId) {
   const cv = await findOwnedCv(userId, cvId);
 
   if (cv.status === 'PROCESSING') {
-    throw createError('CV đang được xử lý, vui lòng đợi', 400);
+    throw createError('CV đang được phân tích. Vui lòng chờ trong giây lát.', 400);
   }
 
   await prisma.cV.update({
@@ -191,7 +247,7 @@ async function extractCvText(userId, cvId) {
     const rawText = await withTimeout(
       extractText(absolutePath, cv.fileType),
       env.EXTRACT_TIMEOUT_MS,
-      'Quá thời gian xử lý file'
+      'Đọc file quá lâu. Vui lòng thử lại hoặc chọn file khác.'
     );
 
     return await prisma.cV.update({
@@ -228,7 +284,7 @@ function textOrEmpty(value) {
 // Lỗi đã định nghĩa (có statusCode, vd 503 NLP) ghi đúng lý do; lỗi bất ngờ (Prisma...) không ghi
 // chi tiết kỹ thuật vào CV vì errorMessage được trả thẳng cho ứng viên
 function parseFailureMessage(err) {
-  const reason = Number.isInteger(err.statusCode) ? err.message : 'Lỗi hệ thống, vui lòng thử lại sau';
+  const reason = Number.isInteger(err.statusCode) ? err.message : 'Đã có lỗi xảy ra. Vui lòng thử lại sau.';
   return `Phân tích thất bại: ${reason}`;
 }
 
@@ -251,7 +307,7 @@ async function parseCvToProfile(userId, cvId) {
   // Chưa extract xong: chỉ báo lỗi, không đổi trạng thái CV
   if (cv.status !== 'COMPLETED') {
     throw createError(
-      'CV chưa trích xuất nội dung thành công, hãy gọi /extract trước khi bóc tách',
+      'Chưa đọc được nội dung CV. Vui lòng phân tích lại CV.',
       400
     );
   }
@@ -266,7 +322,7 @@ async function parseCvToProfile(userId, cvId) {
 
 async function parseAndSave(userId, cv) {
   if (!cv.rawText || !cv.rawText.trim()) {
-    throw createError('CV không có nội dung text để bóc tách', 400);
+    throw createError('CV không có nội dung chữ để phân tích.', 400);
   }
 
   const profile = await getCandidateProfile(userId);
@@ -282,7 +338,7 @@ async function parseAndSave(userId, cv) {
   // kể cả khi từ điển bóc được vài kỹ năng (không lưu kết quả nửa vời)
   if (mode === 'hybrid' && parsed.errors.nlp) {
     throw createError(
-      'Dịch vụ NLP đang không khả dụng, chưa bóc tách được CV. Dữ liệu cũ được giữ nguyên, vui lòng thử lại sau',
+      'Phân tích bằng AI đang tạm gián đoạn. Hồ sơ của bạn được giữ nguyên, vui lòng thử lại sau.',
       503
     );
   }
@@ -418,6 +474,8 @@ async function parseAndSave(userId, cv) {
 module.exports = {
   createCv,
   listMyCvs,
+  resolveCvFilePath,
+  findCurrentCv,
   getCvDetail,
   getCvFile,
   deleteCv,

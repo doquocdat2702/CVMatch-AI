@@ -273,7 +273,8 @@ const BATCH_RESPONSE_SCHEMA = {
   },
 };
 
-const NLP_UNAVAILABLE_MESSAGE = 'Dịch vụ NLP đang không khả dụng, chưa phân tích được JD';
+const NLP_UNAVAILABLE_MESSAGE =
+  'Phân tích bằng AI đang tạm gián đoạn. Yêu cầu cũ của tin được giữ nguyên, vui lòng thử lại sau.';
 
 // Còn mục rule không quyết được mà không hỏi được LLM: báo 503, không đoán bừa OPTIONAL
 function nlpUnavailableError() {

@@ -8,7 +8,7 @@ import styles from './Auth.module.css'
 
 // Luôn hiện cùng một câu dù email có tài khoản hay không,
 // để người ngoài không dò được email nào đã đăng ký
-const SENT_MESSAGE = 'Nếu email tồn tại, chúng tôi đã gửi hướng dẫn đặt lại mật khẩu'
+const SENT_MESSAGE = 'Nếu email đã đăng ký tài khoản, hướng dẫn đặt lại mật khẩu đã được gửi tới email đó.'
 
 function ForgotPassword() {
   useDocumentTitle('Quên mật khẩu')
@@ -23,11 +23,11 @@ function ForgotPassword() {
 
     const value = email.trim()
     if (!value) {
-      setError('Vui lòng nhập email')
+      setError('Vui lòng nhập email.')
       return
     }
     if (!isValidEmail(value)) {
-      setError('Email không đúng định dạng')
+      setError('Email không đúng định dạng.')
       return
     }
 
@@ -86,7 +86,7 @@ function ForgotPassword() {
           </>
         )}
 
-        <p className={styles.note}>Nhà tuyển dụng quên mật khẩu vui lòng liên hệ quản trị viên.</p>
+        <p className={styles.note}>Nhà tuyển dụng quên mật khẩu, vui lòng liên hệ quản trị viên.</p>
         <p className={styles.note}>
           <Link className={styles.link} to="/login">
             Quay lại đăng nhập

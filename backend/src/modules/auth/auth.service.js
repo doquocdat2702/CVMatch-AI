@@ -10,7 +10,7 @@ const MIN_PASSWORD_LENGTH = 6;
 
 const RESET_PURPOSE = 'reset';
 const RESET_TOKEN_EXPIRES_IN = '15m';
-const INVALID_RESET_LINK = 'Link không hợp lệ hoặc đã hết hạn';
+const INVALID_RESET_LINK = 'Liên kết đặt lại mật khẩu đã hết hạn hoặc đã được dùng. Vui lòng gửi yêu cầu mới.';
 
 function createError(message, statusCode) {
   const err = new Error(message);
@@ -24,26 +24,26 @@ async function register({ email, password, fullName }) {
   const normalizedFullName = typeof fullName === 'string' ? fullName.trim() : '';
 
   if (!normalizedEmail) {
-    throw createError('Email không được để trống', 400);
+    throw createError('Vui lòng nhập email.', 400);
   }
   if (!EMAIL_REGEX.test(normalizedEmail)) {
-    throw createError('Email không đúng định dạng', 400);
+    throw createError('Email không đúng định dạng.', 400);
   }
   if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
-    throw createError(`Mật khẩu phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự`, 400);
+    throw createError(`Mật khẩu cần có ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`, 400);
   }
   if (!normalizedFullName) {
-    throw createError('Họ tên không được để trống', 400);
+    throw createError('Vui lòng nhập họ và tên.', 400);
   }
 
   const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
   if (existingUser) {
-    throw createError('Email đã được sử dụng', 400);
+    throw createError('Email này đã được dùng cho tài khoản khác.', 400);
   }
 
   const candidateRole = await prisma.role.findUnique({ where: { name: 'CANDIDATE' } });
   if (!candidateRole) {
-    throw createError('Chưa có role CANDIDATE trong hệ thống, hãy chạy seed trước', 500);
+    throw createError('Chức năng đăng ký chưa sẵn sàng. Vui lòng thử lại sau.', 500);
   }
 
   const hashedPassword = await hashPassword(password);
@@ -76,7 +76,7 @@ async function login({ email, password }) {
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
 
   if (!normalizedEmail || typeof password !== 'string' || !password) {
-    throw createError('Email hoặc mật khẩu không đúng', 400);
+    throw createError('Email hoặc mật khẩu không đúng.', 400);
   }
 
   const user = await prisma.user.findUnique({
@@ -85,16 +85,16 @@ async function login({ email, password }) {
   });
 
   if (!user) {
-    throw createError('Email hoặc mật khẩu không đúng', 400);
+    throw createError('Email hoặc mật khẩu không đúng.', 400);
   }
 
   const isMatch = await comparePassword(password, user.password);
   if (!isMatch) {
-    throw createError('Email hoặc mật khẩu không đúng', 400);
+    throw createError('Email hoặc mật khẩu không đúng.', 400);
   }
 
   if (!user.isActive) {
-    throw createError('Tài khoản đã bị khóa', 403);
+    throw createError('Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.', 403);
   }
 
   const token = signToken({ userId: user.id, role: user.role.name });
@@ -117,7 +117,7 @@ async function getMe(userId) {
   });
 
   if (!user) {
-    throw createError('Không tìm thấy tài khoản', 404);
+    throw createError('Không tìm thấy tài khoản.', 404);
   }
 
   const result = {
@@ -138,23 +138,23 @@ async function getMe(userId) {
 
 async function changePassword(userId, { oldPassword, newPassword }) {
   if (typeof oldPassword !== 'string' || !oldPassword) {
-    throw createError('Mật khẩu cũ không được để trống', 400);
+    throw createError('Vui lòng nhập mật khẩu hiện tại.', 400);
   }
   if (typeof newPassword !== 'string' || newPassword.length < MIN_PASSWORD_LENGTH) {
-    throw createError(`Mật khẩu mới phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự`, 400);
+    throw createError(`Mật khẩu mới cần có ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`, 400);
   }
   if (newPassword === oldPassword) {
-    throw createError('Mật khẩu mới phải khác mật khẩu cũ', 400);
+    throw createError('Mật khẩu mới cần khác mật khẩu hiện tại.', 400);
   }
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
-    throw createError('Không tìm thấy tài khoản', 404);
+    throw createError('Không tìm thấy tài khoản.', 404);
   }
 
   const isMatch = await comparePassword(oldPassword, user.password);
   if (!isMatch) {
-    throw createError('Mật khẩu cũ không đúng', 400);
+    throw createError('Mật khẩu hiện tại không đúng.', 400);
   }
 
   const hashedPassword = await hashPassword(newPassword);
@@ -188,21 +188,21 @@ function buildResetEmail(fullName, link) {
   const text = [
     greeting,
     '',
-    'Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản ứng viên gắn với email này.',
+    'Tài khoản ứng viên gắn với email này vừa yêu cầu đặt lại mật khẩu.',
     'Mở liên kết sau để đặt mật khẩu mới:',
     link,
     '',
     'Liên kết hết hạn sau 15 phút và chỉ dùng được một lần.',
-    'Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua thư này, mật khẩu hiện tại vẫn giữ nguyên.',
+    'Nếu bạn không gửi yêu cầu này, có thể bỏ qua thư. Mật khẩu hiện tại vẫn được giữ nguyên.',
   ].join('\n');
 
   const html = `
 <p>${escapeHtml(greeting)}</p>
-<p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản ứng viên gắn với email này.</p>
+<p>Tài khoản ứng viên gắn với email này vừa yêu cầu đặt lại mật khẩu.</p>
 <p><a href="${escapeHtml(link)}">Đặt lại mật khẩu</a></p>
-<p>Nếu nút trên không mở được, hãy sao chép liên kết sau vào trình duyệt:<br>${escapeHtml(link)}</p>
+<p>Nếu liên kết trên không mở được, sao chép địa chỉ sau vào trình duyệt:<br>${escapeHtml(link)}</p>
 <p><strong>Liên kết hết hạn sau 15 phút</strong> và chỉ dùng được một lần.</p>
-<p>Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua thư này, mật khẩu hiện tại vẫn giữ nguyên.</p>`;
+<p>Nếu bạn không gửi yêu cầu này, có thể bỏ qua thư. Mật khẩu hiện tại vẫn được giữ nguyên.</p>`;
 
   return { subject: 'Hướng dẫn đặt lại mật khẩu', text, html };
 }
@@ -264,7 +264,7 @@ async function resetPassword({ token, newPassword }) {
   }
 
   if (typeof newPassword !== 'string' || newPassword.length < MIN_PASSWORD_LENGTH) {
-    throw createError(`Mật khẩu mới phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự`, 400);
+    throw createError(`Mật khẩu mới cần có ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`, 400);
   }
 
   const hashedPassword = await hashPassword(newPassword);

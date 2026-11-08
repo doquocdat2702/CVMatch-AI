@@ -4,7 +4,7 @@ const { success } = require('../../utils/response');
 async function upload(req, res, next) {
   try {
     const data = await cvService.createCv(req.user.userId, req.file, req.candidateProfileId);
-    return success(res, data, 'Tải CV lên thành công', 201);
+    return success(res, data, 'Đã tải CV lên.', 201);
   } catch (err) {
     return next(err);
   }
@@ -31,7 +31,7 @@ async function detail(req, res, next) {
 async function remove(req, res, next) {
   try {
     const data = await cvService.deleteCv(req.user.userId, req.params.id);
-    return success(res, data, 'Xóa CV thành công');
+    return success(res, data, 'Đã xóa CV.');
   } catch (err) {
     return next(err);
   }
@@ -40,7 +40,7 @@ async function remove(req, res, next) {
 async function extract(req, res, next) {
   try {
     const data = await cvService.extractCvText(req.user.userId, req.params.id);
-    return success(res, data, 'Trích xuất nội dung CV thành công');
+    return success(res, data, 'Đã đọc nội dung CV.');
   } catch (err) {
     return next(err);
   }
@@ -49,7 +49,7 @@ async function extract(req, res, next) {
 async function parse(req, res, next) {
   try {
     const data = await cvService.parseCvToProfile(req.user.userId, req.params.id);
-    return success(res, data, 'Bóc tách CV thành công');
+    return success(res, data, 'Đã phân tích CV.');
   } catch (err) {
     return next(err);
   }

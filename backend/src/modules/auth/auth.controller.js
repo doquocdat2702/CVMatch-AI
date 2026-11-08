@@ -4,7 +4,7 @@ const { success } = require('../../utils/response');
 async function register(req, res, next) {
   try {
     const data = await authService.register(req.body || {});
-    return success(res, data, 'Đăng ký thành công', 201);
+    return success(res, data, 'Đã tạo tài khoản.', 201);
   } catch (err) {
     return next(err);
   }
@@ -13,7 +13,7 @@ async function register(req, res, next) {
 async function login(req, res, next) {
   try {
     const data = await authService.login(req.body || {});
-    return success(res, data, 'Đăng nhập thành công');
+    return success(res, data, 'Đã đăng nhập.');
   } catch (err) {
     return next(err);
   }
@@ -22,7 +22,7 @@ async function login(req, res, next) {
 async function me(req, res, next) {
   try {
     const data = await authService.getMe(req.user.userId);
-    return success(res, data, 'Lấy thông tin tài khoản thành công');
+    return success(res, data, 'Lấy thông tin tài khoản thành công.');
   } catch (err) {
     return next(err);
   }
@@ -31,7 +31,7 @@ async function me(req, res, next) {
 async function changePassword(req, res, next) {
   try {
     const data = await authService.changePassword(req.user.userId, req.body || {});
-    return success(res, data, 'Đổi mật khẩu thành công');
+    return success(res, data, 'Đã đổi mật khẩu.');
   } catch (err) {
     return next(err);
   }
@@ -39,14 +39,14 @@ async function changePassword(req, res, next) {
 
 // Hệ thống không lưu token phía server, client tự xóa token khi đăng xuất
 async function logout(req, res) {
-  return success(res, null, 'Đăng xuất thành công');
+  return success(res, null, 'Đã đăng xuất.');
 }
 
 // Luôn trả cùng một câu, không để lộ email nào có tài khoản
 async function forgotPassword(req, res, next) {
   try {
     await authService.forgotPassword(req.body || {});
-    return success(res, null, 'Nếu email tồn tại, chúng tôi đã gửi hướng dẫn đặt lại mật khẩu');
+    return success(res, null, 'Nếu email đã đăng ký tài khoản, hướng dẫn đặt lại mật khẩu đã được gửi tới email đó.');
   } catch (err) {
     return next(err);
   }
@@ -55,7 +55,7 @@ async function forgotPassword(req, res, next) {
 async function resetPassword(req, res, next) {
   try {
     const data = await authService.resetPassword(req.body || {});
-    return success(res, data, 'Đặt lại mật khẩu thành công');
+    return success(res, data, 'Đã đặt lại mật khẩu.');
   } catch (err) {
     return next(err);
   }

@@ -158,6 +158,30 @@
   border-radius: var(--radius-sm);
 }
 
+/* Nhãn "Đã gửi kèm N đơn" (T35g): xám xanh như Badge trung tính */
+.usedTag {
+  padding: 0 var(--space-1);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--color-neutral-text);
+  background-color: var(--color-neutral-bg);
+  border: var(--border-width) solid var(--color-neutral-border);
+  border-radius: var(--radius-sm);
+}
+
+/* Bấm Xóa CV đã gửi kèm đơn: câu báo ngay dưới hàng thao tác của thẻ */
+.blockedText {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-danger-text);
+  background-color: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger-border);
+  border-radius: var(--radius-sm);
+}
+
 .errorText {
   margin: 0;
   font-size: var(--text-sm);

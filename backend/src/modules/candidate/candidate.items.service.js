@@ -14,7 +14,7 @@ function createError(message, statusCode) {
 async function getMyProfile(userId) {
   const profile = await prisma.candidateProfile.findUnique({ where: { userId } });
   if (!profile) {
-    throw createError('Không tìm thấy hồ sơ ứng viên', 404);
+    throw createError('Không tìm thấy hồ sơ ứng viên.', 404);
   }
   return profile;
 }
@@ -22,7 +22,7 @@ async function getMyProfile(userId) {
 function parseId(value, label) {
   const id = Number(value);
   if (!Number.isInteger(id) || id <= 0) {
-    throw createError(`Mã ${label} không hợp lệ`, 400);
+    throw createError(`Mã ${label} không hợp lệ.`, 400);
   }
   return id;
 }
@@ -33,12 +33,12 @@ async function findOwnedItem(model, userId, itemId, label) {
   const item = await prisma[model].findUnique({ where: { id } });
 
   if (!item) {
-    throw createError(`Không tìm thấy ${label}`, 404);
+    throw createError(`Không tìm thấy ${label}.`, 404);
   }
 
   const profile = await getMyProfile(userId);
   if (item.candidateProfileId !== profile.id) {
-    throw createError(`Bạn không có quyền truy cập ${label} này`, 403);
+    throw createError(`Bạn chỉ sửa được ${label} trong hồ sơ của mình.`, 403);
   }
 
   return { item, profile };
@@ -47,7 +47,7 @@ async function findOwnedItem(model, userId, itemId, label) {
 function requiredText(value, label) {
   const text = typeof value === 'string' ? value.trim() : '';
   if (!text) {
-    throw createError(`${label} không được để trống`, 400);
+    throw createError(`${label} không được để trống.`, 400);
   }
   return text;
 }
@@ -68,7 +68,7 @@ function parseDate(value, label) {
   if (match) {
     const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
     if (Number.isNaN(date.getTime())) {
-      throw createError(`${label} không hợp lệ`, 400);
+      throw createError(`${label} không hợp lệ.`, 400);
     }
     return date;
   }
@@ -83,12 +83,12 @@ function parseDate(value, label) {
     return new Date(Date.UTC(Number(match[1]), 0, 1));
   }
 
-  throw createError(`${label} phải theo định dạng YYYY-MM-DD, YYYY-MM hoặc YYYY`, 400);
+  throw createError(`${label} cần có dạng năm-tháng, ví dụ 2024-03.`, 400);
 }
 
 function ensureDateOrder(startDate, endDate) {
   if (startDate && endDate && startDate > endDate) {
-    throw createError('Ngày bắt đầu không được lớn hơn ngày kết thúc', 400);
+    throw createError('Ngày bắt đầu không được sau ngày kết thúc.', 400);
   }
 }
 
@@ -130,7 +130,7 @@ async function updateSkill(userId, skillItemId, body) {
   }
 
   if (Object.keys(data).length === 0) {
-    throw createError('Không có thông tin nào để cập nhật', 400);
+    throw createError('Chưa có thay đổi nào để lưu.', 400);
   }
 
   // Người dùng đã sửa thì coi như đã xác nhận
@@ -199,7 +199,7 @@ async function updateExperience(userId, experienceId, body) {
   }
 
   if (Object.keys(data).length === 0) {
-    throw createError('Không có thông tin nào để cập nhật', 400);
+    throw createError('Chưa có thay đổi nào để lưu.', 400);
   }
 
   // So sánh với giá trị đang có nếu request chỉ gửi một trong hai mốc thời gian
@@ -264,7 +264,7 @@ async function updateEducation(userId, educationId, body) {
   }
 
   if (Object.keys(data).length === 0) {
-    throw createError('Không có thông tin nào để cập nhật', 400);
+    throw createError('Chưa có thay đổi nào để lưu.', 400);
   }
 
   const startDate = data.startDate !== undefined ? data.startDate : item.startDate;

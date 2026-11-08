@@ -16,7 +16,7 @@ async function readErrorMessage(err) {
       // Không phải JSON: dùng câu mặc định bên dưới
     }
   }
-  return getErrorMessage(err, 'Không mở được file CV, vui lòng thử lại')
+  return getErrorMessage(err, 'Không mở được file CV. Vui lòng thử lại.')
 }
 
 // Mở file CV gốc qua API có token (thư mục upload không phục vụ dạng file tĩnh).
@@ -40,7 +40,7 @@ export async function openCvFile({ id, fileName, fileType }) {
       } else if (!window.open(url, '_blank', 'noopener')) {
         // Trình duyệt chặn cả tab trống lẫn tab mở thẳng object URL: báo rõ thay vì im lặng không có gì xảy ra
         URL.revokeObjectURL(url)
-        throw new Error('Trình duyệt đã chặn mở tab mới. Hãy cho phép cửa sổ bật lên cho trang này rồi thử lại.')
+        throw new Error('Trình duyệt đã chặn tab mới. Vui lòng cho phép cửa sổ bật lên rồi thử lại.')
       }
     } else {
       const link = document.createElement('a')

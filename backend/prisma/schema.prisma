@@ -120,6 +120,8 @@ model CV {
   parsedAt           DateTime?
 
   candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id])
+  // Đơn ứng tuyển gửi kèm CV này (T35g): còn đơn trỏ tới thì không xóa được CV
+  applications     Application[]
 
   @@index([candidateProfileId])
 }
@@ -224,15 +226,20 @@ model Application {
   jobId              Int
   status             ApplicationStatus @default(APPLIED)
   coverage           Float?
+  // CV ứng viên chọn gửi kèm đơn (T35g, ngoại lệ đã duyệt). Null: đơn nộp trước khi hệ thống lưu CV theo đơn
+  cvId               Int?
   appliedAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
 
   candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id])
   job              Job              @relation(fields: [jobId], references: [id])
+  // Restrict: CV đã gửi kèm đơn thì không xóa được (service báo 400 trước khi chạm khóa ngoại)
+  cv               CV?              @relation(fields: [cvId], references: [id], onDelete: Restrict)
   notifications    Notification[]
 
   @@unique([candidateProfileId, jobId])
   @@index([jobId])
+  @@index([cvId])
 }
 
 model Notification {

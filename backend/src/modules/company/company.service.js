@@ -14,10 +14,10 @@ async function getMyCompany(userId) {
   });
 
   if (!profile) {
-    throw createError('Không tìm thấy hồ sơ nhà tuyển dụng', 404);
+    throw createError('Không tìm thấy thông tin nhà tuyển dụng.', 404);
   }
   if (!profile.company) {
-    throw createError('Tài khoản chưa được gán công ty', 404);
+    throw createError('Tài khoản chưa được gán vào công ty. Vui lòng liên hệ quản trị viên.', 404);
   }
 
   return profile.company;
@@ -41,7 +41,7 @@ async function updateMyCompany(userId, { description, address, website }) {
   }
 
   if (Object.keys(data).length === 0) {
-    throw createError('Không có thông tin nào để cập nhật', 400);
+    throw createError('Chưa có thay đổi nào để lưu.', 400);
   }
 
   return prisma.company.update({ where: { id: company.id }, data });
@@ -51,12 +51,12 @@ async function updateMyCompany(userId, { description, address, website }) {
 async function getCompanyById(companyId) {
   const id = Number(companyId);
   if (!Number.isInteger(id) || id <= 0) {
-    throw createError('Mã công ty không hợp lệ', 400);
+    throw createError('Mã công ty không hợp lệ.', 400);
   }
 
   const company = await prisma.company.findUnique({ where: { id } });
   if (!company) {
-    throw createError('Không tìm thấy công ty', 404);
+    throw createError('Không tìm thấy công ty.', 404);
   }
 
   return company;
@@ -71,7 +71,7 @@ async function getPublicCompany() {
     select: { name: true, description: true, address: true, website: true },
   });
   if (!company) {
-    throw createError('Chưa có thông tin công ty', 404);
+    throw createError('Chưa có thông tin công ty.', 404);
   }
 
   return company;

@@ -26,29 +26,22 @@ const VIEW_RECOMMENDED = 'recommended'
 // Gợi ý: lấy cả danh sách (mức tối đa API cho phép, recommend.service MAX_LIMIT) rồi phân trang phía client
 const RECOMMENDED_LIMIT = 50
 
-// Ô tìm kiếm nhận tối đa bằng độ dài cột title / location của Job
+// Ô tìm kiếm nhận tối đa bằng độ dài cột title của Job
 const SEARCH_MAX_LENGTH = 255
 
-// "“kế toán” tại “Hà Nội”" cho câu kết quả tìm kiếm
-function describeFilter(keyword, location) {
-  if (keyword && location) return `“${keyword}” tại “${location}”`
-  if (keyword) return `“${keyword}”`
-  return `địa điểm “${location}”`
-}
-
 // Khối mở đầu trang chủ (T35f), chung cho khách và ứng viên: nền Xanh mực đặc, tên công ty serif lớn,
-// số vị trí đang tuyển và ô tìm theo tên vị trí + địa điểm (đúng 2 tham số keyword, location của GET /jobs).
+// số vị trí đang tuyển và ô tìm theo tên vị trí (tham số keyword của GET /jobs, lọc theo tiêu đề tin).
+// T35g bỏ ô địa điểm: địa điểm vẫn hiện trên thẻ tin và trang chi tiết.
 // Form không điều khiển (defaultValue) và đổi key theo URL: bấm Back / Xóa bộ lọc thì ô nhập lấy lại giá trị trên URL.
 //   companyName: undefined khi đang tải (giữ chỗ để chữ không nhảy); openTotal: null khi chưa có số
 //   contained: HR / Admin xem trang này trong MainLayout (có Sidebar) nên khối không tràn hết bề ngang
-function SearchHero({ companyName, openTotal, keyword, location, onSearch, contained }) {
+function SearchHero({ companyName, openTotal, keyword, onSearch, contained }) {
   const keywordId = useId()
-  const locationId = useId()
 
   function handleSubmit(event) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
-    onSearch(String(form.get('keyword')).trim(), String(form.get('location')).trim())
+    onSearch(String(form.get('keyword')).trim())
   }
 
   let countText = ' '
@@ -64,7 +57,7 @@ function SearchHero({ companyName, openTotal, keyword, location, onSearch, conta
         </h1>
         <p className={styles.heroCount}>{countText}</p>
 
-        <form key={`${keyword}\n${location}`} className={styles.search} role="search" onSubmit={handleSubmit}>
+        <form key={keyword} className={styles.search} role="search" onSubmit={handleSubmit}>
           <div className={styles.field}>
             <label className={styles.srOnly} htmlFor={keywordId}>
               Tên vị trí
@@ -80,21 +73,6 @@ function SearchHero({ companyName, openTotal, keyword, location, onSearch, conta
               autoComplete="off"
             />
           </div>
-          <div className={styles.field}>
-            <label className={styles.srOnly} htmlFor={locationId}>
-              Địa điểm
-            </label>
-            <input
-              id={locationId}
-              className={styles.input}
-              type="search"
-              name="location"
-              defaultValue={location}
-              placeholder="Địa điểm, ví dụ: Hà Nội"
-              maxLength={SEARCH_MAX_LENGTH}
-              autoComplete="off"
-            />
-          </div>
           <button type="submit" className={styles.searchButton}>
             Tìm
           </button>
@@ -106,7 +84,7 @@ function SearchHero({ companyName, openTotal, keyword, location, onSearch, conta
 
 // Bảng tin việc làm, trang chủ công khai "/": ai cũng xem được, không cần đăng nhập.
 // Ứng viên có thêm tab "Gợi ý theo CV của bạn" (T35d, thay cho trang /candidate/recommended-jobs).
-// Tìm kiếm (T35f) nằm trên URL (?keyword=&location=) và chỉ áp cho tab Tất cả: tìm thì về tab Tất cả,
+// Tìm kiếm (T35f) nằm trên URL (?keyword=) và chỉ áp cho tab Tất cả: tìm thì về tab Tất cả,
 // sang tab Gợi ý thì bỏ bộ lọc (danh sách gợi ý là toàn bộ tin đã xếp theo coverage)
 function JobBoard() {
   const { isAuthenticated, role } = useAuth()
@@ -125,13 +103,12 @@ function JobBoard() {
   const jobsPage = view === VIEW_ALL ? page : 1
   const recommendedPage = view === VIEW_RECOMMENDED ? page : 1
   const keyword = (searchParams.get('keyword') || '').trim()
-  const location = (searchParams.get('location') || '').trim()
-  const filterActive = Boolean(keyword || location)
+  const filterActive = Boolean(keyword)
 
   // Kết quả gắn với đúng truy vấn đã gửi: truy vấn trên URL đổi (đổi trang, tìm kiếm, bấm Back) thì
   // key khác nhau nghĩa là đang tải, không phải tự bật / tắt cờ loading ở từng chỗ
   const [reloadKey, setReloadKey] = useState(0)
-  const queryKey = JSON.stringify([jobsPage, keyword, location, reloadKey])
+  const queryKey = JSON.stringify([jobsPage, keyword, reloadKey])
   const [jobsResult, setJobsResult] = useState({ key: null, data: null, error: '' })
   const loading = jobsResult.key !== queryKey
   const data = loading ? null : jobsResult.data
@@ -207,19 +184,19 @@ function JobBoard() {
   useEffect(() => {
     let ignore = false
     const key = queryKey
-    getJobs({ page: jobsPage, limit: CARD_PAGE_SIZE, keyword, location })
+    getJobs({ page: jobsPage, limit: CARD_PAGE_SIZE, keyword })
       .then((result) => {
         if (!ignore) setJobsResult({ key, data: result.data, error: '' })
       })
       .catch((err) => {
         if (!ignore) {
-          setJobsResult({ key, data: null, error: getErrorMessage(err, 'Không tải được danh sách việc làm') })
+          setJobsResult({ key, data: null, error: getErrorMessage(err, 'Không tải được danh sách tin tuyển dụng.') })
         }
       })
     return () => {
       ignore = true
     }
-  }, [queryKey, jobsPage, keyword, location])
+  }, [queryKey, jobsPage, keyword])
 
   // Chỉ ứng viên mới gọi API gợi ý (API chỉ cho role CANDIDATE)
   useEffect(() => {
@@ -230,7 +207,7 @@ function JobBoard() {
         if (!ignore) setRecommended(result.data)
       })
       .catch((err) => {
-        if (!ignore) setRecommendedError(getErrorMessage(err, 'Không tải được việc làm gợi ý'))
+        if (!ignore) setRecommendedError(getErrorMessage(err, 'Không tải được việc làm gợi ý.'))
       })
       .finally(() => {
         if (!ignore) setRecommendedLoading(false)
@@ -247,7 +224,6 @@ function JobBoard() {
     if (nextView === VIEW_RECOMMENDED) {
       params.set('view', VIEW_RECOMMENDED)
       params.delete('keyword')
-      params.delete('location')
     } else {
       params.delete('view')
     }
@@ -271,18 +247,18 @@ function JobBoard() {
   }
 
   // Tìm: về tab Tất cả, trang 1. Ô để trống thì bỏ tham số đó khỏi URL
-  function handleSearch(nextKeyword, nextLocation) {
+  // ?location= của link cũ (trước T35g) cũng bỏ luôn
+  function handleSearch(nextKeyword) {
     const params = withPage(searchParams, 1)
     params.delete('view')
     if (nextKeyword) params.set('keyword', nextKeyword)
     else params.delete('keyword')
-    if (nextLocation) params.set('location', nextLocation)
-    else params.delete('location')
+    params.delete('location')
     setSearchParams(params)
   }
 
   function clearFilter() {
-    handleSearch('', '')
+    handleSearch('')
   }
 
   function scrollToResults() {
@@ -327,8 +303,8 @@ function JobBoard() {
   } else if (data.pagination.total === 0 && filterActive) {
     content = (
       <div className={styles.empty}>
-        <p className={styles.emptyTitle}>Không có vị trí nào khớp với {describeFilter(keyword, location)}.</p>
-        <p className={styles.emptyText}>Thử tên vị trí ngắn hơn hoặc bỏ địa điểm.</p>
+        <p className={styles.emptyTitle}>Không có vị trí nào khớp với “{keyword}”.</p>
+        <p className={styles.emptyText}>Thử tên vị trí ngắn hơn hoặc một từ khóa khác.</p>
         <Button variant="secondary" onClick={clearFilter}>
           Xóa bộ lọc
         </Button>
@@ -345,7 +321,7 @@ function JobBoard() {
     // Có tin nhưng số trang trên URL vượt quá số trang thật (vd ?page=99)
     content = (
       <div className={styles.empty}>
-        <p className={styles.emptyTitle}>Trang này không có tin nào.</p>
+        <p className={styles.emptyTitle}>Trang này không có tin tuyển dụng nào.</p>
         <Button variant="secondary" onClick={() => handlePageChange(1)}>
           Về trang đầu
         </Button>
@@ -371,7 +347,7 @@ function JobBoard() {
   const filterSummary = filterActive && data && data.pagination.total > 0 && (
     <div className={styles.filterSummary}>
       <p className={styles.filterText} role="status">
-        {data.pagination.total} vị trí khớp với {describeFilter(keyword, location)}
+        {data.pagination.total} vị trí khớp với “{keyword}”
       </p>
       <Button variant="ghost" size="sm" onClick={clearFilter}>
         Xóa bộ lọc
@@ -407,7 +383,6 @@ function JobBoard() {
       companyName={companyName}
       openTotal={openTotal}
       keyword={keyword}
-      location={location}
       onSearch={handleSearch}
       contained={!inSiteLayout}
     />

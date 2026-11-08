@@ -55,7 +55,7 @@ function JobList() {
         if (!ignore) setJobs(result.data)
       })
       .catch((err) => {
-        if (!ignore) setError(getErrorMessage(err, 'Không tải được danh sách tin tuyển dụng'))
+        if (!ignore) setError(getErrorMessage(err, 'Không tải được danh sách tin tuyển dụng.'))
       })
       .finally(() => {
         if (!ignore) setLoading(false)
@@ -105,7 +105,7 @@ function JobList() {
       setConfirm(null)
     } catch (err) {
       // Vd tin vừa có đơn ứng tuyển nên không xóa được nữa
-      setConfirmError(getErrorMessage(err, 'Thao tác thất bại, vui lòng thử lại'))
+      setConfirmError(getErrorMessage(err, 'Chưa thực hiện được. Vui lòng thử lại.'))
     } finally {
       setRunning(false)
       await refreshList()
@@ -129,7 +129,7 @@ function JobList() {
     {
       key: 'location',
       title: 'Địa điểm',
-      render: (job) => job.location || <span className={styles.muted}>Chưa ghi</span>,
+      render: (job) => job.location || <span className={styles.muted}>Chưa có</span>,
     },
     { key: 'applicationCount', title: 'Số đơn ứng tuyển', align: 'right' },
     {
@@ -183,7 +183,7 @@ function JobList() {
   } else if (jobs.length === 0) {
     content = (
       <div className={styles.empty}>
-        <p className={styles.emptyText}>Bạn chưa đăng tin tuyển dụng nào.</p>
+        <p className={styles.emptyText}>Chưa có tin tuyển dụng nào.</p>
         <Link className={styles.primaryLink} to="/recruiter/jobs/new">
           Tạo tin mới
         </Link>
@@ -210,7 +210,7 @@ function JobList() {
           Tạo tin mới
         </Link>
       </div>
-      <p className={styles.intro}>Các tin do bạn đăng. Tin của đồng nghiệp xem ở bảng tin việc làm chung.</p>
+      <p className={styles.intro}>Tin tuyển dụng do tài khoản này đăng. Tin của nhà tuyển dụng khác xem ở trang Việc làm.</p>
 
       {notice && (
         <p className={styles.alertSuccess} role="status">

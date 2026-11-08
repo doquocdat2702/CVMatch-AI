@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   createEducation,
   createExperience,
@@ -20,11 +21,96 @@ import Textarea from '../../components/common/Textarea'
 import CVExportModal from '../../components/cv-export/CVExportModal'
 import { getErrorMessage } from '../../utils/apiError'
 import { formatMonthYear, toMonthInput } from '../../utils/format'
+import { PROFILE_SOURCE_LABEL } from '../../utils/labels'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import styles from './ParsedCV.module.css'
 
-// Mục chưa xác nhận dùng màu vàng của Badge (nhóm "chưa chắc chắn")
+// Mục chưa xác nhận dùng màu vàng của Badge (nhóm "chưa chắc chắn"), đã xác nhận màu xanh lá
 const UNCONFIRMED_STATUS = 'UNCERTAIN'
+const CONFIRMED_STATUS = 'COMPLETED'
+
+// Khung giải thích cách phân tích (T35g) mở sẵn ở lần đầu vào trang; đã xem thì các lần sau thu gọn.
+// Chỉ là tiện ích hiển thị cho từng trình duyệt: localStorage lỗi (chế độ ẩn danh...) thì coi như lần đầu
+const GUIDE_SEEN_KEY = 'cvmatch.parsedCvGuideSeen'
+
+function readGuideSeen() {
+  try {
+    return window.localStorage.getItem(GUIDE_SEEN_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function markGuideSeen() {
+  try {
+    window.localStorage.setItem(GUIDE_SEEN_KEY, '1')
+  } catch {
+    // Không lưu được thì lần sau khung vẫn mở sẵn
+  }
+}
+
+const MODE_TEXT = {
+  rule: 'chỉ dùng từ điển kỹ năng, chưa đọc kinh nghiệm và học vấn',
+  hybrid: 'dùng từ điển kỹ năng kết hợp AI',
+}
+
+// Chế độ suy ra từ nguồn của các mục đang có (khi không vừa phân tích xong): có mục do AI đọc là đã dùng Hybrid
+function inferMode(data) {
+  const items = [...data.skills, ...data.experiences, ...data.educations]
+  if (items.some((item) => item.source === 'NLP')) return 'hybrid'
+  if (items.some((item) => item.source === 'RULE')) return 'rule'
+  return null
+}
+
+// "Hệ thống phân tích CV của bạn như thế nào": 4 bước theo đúng luồng của backend
+// (text-extraction -> rule.parser + nlp.parser -> normalizer -> người dùng xác nhận), chế độ đã dùng, câu nhắc.
+//   mode: chế độ của lần phân tích vừa rồi (trang CV của tôi chuyển sang), null thì suy ra từ dữ liệu
+function AnalysisGuide({ mode, data }) {
+  // Mở sẵn ở lần đầu; đọc localStorage đúng một lần khi vào trang
+  const [initialOpen] = useState(() => !readGuideSeen())
+  useEffect(() => {
+    markGuideSeen()
+  }, [])
+
+  const inferred = mode ? null : inferMode(data)
+  let modeLine
+  if (mode && MODE_TEXT[mode]) {
+    modeLine = `Lần phân tích vừa rồi ${MODE_TEXT[mode]}.`
+  } else if (inferred === 'hybrid') {
+    modeLine = 'Hồ sơ có mục do AI đọc từ CV.'
+  } else if (inferred === 'rule') {
+    modeLine = 'Hồ sơ hiện chỉ có mục đọc bằng từ điển kỹ năng.'
+  } else {
+    modeLine = 'Hồ sơ chưa có mục nào do hệ thống đọc từ CV.'
+  }
+
+  return (
+    <details className={styles.guide} open={initialOpen}>
+      <summary className={styles.guideSummary}>Cách hệ thống đọc CV của bạn</summary>
+      <div className={styles.guideBody}>
+        <ol className={styles.steps}>
+          <li>
+            <span className={styles.stepTitle}>Lấy chữ từ file.</span> Đọc chữ trong file PDF hoặc Word bạn tải lên.
+          </li>
+          <li>
+            <span className={styles.stepTitle}>Nhận diện kỹ năng.</span> So chữ trong CV với từ điển kỹ năng. Khi bật
+            AI, hệ thống đọc thêm kinh nghiệm và học vấn.
+          </li>
+          <li>
+            <span className={styles.stepTitle}>Chuẩn hóa.</span> Đưa tên kỹ năng về tên chuẩn, ví dụ "MS Excel" thành
+            "Excel", và mốc thời gian về tháng/năm.
+          </li>
+          <li>
+            <span className={styles.stepTitle}>Bạn kiểm tra và xác nhận.</span> Mục đã xác nhận được giữ nguyên khi phân
+            tích lại CV, mục chưa xác nhận có thể được thay mới.
+          </li>
+        </ol>
+        <p className={styles.guideMode}>{modeLine}</p>
+        <p className={styles.guideNote}>Kết quả chỉ hỗ trợ đối chiếu, không dùng để đánh giá năng lực.</p>
+      </div>
+    </details>
+  )
+}
 
 const FORM_ID = 'parsed-item-form'
 
@@ -136,12 +222,12 @@ function validate(config, form) {
   const errors = {}
   config.fields.forEach((field) => {
     if (field.required && !form[field.name].trim()) {
-      errors[field.name] = `Vui lòng nhập ${field.label.toLowerCase()}`
+      errors[field.name] = `Vui lòng nhập ${field.label.toLowerCase()}.`
     }
   })
   // "YYYY-MM" so sánh theo chuỗi là đúng thứ tự thời gian
   if (form.startDate && form.endDate && form.startDate > form.endDate) {
-    errors.endDate = 'Tháng kết thúc phải sau hoặc trùng tháng bắt đầu'
+    errors.endDate = 'Tháng kết thúc không được trước tháng bắt đầu.'
   }
   return errors
 }
@@ -206,6 +292,9 @@ function ItemContent({ group, item }) {
 
 function ParsedCV() {
   useDocumentTitle('Kết quả phân tích CV')
+  // Trang CV của tôi chuyển sang kèm chế độ của lần phân tích vừa rồi ({ mode: 'rule' | 'hybrid' }, T35g)
+  const location = useLocation()
+  const modeFromAnalysis = location.state && location.state.mode ? location.state.mode : null
   const [data, setData] = useState(EMPTY_DATA)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -239,7 +328,7 @@ function ParsedCV() {
         if (!ignore) setData(pickData(result.data))
       })
       .catch((err) => {
-        if (!ignore) setLoadError(getErrorMessage(err, 'Không tải được kết quả phân tích CV'))
+        if (!ignore) setLoadError(getErrorMessage(err, 'Không tải được kết quả phân tích CV.'))
       })
       .finally(() => {
         if (!ignore) setLoading(false)
@@ -261,7 +350,7 @@ function ParsedCV() {
       const result = await getMyProfile()
       setData(pickData(result.data))
     } catch (err) {
-      setNotice({ group, type: 'error', text: getErrorMessage(err, 'Không tải lại được dữ liệu, vui lòng tải lại trang') })
+      setNotice({ group, type: 'error', text: getErrorMessage(err, 'Không tải lại được dữ liệu. Vui lòng tải lại trang.') })
     }
   }
 
@@ -313,7 +402,7 @@ function ParsedCV() {
       setNotice({ group, type: 'success', text: item ? 'Đã lưu thay đổi.' : `Đã thêm ${config.itemName}.` })
       await refresh(group)
     } catch (err) {
-      setFormError(getErrorMessage(err, 'Lưu thất bại, vui lòng thử lại'))
+      setFormError(getErrorMessage(err, 'Chưa lưu được. Vui lòng thử lại.'))
     } finally {
       setSaving(false)
     }
@@ -334,7 +423,7 @@ function ParsedCV() {
     } catch (err) {
       // 400: dữ liệu phân tích ra còn thiếu trường bắt buộc (vd kinh nghiệm chưa có tên công ty)
       const hint = err.response && err.response.status === 400 ? ' Bấm "Sửa" để bổ sung.' : ''
-      setNotice({ group, type: 'error', text: `Không xác nhận được: ${getErrorMessage(err)}.${hint}` })
+      setNotice({ group, type: 'error', text: `Không xác nhận được. ${getErrorMessage(err)}${hint}` })
     } finally {
       setConfirmingKey(null)
     }
@@ -363,7 +452,7 @@ function ParsedCV() {
       setNotice({ group, type: 'success', text: `Đã xóa ${config.itemName}.` })
       await refresh(group)
     } catch (err) {
-      setDeleteError(getErrorMessage(err, 'Xóa thất bại, vui lòng thử lại'))
+      setDeleteError(getErrorMessage(err, 'Chưa xóa được. Vui lòng thử lại.'))
     } finally {
       setDeleting(false)
     }
@@ -452,8 +541,13 @@ function ParsedCV() {
                 </div>
                 <div className={styles.side}>
                   <div className={styles.badges}>
-                    <Badge status={item.source}>{item.source}</Badge>
-                    {!item.isConfirmed && <Badge status={UNCONFIRMED_STATUS}>Chưa xác nhận</Badge>}
+                    {/* Nguồn bằng chữ tiếng Việt (T35g): Từ điển / AI / Tự nhập */}
+                    <Badge status={item.source}>{PROFILE_SOURCE_LABEL[item.source] || item.source}</Badge>
+                    {item.isConfirmed ? (
+                      <Badge status={CONFIRMED_STATUS}>Đã xác nhận</Badge>
+                    ) : (
+                      <Badge status={UNCONFIRMED_STATUS}>Chưa xác nhận</Badge>
+                    )}
                   </div>
                   <div className={styles.actions}>
                     {!item.isConfirmed && (
@@ -523,18 +617,18 @@ function ParsedCV() {
           Xuất CV
         </Button>
       </div>
+      <AnalysisGuide mode={modeFromAnalysis} data={data} />
       <div className={styles.reminder} role="note">
         <p className={styles.reminderText}>
-          Dữ liệu dưới đây do hệ thống tự phân tích từ CV của bạn, có thể chưa chính xác. Vui lòng kiểm tra và chỉnh
-          sửa.
+          Dữ liệu dưới đây được đọc tự động từ CV nên có thể chưa chính xác. Bạn nên kiểm tra và chỉnh sửa.
         </p>
         <p className={styles.reminderText}>
-          Mục có nhãn "Chưa xác nhận": bấm "Xác nhận" nếu đúng, bấm "Sửa" nếu cần chỉnh. Khi phân tích lại CV, các mục
-          chưa xác nhận có thể được thay mới, mục đã xác nhận được giữ nguyên.
+          Với mục "Chưa xác nhận", bấm "Xác nhận" nếu đúng hoặc "Sửa" nếu cần chỉnh. Khi phân tích lại CV, mục đã xác
+          nhận được giữ nguyên.
         </p>
       </div>
       <p className={styles.legend}>
-        Nguồn: RULE là đối chiếu từ điển kỹ năng, NLP là mô hình ngôn ngữ phân tích, MANUAL là bạn tự nhập.
+        Nguồn: Từ điển là kỹ năng đọc bằng từ điển, AI là mục do AI đọc từ CV, Tự nhập là mục bạn tự thêm.
       </p>
 
       {GROUP_ORDER.map(renderSection)}

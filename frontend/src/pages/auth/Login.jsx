@@ -50,7 +50,7 @@ function Login() {
 
     const email = form.email.trim()
     if (!email || !form.password) {
-      setError('Vui lòng nhập email và mật khẩu')
+      setError('Vui lòng nhập email và mật khẩu.')
       return
     }
 
@@ -59,7 +59,7 @@ function Login() {
       const user = await login(email, form.password)
       navigate(redirectPath(user.role), { replace: true })
     } catch (err) {
-      setError(getErrorMessage(err, 'Đăng nhập thất bại, vui lòng thử lại'))
+      setError(getErrorMessage(err, 'Chưa đăng nhập được. Vui lòng thử lại.'))
     } finally {
       setSubmitting(false)
     }
@@ -80,7 +80,7 @@ function Login() {
             <Logo />
           </div>
           <h1 className={styles.title}>Đăng nhập</h1>
-          <p className={styles.subtitle}>Dùng chung cho ứng viên, nhà tuyển dụng và quản trị viên.</p>
+          <p className={styles.subtitle}>Dành cho ứng viên, nhà tuyển dụng và quản trị viên.</p>
 
           {notice && !error && <p className={styles.alertSuccess}>{notice}</p>}
           {error && (

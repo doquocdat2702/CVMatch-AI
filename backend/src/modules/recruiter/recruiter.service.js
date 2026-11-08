@@ -28,7 +28,7 @@ async function getMyProfile(userId) {
   });
 
   if (!profile) {
-    throw createError('Không tìm thấy hồ sơ nhà tuyển dụng', 404);
+    throw createError('Không tìm thấy thông tin nhà tuyển dụng.', 404);
   }
 
   return profile;
@@ -38,7 +38,7 @@ async function getMyProfile(userId) {
 async function updateMyProfile(userId, { fullName, phone, position }) {
   const profile = await prisma.recruiterProfile.findUnique({ where: { userId } });
   if (!profile) {
-    throw createError('Không tìm thấy hồ sơ nhà tuyển dụng', 404);
+    throw createError('Không tìm thấy thông tin nhà tuyển dụng.', 404);
   }
 
   const data = {};
@@ -46,7 +46,7 @@ async function updateMyProfile(userId, { fullName, phone, position }) {
   if (fullName !== undefined) {
     const value = typeof fullName === 'string' ? fullName.trim() : '';
     if (!value) {
-      throw createError('Họ tên không được để trống', 400);
+      throw createError('Vui lòng nhập họ và tên.', 400);
     }
     data.fullName = value;
   }
@@ -58,7 +58,7 @@ async function updateMyProfile(userId, { fullName, phone, position }) {
   }
 
   if (Object.keys(data).length === 0) {
-    throw createError('Không có thông tin nào để cập nhật', 400);
+    throw createError('Chưa có thay đổi nào để lưu.', 400);
   }
 
   return prisma.recruiterProfile.update({
@@ -75,12 +75,12 @@ async function getDashboard(userId, { scope } = {}) {
   const selectedScope =
     scope === undefined || scope === '' ? 'mine' : String(scope).trim().toLowerCase();
   if (!DASHBOARD_SCOPES.includes(selectedScope)) {
-    throw createError('scope phải là mine hoặc all', 400);
+    throw createError('Phạm vi số liệu không đúng.', 400);
   }
 
   const profile = await prisma.recruiterProfile.findUnique({ where: { userId } });
   if (!profile) {
-    throw createError('Không tìm thấy hồ sơ nhà tuyển dụng', 404);
+    throw createError('Không tìm thấy thông tin nhà tuyển dụng.', 404);
   }
 
   const jobWhere =

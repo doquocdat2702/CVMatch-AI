@@ -6,7 +6,7 @@ import { MIN_PASSWORD_LENGTH } from '../../utils/validation'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import styles from './Auth.module.css'
 
-const INVALID_LINK = 'Link không hợp lệ hoặc đã hết hạn'
+const INVALID_LINK = 'Liên kết đặt lại mật khẩu đã hết hạn hoặc đã được dùng. Vui lòng gửi yêu cầu mới.'
 
 // Mở từ liên kết trong email: /reset-password?token=...
 function ResetPassword() {
@@ -31,11 +31,11 @@ function ResetPassword() {
     setError('')
 
     if (form.newPassword.length < MIN_PASSWORD_LENGTH) {
-      setError(`Mật khẩu mới phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự`)
+      setError(`Mật khẩu mới cần có ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`)
       return
     }
     if (form.confirmPassword !== form.newPassword) {
-      setError('Mật khẩu xác nhận không khớp')
+      setError('Mật khẩu xác nhận chưa khớp.')
       return
     }
 
@@ -44,7 +44,7 @@ function ResetPassword() {
       await resetPassword({ token, newPassword: form.newPassword })
       navigate('/login', {
         replace: true,
-        state: { notice: 'Đặt lại mật khẩu thành công, vui lòng đăng nhập bằng mật khẩu mới' },
+        state: { notice: 'Đã đặt lại mật khẩu. Vui lòng đăng nhập bằng mật khẩu mới.' },
       })
     } catch (err) {
       // Mật khẩu đã kiểm ở trên theo đúng quy tắc backend,

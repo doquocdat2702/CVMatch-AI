@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { applyJob, getMyApplications } from '../../api/application.api'
 import { getCVs } from '../../api/cv.api'
@@ -20,8 +20,9 @@ const EMPTY_CVS = { loading: false, items: [], error: '' }
 //   - Đã nộp đơn cho tin này: nút "Đã ứng tuyển" bị khóa + trạng thái đơn + link "Xem đơn"
 //   - Tin đã đóng: "Tin đã ngừng nhận hồ sơ", không có nút
 //   - Còn lại: nút "Ứng tuyển ngay" mở hộp ứng tuyển
-// Đơn ứng tuyển không lưu riêng CV: nhà tuyển dụng đối chiếu với hồ sơ đã phân tích và xem CV hiện tại
-// (CV mới nhất đã phân tích). Hộp ứng tuyển chỉ liệt kê CV để xem; chưa có CV đã phân tích thì tải ngay trong hộp.
+// Hộp ứng tuyển (T35g): ứng viên chọn CV gửi kèm đơn (radio, chọn sẵn CV mới nhất), đơn lưu đúng CV đã chọn
+// (Application.cvId). Đối chiếu yêu cầu vẫn dùng hồ sơ hiện tại (lần phân tích CV gần nhất), nên CV đang chọn khác
+// CV đã phân tích thì hộp nói rõ. "Tải CV mới" tải + phân tích ngay trong hộp rồi tự chọn CV đó.
 //   autoOpen: tự mở hộp một lần (khách đăng nhập xong quay lại /jobs/:id?apply=1); onAutoOpened báo đã xử lý
 //   variant: 'panel' cho khung ứng tuyển của trang chi tiết tin (T35f): nút rộng hết khung, trạng thái đơn
 //   gọn trên một dòng để dưới 900px khung dính ở đáy màn hình không cao quá
@@ -38,7 +39,10 @@ function ApplyAction({ jobId, jobTitle, isOpen, autoOpen = false, onAutoOpened, 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  // CV đang chọn gửi kèm đơn
+  const [selectedCvId, setSelectedCvId] = useState(null)
   const fileInputRef = useRef(null)
+  const radioName = useId()
 
   // Giá trị mới nhất của các props dùng sau khi kiểm tra đơn xong. Để trong ref thay vì dependency:
   // onAutoOpened là hàm mới mỗi lần trang cha render, đưa vào dependency sẽ gọi lại API liên tục
@@ -74,13 +78,21 @@ function ApplyAction({ jobId, jobTitle, isOpen, autoOpen = false, onAutoOpened, 
     }
   }, [jobId])
 
-  async function loadCvs() {
+  // preferId: CV cần chọn sau khi tải (CV vừa tải lên). Không có thì giữ lựa chọn cũ nếu CV đó còn,
+  // không còn thì chọn CV mới nhất (API trả mới nhất trước)
+  async function loadCvs(preferId) {
     setCvs({ ...EMPTY_CVS, loading: true })
     try {
       const result = await getCVs()
-      setCvs({ loading: false, items: result.data, error: '' })
+      const items = result.data
+      setCvs({ loading: false, items, error: '' })
+      setSelectedCvId((current) => {
+        const wanted = preferId !== undefined ? preferId : current
+        if (items.some((cv) => cv.id === wanted)) return wanted
+        return items.length > 0 ? items[0].id : null
+      })
     } catch (err) {
-      setCvs({ ...EMPTY_CVS, error: getErrorMessage(err, 'Không tải được danh sách CV') })
+      setCvs({ ...EMPTY_CVS, error: getErrorMessage(err, 'Không tải được danh sách CV.') })
     }
   }
 
@@ -88,6 +100,8 @@ function ApplyAction({ jobId, jobTitle, isOpen, autoOpen = false, onAutoOpened, 
     setError('')
     setUploadError('')
     setSubmitted(false)
+    // Mỗi lần mở hộp chọn sẵn CV mới nhất
+    setSelectedCvId(null)
     setModalOpen(true)
     loadCvs()
   }
@@ -111,15 +125,19 @@ function ApplyAction({ jobId, jobTitle, isOpen, autoOpen = false, onAutoOpened, 
       setUploadError(invalid)
       return
     }
+    // CV vừa tải lên được chọn sẵn, kể cả khi phân tích lỗi (file vẫn gửi kèm đơn được)
+    let uploadedId
     try {
-      await uploadAndAnalyzeCv(file, setUploadStep)
+      const uploaded = await uploadAndAnalyzeCv(file, setUploadStep)
+      uploadedId = uploaded.id
     } catch (err) {
-      const prefix = { upload: 'Tải CV lên thất bại', extract: 'Trích xuất nội dung thất bại', parse: 'Phân tích thất bại' }
+      if (err.cv) uploadedId = err.cv.id
+      const prefix = { upload: 'Tải CV lên thất bại', extract: 'Đọc nội dung CV thất bại', parse: 'Phân tích CV thất bại' }
       setUploadError(`${prefix[err.step] || 'Lỗi'}: ${getErrorMessage(err)}`)
     } finally {
       setUploadStep(null)
-      // Lấy lại danh sách: CV vừa phân tích xong thành CV hiện tại, nút gửi đơn mở khóa
-      loadCvs()
+      // Lấy lại danh sách: CV vừa phân tích xong là CV dùng cho hồ sơ, nút gửi đơn mở khóa
+      loadCvs(uploadedId)
     }
   }
 
@@ -127,20 +145,27 @@ function ApplyAction({ jobId, jobTitle, isOpen, autoOpen = false, onAutoOpened, 
     setError('')
     setSubmitting(true)
     try {
-      const result = await applyJob(Number(jobId))
+      // Gửi đúng CV đang chọn trong hộp
+      const result = await applyJob(Number(jobId), selectedCvId)
       // Đơn vừa tạo: bên ngoài hộp chuyển thành "Đã ứng tuyển"
       setApplication(result.data)
       setSubmitted(true)
     } catch (err) {
       // Vd tin vừa đóng, đã ứng tuyển ở tab khác: giữ hộp mở và hiện câu của API
-      setError(getErrorMessage(err, 'Gửi đơn ứng tuyển thất bại, vui lòng thử lại'))
+      setError(getErrorMessage(err, 'Chưa gửi được đơn ứng tuyển. Vui lòng thử lại.'))
     } finally {
       setSubmitting(false)
     }
   }
 
-  // CV hiện tại = CV mới nhất đã phân tích (API trả mới nhất trước)
-  const currentCv = cvs.items.find((cv) => cv.status === 'COMPLETED') || null
+  // CV đã dùng để phân tích hồ sơ = CV đã phân tích (COMPLETED) có lần phân tích gần nhất.
+  // Chưa có CV nào đã phân tích thì chưa ứng tuyển được (backend chặn), hộp hướng dẫn tải CV ngay tại đây
+  const analysedCv =
+    cvs.items
+      .filter((cv) => cv.status === 'COMPLETED')
+      .sort((a, b) => new Date(b.parsedAt || b.uploadedAt) - new Date(a.parsedAt || a.uploadedAt))[0] || null
+  const selectedCv = cvs.items.find((cv) => cv.id === selectedCvId) || null
+  const selectedDiffers = selectedCv !== null && analysedCv !== null && selectedCv.id !== analysedCv.id
 
   let body
   if (submitted) {
@@ -149,11 +174,37 @@ function ApplyAction({ jobId, jobTitle, isOpen, autoOpen = false, onAutoOpened, 
         <p className={styles.doneTitle}>Đã gửi đơn ứng tuyển</p>
         <p className={styles.doneText}>Bạn sẽ nhận thông báo khi nhà tuyển dụng cập nhật trạng thái đơn.</p>
         <Link className={styles.link} to="/candidate/applications">
-          Xem đơn của tôi
+          Xem đơn ứng tuyển
         </Link>
       </div>
     )
   } else {
+    const fileInput = (
+      <input
+        ref={fileInputRef}
+        className={styles.fileInput}
+        type="file"
+        accept=".pdf,.docx"
+        onChange={handleFileChange}
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+    )
+    const uploadStatus = (
+      <>
+        {uploadStep && (
+          <p className={styles.stepText} role="status">
+            {CV_UPLOAD_STEP_TEXT[uploadStep]}
+          </p>
+        )}
+        {uploadError && (
+          <p className={styles.error} role="alert">
+            {uploadError}
+          </p>
+        )}
+      </>
+    )
+
     let cvSection
     if (cvs.loading) {
       cvSection = <Loading text="Đang tải danh sách CV..." />
@@ -163,7 +214,7 @@ function ApplyAction({ jobId, jobTitle, isOpen, autoOpen = false, onAutoOpened, 
           <p className={styles.error} role="alert">
             {cvs.error}
           </p>
-          <Button variant="secondary" size="sm" onClick={loadCvs}>
+          <Button variant="secondary" size="sm" onClick={() => loadCvs()}>
             Thử lại
           </Button>
         </div>
@@ -172,43 +223,56 @@ function ApplyAction({ jobId, jobTitle, isOpen, autoOpen = false, onAutoOpened, 
       cvSection = (
         <>
           {cvs.items.length > 0 && (
-            <ul className={styles.cvList}>
-              {cvs.items.map((cv) => (
-                <li key={cv.id} className={styles.cvItem}>
-                  <div className={styles.cvInfo}>
-                    <span className={styles.cvName}>{cv.fileName}</span>
-                    <span className={styles.cvMeta}>
-                      Tải lên {formatDate(cv.uploadedAt)}
-                      <Badge status={cv.status}>{CV_STATUS_LABEL[cv.status] || cv.status}</Badge>
-                      {currentCv && cv.id === currentCv.id && <span className={styles.currentTag}>CV hiện tại</span>}
-                    </span>
-                  </div>
-                  <span className={styles.cvAction}>
-                    <CvViewButton cv={cv} label="Xem" />
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <fieldset className={styles.cvFieldset} disabled={busy}>
+              <legend className={styles.cvLegend}>Chọn CV gửi kèm đơn</legend>
+              <ul className={styles.cvList}>
+                {cvs.items.map((cv) => {
+                  const selected = cv.id === selectedCvId
+                  return (
+                    <li key={cv.id} className={selected ? `${styles.cvItem} ${styles.cvItemSelected}` : styles.cvItem}>
+                      <label className={styles.cvOption}>
+                        <input
+                          className={styles.radio}
+                          type="radio"
+                          name={radioName}
+                          value={cv.id}
+                          checked={selected}
+                          onChange={() => setSelectedCvId(cv.id)}
+                        />
+                        <span className={styles.cvInfo}>
+                          <span className={styles.cvName}>{cv.fileName}</span>
+                          <span className={styles.cvMeta}>
+                            Tải lên {formatDate(cv.uploadedAt)}
+                            <Badge status={cv.status}>{CV_STATUS_LABEL[cv.status] || cv.status}</Badge>
+                            {analysedCv && cv.id === analysedCv.id && (
+                              <span className={styles.currentTag}>Dùng cho hồ sơ</span>
+                            )}
+                          </span>
+                        </span>
+                      </label>
+                      {/* Nút Xem nằm ngoài nhãn: bấm Xem không đổi lựa chọn */}
+                      <span className={styles.cvAction}>
+                        <CvViewButton cv={cv} label="Xem" />
+                      </span>
+                    </li>
+                  )
+                })}
+              </ul>
+            </fieldset>
           )}
 
-          {/* Chưa có CV đã phân tích: tải ngay trong hộp, xong thì CV đó thành CV hiện tại */}
-          {!currentCv && (
-            <div className={styles.uploadBox}>
-              <p className={styles.uploadText}>
-                {cvs.items.length === 0
-                  ? 'Bạn chưa có CV nào. Tải CV lên ngay tại đây để ứng tuyển.'
-                  : 'Bạn chưa có CV nào đã phân tích xong. Tải CV lên ngay tại đây để ứng tuyển.'}{' '}
-                Nhận file PDF hoặc DOCX, tối đa 5MB.
-              </p>
-              <input
-                ref={fileInputRef}
-                className={styles.fileInput}
-                type="file"
-                accept=".pdf,.docx"
-                onChange={handleFileChange}
-                tabIndex={-1}
-                aria-hidden="true"
-              />
+          {cvs.items.length > 0 && (
+            // aria-live: đổi CV thì trình đọc màn hình đọc lại câu "CV này khác..." khi câu đó hiện ra
+            <p className={styles.attachNote} aria-live="polite">
+              CV được chọn sẽ gửi kèm đơn ứng tuyển. Kết quả đối chiếu dựa trên hồ sơ hiện tại của bạn.
+              {selectedDiffers && ' Lưu ý: hồ sơ của bạn chưa được cập nhật từ CV này.'}
+            </p>
+          )}
+
+          {analysedCv ? (
+            // Đã có CV phân tích: "Tải CV mới" gọn một dòng, tải và phân tích xong thì tự chọn CV đó
+            <div className={styles.uploadRow}>
+              {fileInput}
               <Button
                 variant="secondary"
                 size="sm"
@@ -216,18 +280,31 @@ function ApplyAction({ jobId, jobTitle, isOpen, autoOpen = false, onAutoOpened, 
                 onClick={() => fileInputRef.current.click()}
                 disabled={busy}
               >
-                Chọn file CV
+                Tải CV mới
               </Button>
-              {uploadStep && (
-                <p className={styles.stepText} role="status">
-                  {CV_UPLOAD_STEP_TEXT[uploadStep]}
-                </p>
-              )}
-              {uploadError && (
-                <p className={styles.error} role="alert">
-                  {uploadError}
-                </p>
-              )}
+              <span className={styles.uploadHint}>PDF hoặc DOCX, tối đa 5 MB. CV mới sẽ được phân tích để cập nhật hồ sơ.</span>
+              {uploadStatus}
+            </div>
+          ) : (
+            // Chưa có CV đã phân tích: tải ngay trong hộp, xong thì CV đó được chọn và hồ sơ có dữ liệu để đối chiếu
+            <div className={styles.uploadBox}>
+              <p className={styles.uploadText}>
+                {cvs.items.length === 0
+                  ? 'Bạn chưa có CV. Tải CV lên để ứng tuyển.'
+                  : 'Bạn chưa có CV đã phân tích. Tải CV lên để ứng tuyển.'}{' '}
+                Nhận file PDF hoặc DOCX, tối đa 5 MB.
+              </p>
+              {fileInput}
+              <Button
+                variant="secondary"
+                size="sm"
+                className={styles.touch}
+                onClick={() => fileInputRef.current.click()}
+                disabled={busy}
+              >
+                Tải CV mới
+              </Button>
+              {uploadStatus}
             </div>
           )}
         </>
@@ -236,10 +313,6 @@ function ApplyAction({ jobId, jobTitle, isOpen, autoOpen = false, onAutoOpened, 
 
     body = (
       <>
-        <p className={styles.intro}>
-          Nhà tuyển dụng đối chiếu yêu cầu của tin với hồ sơ đã phân tích từ CV của bạn và xem được CV hiện tại (CV mới
-          nhất đã phân tích).
-        </p>
         {cvSection}
         {error && (
           <p className={styles.error} role="alert">
@@ -250,7 +323,6 @@ function ApplyAction({ jobId, jobTitle, isOpen, autoOpen = false, onAutoOpened, 
     )
   }
 
-  // Hộp thoại gắn vào body (ngoài SiteLayout) nên tự đặt vùng bấm 44px cho điện thoại (styles.touch)
   const footer = submitted ? (
     <Button variant="secondary" className={styles.touch} onClick={closeModal}>
       Đóng
@@ -264,7 +336,8 @@ function ApplyAction({ jobId, jobTitle, isOpen, autoOpen = false, onAutoOpened, 
         className={styles.touch}
         onClick={handleSubmit}
         loading={submitting}
-        disabled={!currentCv || uploadStep !== null}
+        // Chưa có CV đã phân tích (hồ sơ trống) hoặc chưa chọn CV thì chưa gửi được
+        disabled={!analysedCv || !selectedCv || uploadStep !== null}
       >
         {submitting ? 'Đang gửi đơn...' : 'Gửi đơn ứng tuyển'}
       </Button>
@@ -304,12 +377,12 @@ function ApplyAction({ jobId, jobTitle, isOpen, autoOpen = false, onAutoOpened, 
         ) : (
           statusLine
         )}
-        <p className={styles.meta}>Nộp lúc {formatDateTime(application.appliedAt)}</p>
+        <p className={styles.meta}>Ứng tuyển lúc {formatDateTime(application.appliedAt)}</p>
         {!isPanel && viewLink}
       </div>
     )
   } else if (!isOpen) {
-    action = <p className={styles.closed}>Tin đã ngừng nhận hồ sơ</p>
+    action = <p className={styles.closed}>Tin tuyển dụng đã ngừng nhận đơn</p>
   } else {
     action = (
       <div className={boxClass}>

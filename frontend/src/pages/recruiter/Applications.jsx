@@ -75,7 +75,7 @@ function Applications() {
         if (!ignore) setJobs(response.data)
       })
       .catch((err) => {
-        if (!ignore) setJobsError(getErrorMessage(err, 'Không tải được danh sách tin tuyển dụng'))
+        if (!ignore) setJobsError(getErrorMessage(err, 'Không tải được danh sách tin tuyển dụng.'))
       })
       .finally(() => {
         if (!ignore) setJobsLoading(false)
@@ -102,7 +102,7 @@ function Applications() {
       })
       .catch((err) => {
         if (!ignore) {
-          setResult({ key: requestKey, data: null, error: getErrorMessage(err, 'Không tải được đơn ứng tuyển') })
+          setResult({ key: requestKey, data: null, error: getErrorMessage(err, 'Không tải được đơn ứng tuyển.') })
         }
       })
     return () => {
@@ -162,7 +162,7 @@ function Applications() {
       })
     } catch (err) {
       // Hiện đúng câu lỗi của API (vd đơn vừa bị đổi trạng thái, không phải tin của mình)
-      setNotice({ type: 'error', text: getErrorMessage(err, 'Đổi trạng thái đơn thất bại, vui lòng thử lại') })
+      setNotice({ type: 'error', text: getErrorMessage(err, 'Chưa đổi được trạng thái đơn. Vui lòng thử lại.') })
     } finally {
       await refreshList()
       setUpdatingId(null)
@@ -185,16 +185,23 @@ function Applications() {
         <span className={styles.name}>{application.candidate.fullName || 'Chưa có họ tên'}</span>
       ),
     },
-    { key: 'appliedAt', title: 'Ngày nộp', render: (application) => formatDate(application.appliedAt) },
+    { key: 'appliedAt', title: 'Ngày ứng tuyển', render: (application) => formatDate(application.appliedAt) },
     {
-      // CV hiện tại của ứng viên (mới nhất đã phân tích): đơn không lưu riêng CV lúc nộp (T35f)
+      // CV ứng viên chọn gửi kèm đơn (T35g). Đơn cũ chưa lưu CV: CV hiện tại của ứng viên kèm ghi chú
       key: 'cv',
       title: 'CV',
-      render: (application) => <CvViewButton cv={application.currentCv} />,
+      render: (application) => (
+        <div className={styles.cvCell}>
+          <CvViewButton cv={application.cv} />
+          {application.cv && application.cvLegacy && (
+            <span className={styles.cvLegacy}>Đang hiển thị CV hiện tại của ứng viên</span>
+          )}
+        </div>
+      ),
     },
     {
       key: 'coverage',
-      title: 'Coverage lúc nộp',
+      title: 'Tỉ lệ có bằng chứng',
       align: 'right',
       // Backend chỉ lưu % lúc nộp (không lưu số yêu cầu), xem đủ "x/y" trong ma trận
       render: (application) =>
@@ -219,7 +226,7 @@ function Applications() {
         return (
           <Select
             aria-label={`Đổi trạng thái đơn của ${application.candidate.fullName || 'ứng viên'}`}
-            placeholder={locked ? 'Đã chốt, không đổi được' : 'Chuyển sang...'}
+            placeholder={locked ? 'Đã có kết quả' : 'Chuyển sang...'}
             options={allowed.map((status) => ({ value: status, label: statusLabel(status) }))}
             value=""
             onChange={(event) => handleStatusSelect(application, event.target.value)}
@@ -235,7 +242,7 @@ function Applications() {
       align: 'right',
       render: (application) => (
         <Button variant="ghost" size="sm" onClick={() => setMatrixTarget(application)}>
-          Xem ma trận
+          Xem đối chiếu
         </Button>
       ),
     },
@@ -258,7 +265,7 @@ function Applications() {
   } else if (jobs.length === 0) {
     content = (
       <div className={styles.empty}>
-        <p className={styles.emptyText}>Bạn chưa đăng tin tuyển dụng nào.</p>
+        <p className={styles.emptyText}>Chưa có tin tuyển dụng nào.</p>
         <Link className={styles.link} to="/recruiter/jobs/new">
           Đăng tin tuyển dụng
         </Link>
@@ -330,8 +337,8 @@ function Applications() {
     <>
       <h1>Đơn ứng tuyển</h1>
       <p className={styles.intro}>
-        Đơn đi theo luồng: Đã nộp, Đang xem xét, rồi Đã chấp nhận hoặc Đã từ chối (có thể từ chối ngay khi mới nộp). Đơn
-        đã chấp nhận hoặc từ chối thì không đổi được nữa. Mỗi lần đổi, ứng viên nhận được thông báo.
+        Đơn đi theo thứ tự Đã ứng tuyển, Đang xem xét, rồi Đã chấp nhận hoặc Đã từ chối. Đơn đã có kết quả thì không đổi
+        được nữa. Ứng viên nhận thông báo sau mỗi lần đổi.
       </p>
 
       {notice && (
@@ -371,8 +378,8 @@ function Applications() {
         {confirm && (
           <p className={styles.modalText}>
             Đơn của {confirm.application.candidate.fullName || 'ứng viên'} sẽ chuyển từ "
-            {statusLabel(confirm.application.status)}" sang "{statusLabel(confirm.status)}". Đây là trạng thái cuối,
-            không đổi lại được, và ứng viên sẽ nhận được thông báo.
+            {statusLabel(confirm.application.status)}" sang "{statusLabel(confirm.status)}". Đây là kết quả cuối, không
+            đổi lại được. Ứng viên sẽ nhận thông báo.
           </p>
         )}
       </Modal>

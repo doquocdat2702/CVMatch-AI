@@ -13,18 +13,18 @@ const EMPTY_FORM = { email: '', password: '', confirmPassword: '', fullName: '',
 function validate(form) {
   const errors = {}
   if (!form.email.trim()) {
-    errors.email = 'Vui lòng nhập email'
+    errors.email = 'Vui lòng nhập email.'
   } else if (!isValidEmail(form.email.trim())) {
-    errors.email = 'Email không đúng định dạng'
+    errors.email = 'Email không đúng định dạng.'
   }
   if (form.password.length < MIN_PASSWORD_LENGTH) {
-    errors.password = `Mật khẩu phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự`
+    errors.password = `Mật khẩu cần có ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`
   }
   if (form.confirmPassword !== form.password) {
-    errors.confirmPassword = 'Mật khẩu xác nhận không khớp'
+    errors.confirmPassword = 'Mật khẩu xác nhận chưa khớp.'
   }
   if (!form.fullName.trim()) {
-    errors.fullName = 'Vui lòng nhập họ và tên'
+    errors.fullName = 'Vui lòng nhập họ và tên.'
   }
   return errors
 }
@@ -49,7 +49,7 @@ function CreateRecruiter() {
         if (!ignore) setCompany({ loading: false, name: result.data.name, error: '' })
       })
       .catch((err) => {
-        if (!ignore) setCompany({ loading: false, name: '', error: getErrorMessage(err, 'Không tải được tên công ty') })
+        if (!ignore) setCompany({ loading: false, name: '', error: getErrorMessage(err, 'Không tải được tên công ty.') })
       })
     return () => {
       ignore = true
@@ -90,7 +90,7 @@ function CreateRecruiter() {
       window.scrollTo(0, 0)
     } catch (err) {
       // Email đã được sử dụng, chưa cấu hình công ty... lấy câu báo từ backend
-      setError(getErrorMessage(err, 'Tạo tài khoản thất bại, vui lòng thử lại'))
+      setError(getErrorMessage(err, 'Chưa tạo được tài khoản. Vui lòng thử lại.'))
     } finally {
       setSubmitting(false)
     }
@@ -107,16 +107,16 @@ function CreateRecruiter() {
 
   return (
     <>
-      <h1>Tạo tài khoản Recruiter</h1>
+      <h1>Tạo tài khoản nhà tuyển dụng</h1>
       <p className={styles.intro}>
-        Cấp tài khoản cho nhân viên tuyển dụng (HR) của công ty. Sau khi tạo, hãy gửi email và mật khẩu cho nhân viên qua
-        kênh nội bộ; họ đổi lại mật khẩu trong trang Hồ sơ.
+        Cấp tài khoản cho nhà tuyển dụng của công ty. Sau khi tạo, gửi email và mật khẩu qua kênh nội bộ để người dùng
+        đổi lại mật khẩu ở trang Đổi mật khẩu.
       </p>
 
       {created && (
         <div className={styles.alertSuccess} role="status">
           <p className={styles.alertText}>
-            Đã tạo tài khoản cho {created.fullName} ({created.email}), thuộc công ty {created.companyName}.
+            Đã tạo tài khoản cho {created.fullName} với email {created.email}, thuộc công ty {created.companyName}.
           </p>
           <Link className={styles.link} to="/admin/users?role=RECRUITER">
             Xem danh sách nhà tuyển dụng
@@ -130,7 +130,7 @@ function CreateRecruiter() {
           <dt className={styles.term}>Công ty</dt>
           <dd className={styles.value}>
             {companyValue}
-            <span className={styles.readonlyNote}>Tài khoản mới tự gán vào công ty duy nhất của hệ thống</span>
+            <span className={styles.readonlyNote}>Tài khoản mới được gán vào công ty này</span>
           </dd>
         </div>
       </dl>

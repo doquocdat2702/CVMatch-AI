@@ -10,7 +10,8 @@ function Forbidden() {
   return (
     <main className={styles.page}>
       <div className={styles.card}>
-        <h1 className={styles.title}>403 - Không có quyền truy cập</h1>
+        <h1 className={styles.title}>Bạn không có quyền truy cập trang này</h1>
+        <p className={styles.errorCode}>Mã lỗi 403</p>
         <p className={styles.subtitle}>Tài khoản của bạn không được phép mở trang này.</p>
         <div className={styles.actions}>
           {isAuthenticated ? (

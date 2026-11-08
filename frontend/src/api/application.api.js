@@ -1,12 +1,14 @@
 import axiosClient from './axiosClient'
 
-// Ứng tuyển một job: { jobId }. Backend chặn nếu chưa có CV đã phân tích, job đã đóng hoặc đã ứng tuyển
-export async function applyJob(jobId) {
-  const response = await axiosClient.post('/applications', { jobId })
+// Ứng tuyển một job kèm CV ứng viên chọn (T35g): { jobId, cvId }. Backend chặn nếu chưa có CV đã phân tích,
+// job đã đóng, đã ứng tuyển, thiếu cvId hoặc CV không thuộc ứng viên / không còn file
+export async function applyJob(jobId, cvId) {
+  const response = await axiosClient.post('/applications', { jobId, cvId })
   return response.data
 }
 
-// Đơn của ứng viên đang đăng nhập: data.items = [{ id, status, coverage, appliedAt, job: { id, title, companyName } }]
+// Đơn của ứng viên đang đăng nhập: data.items = [{ id, status, coverage, appliedAt, job: { id, title, companyName },
+//   cv: { id, fileName, fileType } | null, cvLegacy }]. cvLegacy: đơn nộp trước khi lưu CV, cv là CV hiện tại
 export async function getMyApplications() {
   const response = await axiosClient.get('/applications/my')
   return response.data

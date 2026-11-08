@@ -34,7 +34,7 @@ function AdminDashboard() {
         if (!ignore) setResult({ key: reloadKey, data: response.data, error: '' })
       })
       .catch((err) => {
-        if (!ignore) setResult({ key: reloadKey, data: null, error: getErrorMessage(err, 'Không tải được số liệu') })
+        if (!ignore) setResult({ key: reloadKey, data: null, error: getErrorMessage(err, 'Không tải được số liệu.') })
       })
     return () => {
       ignore = true
@@ -97,9 +97,9 @@ function AdminDashboard() {
             />
             <StatCard label="Đơn ứng tuyển" value={formatNumber(data.applications.total)} />
             <StatCard
-              label="Tỷ lệ xử lý CV thành công"
+              label="Tỉ lệ phân tích CV thành công"
               value={`${formatNumber(data.cvSuccessRate * 100)}%`}
-              hint={`${formatNumber(completed)}/${formatNumber(finished)} CV xử lý thành công, không tính CV chưa xử lý xong`}
+              hint={`${formatNumber(completed)}/${formatNumber(finished)} CV phân tích thành công, không tính CV đang chờ`}
               empty={finished === 0}
             />
           </div>
@@ -130,7 +130,7 @@ function AdminDashboard() {
   return (
     <>
       <h1>Tổng quan</h1>
-      <p className={styles.intro}>Số liệu toàn hệ thống: tài khoản, tuyển dụng và xử lý CV.</p>
+      <p className={styles.intro}>Số liệu toàn hệ thống: tài khoản, tuyển dụng và phân tích CV.</p>
       {content}
     </>
   )

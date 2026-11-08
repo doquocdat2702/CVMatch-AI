@@ -4,12 +4,38 @@ import { getMyProfile } from '../../api/candidate.api'
 import { getJobDetail } from '../../api/job.api'
 import { getMatchingDetail } from '../../api/matching.api'
 import ApplyAction from '../../components/application/ApplyAction'
+import Badge from '../../components/common/Badge'
 import Button from '../../components/common/Button'
 import Loading from '../../components/common/Loading'
 import RequirementEvidenceMatrix from '../../components/matching/RequirementEvidenceMatrix'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import { getErrorMessage } from '../../utils/apiError'
+import { MATCH_STATUS_LABEL } from '../../utils/labels'
 import styles from './MatchingDetail.module.css'
+
+// Chú thích 3 trạng thái (T35g), viết theo đúng quy tắc của backend:
+// matcher.js resolveEvidence + evidence.finder.js (matchOneSkill, findExperienceEvidence, findEducationEvidence,
+// checkYearsRequirement). EXACT -> Có bằng chứng, PARTIAL -> Chưa chắc chắn, NONE -> Không tìm thấy
+const STATUS_RULES = [
+  {
+    status: 'SUPPORTED',
+    text:
+      'Hồ sơ có đúng kỹ năng, hoặc có trường, ngành, bằng cấp trùng với yêu cầu. ' +
+      'Nếu yêu cầu có số năm, kinh nghiệm liên quan phải đủ số năm đó.',
+  },
+  {
+    status: 'UNCERTAIN',
+    text:
+      'Hồ sơ có dấu hiệu liên quan nhưng chưa khớp trực tiếp, ví dụ kỹ năng ghi bằng tên khác, chỉ nhắc trong phần ' +
+      'kinh nghiệm, hoặc kinh nghiệm chưa đủ số năm.',
+  },
+  {
+    status: 'NOT_FOUND',
+    text:
+      'Hồ sơ không có kỹ năng, kinh nghiệm hay học vấn nào nhắc tới yêu cầu này. ' +
+      'Hai kỹ năng khác nhau như Java và JavaScript không được tính là khớp.',
+  },
+]
 
 // Lấy cùng lúc hồ sơ (để biết mã ứng viên) và chi tiết job, xong mới gọi ma trận đối chiếu.
 // Đơn đã nộp do ApplyAction tự kiểm tra.
@@ -98,6 +124,16 @@ function MatchingDetail() {
 
       <section className={styles.section}>
         <h2>Đối chiếu yêu cầu với hồ sơ</h2>
+        <dl className={styles.statusLegend} aria-label="Cách hiểu 3 trạng thái đối chiếu">
+          {STATUS_RULES.map((rule) => (
+            <div key={rule.status} className={styles.legendRow}>
+              <dt className={styles.legendTerm}>
+                <Badge status={rule.status}>{MATCH_STATUS_LABEL[rule.status]}</Badge>
+              </dt>
+              <dd className={styles.legendText}>{rule.text}</dd>
+            </div>
+          ))}
+        </dl>
         <RequirementEvidenceMatrix
           matrix={matching.matrix}
           note={matching.note}

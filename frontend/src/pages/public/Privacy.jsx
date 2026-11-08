@@ -29,9 +29,9 @@ function Privacy() {
           <li>
             Thông tin tài khoản: email, mật khẩu, họ tên; số điện thoại, địa chỉ và tiêu đề hồ sơ nếu bạn tự nhập.
           </li>
-          <li>CV bạn tải lên (tệp PDF hoặc DOCX).</li>
+          <li>CV bạn tải lên, ở dạng file PDF hoặc DOCX.</li>
           <li>
-            Nội dung bóc tách từ CV: văn bản trích ra từ tệp và các mục kỹ năng, kinh nghiệm, học vấn được lưu vào hồ sơ
+            Nội dung đọc từ CV: văn bản trong file và các mục kỹ năng, kinh nghiệm, học vấn được lưu vào hồ sơ
             của bạn.
           </li>
           <li>Đơn ứng tuyển: vị trí bạn ứng tuyển, thời điểm nộp, trạng thái xử lý và thông báo liên quan.</li>
@@ -52,15 +52,15 @@ function Privacy() {
       <section className={styles.section}>
         <h2>3. Sử dụng AI để phân tích CV</h2>
         <p>
-          Khi bạn phân tích CV, nội dung văn bản trích từ CV có thể được gửi tới dịch vụ AI Gemini của Google để bóc tách
-          kỹ năng, kinh nghiệm và học vấn. Tệp CV gốc không được gửi đi.
+          Khi bạn phân tích CV, nội dung văn bản trích từ CV có thể được gửi tới dịch vụ AI Gemini của Google để đọc
+          kỹ năng, kinh nghiệm và học vấn. File CV gốc không được gửi đi.
         </p>
         {/* CẦN CHỦ DỰ ÁN DUYỆT */}
         <p>Việc xử lý dữ liệu tại dịch vụ AI tuân theo điều khoản của nhà cung cấp dịch vụ.</p>
         <p>
           AI chỉ hỗ trợ phân tích và đối chiếu, không quyết định tuyển dụng. Kết quả đối chiếu cho biết bao nhiêu yêu cầu
           của vị trí có bằng chứng trong hồ sơ, đây là chỉ số tham khảo, không phải điểm đánh giá năng lực. Mọi quyết
-          định tuyển dụng do nhân viên tuyển dụng của công ty đưa ra.
+          định tuyển dụng do nhà tuyển dụng của công ty đưa ra.
         </p>
       </section>
 
@@ -68,7 +68,7 @@ function Privacy() {
         <h2>4. Ai được xem dữ liệu của bạn</h2>
         <ul className={styles.list}>
           <li>
-            Nhân viên tuyển dụng của {companyName} (tài khoản do quản trị viên cấp): xem đơn ứng tuyển và hồ sơ đã phân
+            Nhà tuyển dụng của {companyName}, có tài khoản do quản trị viên cấp: xem đơn ứng tuyển và hồ sơ đã phân
             tích của bạn. Hồ sơ có CV đã phân tích có thể xuất hiện trong danh sách ứng viên gợi ý của các vị trí đang
             tuyển, kể cả vị trí bạn chưa ứng tuyển.
           </li>
@@ -82,7 +82,7 @@ function Privacy() {
         <ul className={styles.list}>
           <li>Mật khẩu được lưu dưới dạng đã băm, không ai đọc được mật khẩu gốc, kể cả quản trị viên.</li>
           <li>
-            Tệp CV được lưu với tên ngẫu nhiên và không công khai trên web; chỉ bạn mở được danh sách CV của mình sau khi
+            File CV được lưu với tên ngẫu nhiên và không công khai trên web; chỉ bạn mở được danh sách CV của mình sau khi
             đăng nhập.
           </li>
           <li>Đăng nhập sai nhiều lần liên tiếp sẽ bị tạm chặn; phiên đăng nhập có thời hạn.</li>
@@ -94,13 +94,13 @@ function Privacy() {
         <ul className={styles.list}>
           <li>Xem và sửa thông tin hồ sơ, kỹ năng, kinh nghiệm, học vấn bất cứ lúc nào.</li>
           <li>
-            Xóa CV đã tải lên trong mục CV của tôi: tệp và bản ghi CV bị xóa; các mục kỹ năng, kinh nghiệm, học vấn đã
+            Xóa CV đã tải lên trong mục CV của tôi: file và bản ghi CV bị xóa; các mục kỹ năng, kinh nghiệm, học vấn đã
             lưu vào hồ sơ vẫn giữ, bạn tự xóa từng mục nếu muốn.
           </li>
           <li>Rút đơn ứng tuyển khi nhà tuyển dụng chưa bắt đầu xem xét đơn.</li>
           <li>Đổi mật khẩu trong mục Đổi mật khẩu.</li>
           {/* CẦN CHỦ DỰ ÁN DUYỆT */}
-          <li>Với yêu cầu khác về dữ liệu cá nhân (ví dụ khóa hoặc xóa tài khoản), vui lòng liên hệ công ty.</li>
+          <li>Với yêu cầu khác về dữ liệu cá nhân, ví dụ khóa hoặc xóa tài khoản, vui lòng liên hệ công ty.</li>
         </ul>
       </section>
 

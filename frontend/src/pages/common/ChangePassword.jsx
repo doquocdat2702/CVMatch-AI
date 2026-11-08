@@ -7,7 +7,8 @@ import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 // /candidate/change-password, /recruiter/change-password, /admin/change-password.
 // AppRouter đặt mỗi route dưới ProtectedRoute của đúng role và trong layout của role đó.
 // siteStyle (chỉ route của ứng viên, T35f): đầu trang có câu mô tả, form nằm trong khối Giấy viền mảnh
-// như các trang khác của ứng viên. HR / Admin giữ nguyên bố cục cũ
+// như các trang khác của ứng viên; từ T35g form ở chế độ enhanced (Hiện / Ẩn, danh sách điều kiện).
+// HR / Admin giữ nguyên bố cục và form cũ
 function ChangePassword({ siteStyle = false }) {
   // Trang HR / Admin chưa đặt tiêu đề tab riêng: giữ tên hệ thống cho đồng bộ
   useDocumentTitle(siteStyle ? 'Đổi mật khẩu' : '')
@@ -23,9 +24,9 @@ function ChangePassword({ siteStyle = false }) {
 
   return (
     <>
-      <PageHeader title="Đổi mật khẩu" description="Mật khẩu mới dùng cho lần đăng nhập sau." />
+      <PageHeader title="Đổi mật khẩu" description="Nhập mật khẩu hiện tại rồi đặt mật khẩu mới cho lần đăng nhập sau." />
       <Panel width="form">
-        <ChangePasswordForm />
+        <ChangePasswordForm enhanced />
       </Panel>
     </>
   )

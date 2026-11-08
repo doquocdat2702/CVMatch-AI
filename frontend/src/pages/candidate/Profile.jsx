@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link, useOutletContext } from 'react-router-dom'
 import { getMyProfile, updateMyProfile } from '../../api/candidate.api'
 import Button from '../../components/common/Button'
 import Input from '../../components/common/Input'
@@ -8,6 +9,8 @@ import Panel from '../../components/layout/Panel'
 import { useAuth } from '../../hooks/useAuth'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import { getErrorMessage } from '../../utils/apiError'
+import { formatMonthYear } from '../../utils/format'
+import { PROFILE_SOURCE_LABEL } from '../../utils/labels'
 import styles from './Profile.module.css'
 
 // 4 trường ứng viên tự sửa; maxLength khớp độ dài cột trong database
@@ -24,6 +27,7 @@ const FIELDS = [
 ]
 
 const EMPTY_FORM = { fullName: '', phone: '', address: '', headline: '' }
+const EMPTY_DETAILS = { skills: [], experiences: [], educations: [] }
 
 const PAGE_DESCRIPTION = 'Nhà tuyển dụng xem các thông tin này khi bạn ứng tuyển.'
 
@@ -37,11 +41,48 @@ function pickFields(profile) {
   }
 }
 
+// Mới nhất trước; mục không có ngày bắt đầu xếp cuối
+function byStartDesc(a, b) {
+  const left = a.startDate ? new Date(a.startDate).getTime() : -Infinity
+  const right = b.startDate ? new Date(b.startDate).getTime() : -Infinity
+  return right - left
+}
+
+// "03/2020 – 12/2022", đang làm (không có ngày kết thúc) thì "03/2020 – hiện tại"
+function formatPeriod(item) {
+  if (!item.startDate) return ''
+  return `${formatMonthYear(item.startDate)} – ${item.endDate ? formatMonthYear(item.endDate) : 'hiện tại'}`
+}
+
+// Khối rỗng của Kỹ năng / Kinh nghiệm / Học vấn: một câu hướng dẫn + link sang trang CV
+function EmptyGuide({ text }) {
+  return (
+    <div className={styles.emptyGuide}>
+      <p className={styles.emptyText}>{text}</p>
+      <Link className={styles.guideLink} to="/candidate/cvs">
+        Tải CV và phân tích
+      </Link>
+    </div>
+  )
+}
+
+// Link chỉnh dữ liệu đọc từ CV: các khối ở trang này chỉ đọc, sửa ở trang Kết quả phân tích CV
+const EDIT_PARSED_LINK = (
+  <Link className={styles.editLink} to="/candidate/cvs/parsed">
+    Chỉnh sửa ở Kết quả phân tích CV
+  </Link>
+)
+
+// Trang Hồ sơ trong khu Tài khoản (T35g): Thông tin cá nhân (sửa được, email chỉ đọc) và 3 khối chỉ đọc
+// lấy từ dữ liệu hồ sơ hiện có (GET /candidates/me): Kỹ năng (chip, nhãn nguồn), Kinh nghiệm, Học vấn (dòng thời gian)
 function Profile() {
   useDocumentTitle('Hồ sơ')
   // Họ tên trên nút tài khoản (AccountMenu) lấy từ AuthContext: lưu xong thì cập nhật để nút đổi tên ngay
-  const { setProfileName } = useAuth()
+  const { user, setProfileName } = useAuth()
+  // Khung tóm tắt của khu Tài khoản: lưu xong thì đếm lại mục hồ sơ
+  const account = useOutletContext()
   const [profile, setProfile] = useState(EMPTY_FORM)
+  const [details, setDetails] = useState(EMPTY_DETAILS)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   // Tăng số này để tải lại hồ sơ (nút Thử lại)
@@ -59,10 +100,16 @@ function Profile() {
     let ignore = false
     getMyProfile()
       .then((result) => {
-        if (!ignore) setProfile(pickFields(result.data))
+        if (ignore) return
+        setProfile(pickFields(result.data))
+        setDetails({
+          skills: result.data.skills || [],
+          experiences: [...(result.data.experiences || [])].sort(byStartDesc),
+          educations: [...(result.data.educations || [])].sort(byStartDesc),
+        })
       })
       .catch((err) => {
-        if (!ignore) setLoadError(getErrorMessage(err, 'Không tải được hồ sơ'))
+        if (!ignore) setLoadError(getErrorMessage(err, 'Không tải được hồ sơ.'))
       })
       .finally(() => {
         if (!ignore) setLoading(false)
@@ -104,7 +151,7 @@ function Profile() {
 
     const fullName = form.fullName.trim()
     if (!fullName) {
-      setFieldErrors({ fullName: 'Vui lòng nhập họ và tên' })
+      setFieldErrors({ fullName: 'Vui lòng nhập họ và tên.' })
       return
     }
 
@@ -121,8 +168,9 @@ function Profile() {
       setProfileName((result.data.fullName || '').trim())
       setEditing(false)
       setSaved(true)
+      if (account) account.refreshProfile()
     } catch (err) {
-      setSaveError(getErrorMessage(err, 'Lưu hồ sơ thất bại, vui lòng thử lại'))
+      setSaveError(getErrorMessage(err, 'Chưa lưu được hồ sơ. Vui lòng thử lại.'))
     } finally {
       setSaving(false)
     }
@@ -146,18 +194,19 @@ function Profile() {
     )
   }
 
+  const email = user ? user.email : ''
+
   return (
     <>
       <PageHeader title="Hồ sơ" description={PAGE_DESCRIPTION} />
 
       {saved && (
         <p className={styles.alertSuccess} role="status">
-          Đã lưu hồ sơ.
+          Đã lưu thay đổi.
         </p>
       )}
 
-      {/* Khối Giấy viền mảnh rộng bằng form (T35f) */}
-      <Panel width="form">
+      <Panel title="Thông tin cá nhân">
         {editing ? (
           <form className={styles.form} onSubmit={handleSubmit} noValidate>
             {saveError && (
@@ -165,6 +214,13 @@ function Profile() {
                 {saveError}
               </p>
             )}
+
+            {/* Email đăng nhập chỉ đọc: hiện để ứng viên biết nhà tuyển dụng liên hệ qua địa chỉ nào */}
+            <div className={styles.readonlyField}>
+              <span className={styles.term}>Email</span>
+              <span className={styles.value}>{email}</span>
+              <span className={styles.readonlyHint}>Email dùng để đăng nhập, không đổi được ở đây.</span>
+            </div>
 
             {FIELDS.map((field) => (
               <Input
@@ -185,7 +241,7 @@ function Profile() {
 
             <div className={styles.actions}>
               <Button type="submit" loading={saving}>
-                {saving ? 'Đang lưu...' : 'Lưu'}
+                {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
               </Button>
               <Button variant="secondary" onClick={cancelEdit} disabled={saving}>
                 Hủy
@@ -195,6 +251,10 @@ function Profile() {
         ) : (
           <>
             <dl className={styles.details}>
+              <div>
+                <dt className={styles.term}>Email</dt>
+                <dd className={styles.value}>{email}</dd>
+              </div>
               {FIELDS.map((field) => (
                 <div key={field.name}>
                   <dt className={styles.term}>{field.label}</dt>
@@ -204,7 +264,68 @@ function Profile() {
                 </div>
               ))}
             </dl>
-            <Button onClick={startEdit}>Sửa hồ sơ</Button>
+            <Button onClick={startEdit}>Sửa thông tin</Button>
+          </>
+        )}
+      </Panel>
+
+      <Panel title="Kỹ năng">
+        {details.skills.length === 0 ? (
+          <EmptyGuide text="Hồ sơ chưa có kỹ năng. Tải CV lên và phân tích để bổ sung." />
+        ) : (
+          <>
+            <ul className={styles.chips}>
+              {details.skills.map((skill) => (
+                <li key={skill.id} className={styles.chip}>
+                  <span className={styles.chipName}>{skill.rawName}</span>
+                  {PROFILE_SOURCE_LABEL[skill.source] && (
+                    <span className={styles.chipSource}>{PROFILE_SOURCE_LABEL[skill.source]}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {EDIT_PARSED_LINK}
+          </>
+        )}
+      </Panel>
+
+      <Panel title="Kinh nghiệm">
+        {details.experiences.length === 0 ? (
+          <EmptyGuide text="Hồ sơ chưa có kinh nghiệm. Bạn có thể phân tích CV hoặc tự thêm ở trang Kết quả phân tích CV." />
+        ) : (
+          <>
+            <ol className={styles.timeline}>
+              {details.experiences.map((item) => (
+                <li key={item.id} className={styles.timelineItem}>
+                  <p className={styles.itemTitle}>{item.position}</p>
+                  {item.companyName && <p className={styles.itemSub}>{item.companyName}</p>}
+                  {formatPeriod(item) && <p className={styles.itemPeriod}>{formatPeriod(item)}</p>}
+                  {item.description && <p className={styles.itemText}>{item.description}</p>}
+                </li>
+              ))}
+            </ol>
+            {EDIT_PARSED_LINK}
+          </>
+        )}
+      </Panel>
+
+      <Panel title="Học vấn">
+        {details.educations.length === 0 ? (
+          <EmptyGuide text="Hồ sơ chưa có học vấn. Bạn có thể phân tích CV hoặc tự thêm ở trang Kết quả phân tích CV." />
+        ) : (
+          <>
+            <ol className={styles.timeline}>
+              {details.educations.map((item) => (
+                <li key={item.id} className={styles.timelineItem}>
+                  <p className={styles.itemTitle}>{item.school}</p>
+                  {(item.major || item.degree) && (
+                    <p className={styles.itemSub}>{[item.degree, item.major].filter(Boolean).join(', ')}</p>
+                  )}
+                  {formatPeriod(item) && <p className={styles.itemPeriod}>{formatPeriod(item)}</p>}
+                </li>
+              ))}
+            </ol>
+            {EDIT_PARSED_LINK}
           </>
         )}
       </Panel>

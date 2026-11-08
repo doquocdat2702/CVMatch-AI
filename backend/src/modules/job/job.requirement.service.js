@@ -21,7 +21,7 @@ function createError(message, statusCode) {
 function parseId(value, label) {
   const id = Number(value);
   if (!Number.isInteger(id) || id <= 0) {
-    throw createError(`${label} không hợp lệ`, 400);
+    throw createError(`${label} không hợp lệ.`, 400);
   }
   return id;
 }
@@ -31,7 +31,7 @@ function parseId(value, label) {
 function requiredText(value, label) {
   const text = typeof value === 'string' ? value.trim() : '';
   if (!text) {
-    throw createError(`${label} không được để trống`, 400);
+    throw createError(`${label} không được để trống.`, 400);
   }
   return text;
 }
@@ -39,7 +39,7 @@ function requiredText(value, label) {
 function parseType(value) {
   const type = typeof value === 'string' ? value.trim().toUpperCase() : '';
   if (!REQUIREMENT_TYPES.includes(type)) {
-    throw createError(`Loại yêu cầu phải là một trong: ${REQUIREMENT_TYPES.join(', ')}`, 400);
+    throw createError(`Loại yêu cầu phải là Bắt buộc, Ưu tiên hoặc Không bắt buộc.`, 400);
   }
   return type;
 }
@@ -51,7 +51,7 @@ function parseMinYears(value) {
   }
   const years = Number(value);
   if (!Number.isInteger(years) || years < 0 || years > MAX_MIN_YEARS) {
-    throw createError(`Số năm kinh nghiệm phải là số nguyên từ 0 đến ${MAX_MIN_YEARS}`, 400);
+    throw createError(`Số năm kinh nghiệm phải là số nguyên từ 0 đến ${MAX_MIN_YEARS}.`, 400);
   }
   return years;
 }
@@ -68,7 +68,7 @@ async function findJobOrThrow(jobId) {
   const id = parseId(jobId, 'Mã tin tuyển dụng');
   const job = await prisma.job.findUnique({ where: { id } });
   if (!job) {
-    throw createError('Không tìm thấy tin tuyển dụng', 404);
+    throw createError('Không tìm thấy tin tuyển dụng.', 404);
   }
   return job;
 }
@@ -78,7 +78,7 @@ async function findRequirementOfJob(jobId, reqId) {
   const id = parseId(reqId, 'Mã yêu cầu');
   const requirement = await prisma.jobRequirement.findUnique({ where: { id } });
   if (!requirement || requirement.jobId !== jobId) {
-    throw createError('Không tìm thấy yêu cầu trong tin tuyển dụng này', 404);
+    throw createError('Không tìm thấy yêu cầu trong tin tuyển dụng này.', 404);
   }
   return requirement;
 }
@@ -95,7 +95,7 @@ async function parseJobDescription(user, jobId) {
 
   const description = typeof job.description === 'string' ? job.description.trim() : '';
   if (!description) {
-    throw createError('Job chưa có mô tả để phân tích', 400);
+    throw createError('Tin tuyển dụng chưa có mô tả công việc để phân tích.', 400);
   }
 
   const extracted = extractRequirements(description);
@@ -191,7 +191,7 @@ async function updateRequirement(user, jobId, reqId, body) {
   }
 
   if (Object.keys(data).length === 0) {
-    throw createError('Không có thông tin nào để cập nhật', 400);
+    throw createError('Chưa có thay đổi nào để lưu.', 400);
   }
 
   return prisma.jobRequirement.update({

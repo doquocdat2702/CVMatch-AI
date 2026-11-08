@@ -32,12 +32,12 @@ const ADD_FORM_ID = 'add-requirement-form'
 
 function validateAddForm(form) {
   const errors = {}
-  if (!form.rawText.trim()) errors.rawText = 'Vui lòng nhập câu yêu cầu'
-  if (!form.normalizedName.trim()) errors.normalizedName = 'Vui lòng nhập tên yêu cầu'
+  if (!form.rawText.trim()) errors.rawText = 'Vui lòng nhập câu yêu cầu.'
+  if (!form.normalizedName.trim()) errors.normalizedName = 'Vui lòng nhập tên yêu cầu.'
   if (form.minYears !== '') {
     const years = Number(form.minYears)
     if (!Number.isInteger(years) || years < 0 || years > MAX_MIN_YEARS) {
-      errors.minYears = `Số năm phải là số nguyên từ 0 đến ${MAX_MIN_YEARS}`
+      errors.minYears = `Số năm phải là số nguyên từ 0 đến ${MAX_MIN_YEARS}.`
     }
   }
   return errors
@@ -84,7 +84,7 @@ function ParsedJD({ jobId }) {
         setRequirements(requirementsResult.data)
       })
       .catch((err) => {
-        if (!ignore) setLoadError(getErrorMessage(err, 'Không tải được yêu cầu của tin tuyển dụng'))
+        if (!ignore) setLoadError(getErrorMessage(err, 'Không tải được yêu cầu của tin tuyển dụng.'))
       })
       .finally(() => {
         if (!ignore) setLoading(false)
@@ -108,7 +108,7 @@ function ParsedJD({ jobId }) {
       ])
     } catch (err) {
       // Dropdown đọc giá trị từ state nên tự trở về loại cũ khi lưu lỗi
-      setNotices([{ type: 'error', text: getErrorMessage(err, 'Đổi loại yêu cầu thất bại, vui lòng thử lại') }])
+      setNotices([{ type: 'error', text: getErrorMessage(err, 'Chưa đổi được loại yêu cầu. Vui lòng thử lại.') }])
     } finally {
       setSavingTypeId(null)
     }
@@ -135,7 +135,7 @@ function ParsedJD({ jobId }) {
       setNotices([{ type: 'success', text: `Đã xóa yêu cầu "${deleteTarget.normalizedName}".` }])
       setDeleteTarget(null)
     } catch (err) {
-      setDeleteError(getErrorMessage(err, 'Xóa yêu cầu thất bại, vui lòng thử lại'))
+      setDeleteError(getErrorMessage(err, 'Chưa xóa được yêu cầu. Vui lòng thử lại.'))
     } finally {
       setDeleting(false)
     }
@@ -180,7 +180,7 @@ function ParsedJD({ jobId }) {
       setNotices([{ type: 'success', text: `Đã thêm yêu cầu "${result.data.normalizedName}".` }])
       setAddOpen(false)
     } catch (err) {
-      setAddError(getErrorMessage(err, 'Thêm yêu cầu thất bại, vui lòng thử lại'))
+      setAddError(getErrorMessage(err, 'Chưa thêm được yêu cầu. Vui lòng thử lại.'))
     } finally {
       setAdding(false)
     }
@@ -198,22 +198,22 @@ function ParsedJD({ jobId }) {
       setRequirements(list)
       const next = [
         list.length > 0
-          ? { type: 'success', text: `Đã phân tích JD: ${list.length} yêu cầu.` }
+          ? { type: 'success', text: `Đã phân tích, tìm được ${list.length} yêu cầu.` }
           : {
               type: 'warning',
-              text: 'Không tách được yêu cầu nào. Hãy kiểm tra JD có mục "YÊU CẦU CÔNG VIỆC" và mỗi yêu cầu một dòng.',
+              text: 'Chưa tách được yêu cầu nào. Kiểm tra mô tả công việc có mục "Yêu cầu công việc" và mỗi yêu cầu một dòng.',
             },
       ]
       // Chế độ rule: yêu cầu không có từ khóa bắt buộc / ưu tiên thì tạm để Ưu tiên
       if (mode === 'rule' && unresolvedCount > 0) {
         next.push({
           type: 'warning',
-          text: `${unresolvedCount} yêu cầu chưa phân loại chắc chắn, đang để Ưu tiên, vui lòng kiểm tra lại`,
+          text: `${unresolvedCount} yêu cầu chưa phân loại chắc chắn, đang để Ưu tiên. Vui lòng kiểm tra lại.`,
         })
       }
       setNotices(next)
     } catch (err) {
-      setNotices([{ type: 'error', text: getErrorMessage(err, 'Phân tích JD thất bại, vui lòng thử lại') }])
+      setNotices([{ type: 'error', text: getErrorMessage(err, 'Chưa phân tích được yêu cầu. Vui lòng thử lại.') }])
     } finally {
       setParsing(false)
     }
@@ -222,7 +222,7 @@ function ParsedJD({ jobId }) {
   const columns = [
     {
       key: 'rawText',
-      title: 'Câu gốc trong JD',
+      title: 'Câu gốc trong mô tả',
       render: (requirement) => <span className={styles.rawText}>{requirement.rawText}</span>,
     },
     {
@@ -277,7 +277,7 @@ function ParsedJD({ jobId }) {
         {backLink}
         <h1>Yêu cầu tuyển dụng</h1>
         <p className={styles.alertError} role="alert">
-          {forbidden ? 'Bạn chỉ được chỉnh sửa tin tuyển dụng do mình đăng.' : loadError}
+          {forbidden ? 'Chỉ người đăng tin mới sửa được tin tuyển dụng này.' : loadError}
         </p>
       </>
     )
@@ -298,7 +298,7 @@ function ParsedJD({ jobId }) {
             onClick={requirements.length > 0 ? () => setReparseOpen(true) : handleReparse}
             loading={parsing}
           >
-            {parsing ? 'Đang phân tích...' : requirements.length > 0 ? 'Phân tích lại JD' : 'Phân tích JD'}
+            {parsing ? 'Đang phân tích...' : requirements.length > 0 ? 'Phân tích lại yêu cầu' : 'Phân tích yêu cầu'}
           </Button>
           <Button onClick={openAdd} disabled={parsing}>
             Thêm yêu cầu thủ công
@@ -320,12 +320,12 @@ function ParsedJD({ jobId }) {
       ))}
 
       {parsing ? (
-        <Loading text="Đang phân tích JD..." />
+        <Loading text="Đang phân tích yêu cầu..." />
       ) : (
         <Table
           columns={columns}
           data={requirements}
-          emptyText="Chưa có yêu cầu nào. Phân tích JD hoặc thêm yêu cầu thủ công."
+          emptyText="Chưa có yêu cầu nào. Phân tích mô tả công việc hoặc thêm yêu cầu thủ công."
         />
       )}
 
@@ -333,7 +333,7 @@ function ParsedJD({ jobId }) {
       <Modal
         open={reparseOpen}
         onClose={() => setReparseOpen(false)}
-        title="Phân tích lại JD?"
+        title="Phân tích lại yêu cầu?"
         footer={
           <>
             <Button variant="secondary" onClick={() => setReparseOpen(false)}>
@@ -346,8 +346,8 @@ function ParsedJD({ jobId }) {
         }
       >
         <p className={styles.modalText}>
-          Phân tích lại sẽ xóa toàn bộ {requirements.length} yêu cầu hiện tại, kể cả các chỉnh sửa tay (đổi loại, thêm,
-          xóa), rồi tách lại từ JD đã lưu. Thao tác này không hoàn tác được.
+          Phân tích lại sẽ thay toàn bộ {requirements.length} yêu cầu hiện tại, kể cả các yêu cầu đã sửa tay. Thao tác
+          này không hoàn tác được.
         </p>
       </Modal>
 
@@ -404,7 +404,7 @@ function ParsedJD({ jobId }) {
             name="rawText"
             required
             rows={3}
-            hint="Câu trong JD hoặc câu bạn tự viết, dùng làm dẫn chứng cho yêu cầu"
+            hint="Câu trong mô tả công việc hoặc câu tự viết, dùng làm dẫn chứng"
             value={addForm.rawText}
             onChange={handleAddChange}
             error={addErrors.rawText}

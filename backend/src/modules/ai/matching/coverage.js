@@ -8,8 +8,8 @@
 //   []                                            -> coverage 0, total 0 (không chia cho 0)
 
 const COVERAGE_NOTE =
-  'Requirement Coverage chỉ là chỉ số hỗ trợ đối chiếu yêu cầu, ' +
-  'không phải điểm đánh giá năng lực ứng viên và không phải quyết định tuyển dụng.';
+  'Tỉ lệ yêu cầu có bằng chứng chỉ hỗ trợ đối chiếu, ' +
+  'không phải điểm năng lực và không phải quyết định tuyển dụng.';
 
 function calculateCoverage(matrix) {
   const rows = Array.isArray(matrix) ? matrix : [];

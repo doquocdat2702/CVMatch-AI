@@ -47,7 +47,7 @@ function RecruiterProfile() {
         setCompanyName(result.data.company ? result.data.company.name : '')
       })
       .catch((err) => {
-        if (!ignore) setLoadError(getErrorMessage(err, 'Không tải được hồ sơ'))
+        if (!ignore) setLoadError(getErrorMessage(err, 'Không tải được hồ sơ.'))
       })
       .finally(() => {
         if (!ignore) setLoading(false)
@@ -88,7 +88,7 @@ function RecruiterProfile() {
 
     const fullName = form.fullName.trim()
     if (!fullName) {
-      setFieldErrors({ fullName: 'Vui lòng nhập họ và tên' })
+      setFieldErrors({ fullName: 'Vui lòng nhập họ và tên.' })
       return
     }
 
@@ -104,7 +104,7 @@ function RecruiterProfile() {
       setEditing(false)
       setSaved(true)
     } catch (err) {
-      setSaveError(getErrorMessage(err, 'Lưu hồ sơ thất bại, vui lòng thử lại'))
+      setSaveError(getErrorMessage(err, 'Chưa lưu được hồ sơ. Vui lòng thử lại.'))
     } finally {
       setSaving(false)
     }
@@ -128,30 +128,23 @@ function RecruiterProfile() {
     )
   }
 
-  // Công ty: chỉ đọc ở cả chế độ xem lẫn chế độ sửa. Có công ty thì chỉ hiện tên
-  // (server tự gán công ty duy nhất khi khởi động, G7); ghi chú chỉ còn khi chưa được gán
+  // Công ty: chỉ đọc ở cả chế độ xem lẫn chế độ sửa, chỉ hiện tên
+  // (server tự gán công ty duy nhất khi khởi động, G7)
   const companyRow = (
     <div>
       <dt className={styles.term}>Công ty</dt>
-      <dd className={styles.value}>
-        {companyName || (
-          <>
-            <span className={styles.empty}>Chưa được gán</span>
-            <span className={styles.readonlyNote}>Do quản trị viên gán, không sửa tại đây</span>
-          </>
-        )}
-      </dd>
+      <dd className={styles.value}>{companyName || <span className={styles.empty}>Chưa được gán</span>}</dd>
     </div>
   )
 
   return (
     <>
       <h1>Hồ sơ</h1>
-      <p className={styles.intro}>Thông tin cá nhân của bạn trong hệ thống tuyển dụng.</p>
+      <p className={styles.intro}>Thông tin cá nhân của tài khoản nhà tuyển dụng.</p>
 
       {saved && (
         <p className={styles.alertSuccess} role="status">
-          Đã lưu hồ sơ.
+          Đã lưu thay đổi.
         </p>
       )}
 
@@ -184,7 +177,7 @@ function RecruiterProfile() {
 
             <div className={styles.actions}>
               <Button type="submit" loading={saving}>
-                {saving ? 'Đang lưu...' : 'Lưu'}
+                {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
               </Button>
               <Button variant="secondary" onClick={cancelEdit} disabled={saving}>
                 Hủy
@@ -205,7 +198,7 @@ function RecruiterProfile() {
             ))}
             {companyRow}
           </dl>
-          <Button onClick={startEdit}>Sửa hồ sơ</Button>
+          <Button onClick={startEdit}>Sửa thông tin</Button>
         </>
       )}
     </>

@@ -2,6 +2,7 @@ const prisma = require('../../config/prisma');
 const { matchJobWithCandidate } = require('../ai/matching/matcher');
 const { COVERAGE_NOTE } = require('../ai/matching/coverage');
 const { getOwnedJob, assertCanManageJob } = require('../job/job.service');
+const { resolveCvFilePath, findCurrentCv } = require('../cv/cv.service');
 const {
   NOTIFICATION_TYPES,
   APPLICATION_STATUS_LABELS,
@@ -19,7 +20,7 @@ function createError(message, statusCode) {
 function parseId(value, label) {
   const id = Number(value);
   if (!Number.isInteger(id) || id <= 0) {
-    throw createError(`${label} không hợp lệ`, 400);
+    throw createError(`${label} không hợp lệ.`, 400);
   }
   return id;
 }
@@ -27,7 +28,7 @@ function parseId(value, label) {
 async function getCandidateProfile(userId) {
   const profile = await prisma.candidateProfile.findUnique({ where: { userId } });
   if (!profile) {
-    throw createError('Không tìm thấy hồ sơ ứng viên', 404);
+    throw createError('Không tìm thấy hồ sơ ứng viên.', 404);
   }
   return profile;
 }
@@ -38,8 +39,20 @@ const JOB_SUMMARY_SELECT = {
   company: { select: { name: true } },
 };
 
-// Dạng trả về chung cho một đơn: job title, tên công ty, appliedAt, status, coverage lúc nộp
-function toApplicationView(application, job) {
+const CV_SUMMARY_SELECT = { id: true, fileName: true, fileType: true };
+
+// CV hiển thị cho một đơn (T35g): CV gửi kèm đơn (application.cv).
+// Đơn nộp trước khi hệ thống lưu CV (cvId null) thì dùng CV hiện tại của ứng viên và đánh dấu cvLegacy
+// để giao diện ghi chú "(đơn nộp trước khi hệ thống lưu CV)". Không còn CV nào thì cv null
+function cvViewOf(application, currentCv) {
+  if (application.cv) {
+    return { cv: application.cv, cvLegacy: false };
+  }
+  return { cv: currentCv || null, cvLegacy: true };
+}
+
+// Dạng trả về chung cho một đơn: job title, tên công ty, appliedAt, status, coverage lúc nộp, CV của đơn
+function toApplicationView(application, job, currentCv = null) {
   return {
     id: application.id,
     status: application.status,
@@ -50,12 +63,36 @@ function toApplicationView(application, job) {
       title: job.title,
       companyName: job.company ? job.company.name : null,
     },
+    ...cvViewOf(application, currentCv),
   };
+}
+
+// CV gửi kèm đơn mới (T35g): bắt buộc, thuộc chính ứng viên, file còn trên hệ thống
+async function getCvToAttach(profileId, cvId) {
+  if (cvId === undefined || cvId === null || cvId === '') {
+    throw createError('Vui lòng chọn CV gửi kèm đơn ứng tuyển.', 400);
+  }
+  const id = parseId(cvId, 'Mã CV');
+
+  const cv = await prisma.cV.findUnique({
+    where: { id },
+    select: { ...CV_SUMMARY_SELECT, candidateProfileId: true, filePath: true },
+  });
+  // CV đã xóa hoặc của người khác: cùng một câu, không lộ CV của người khác có tồn tại hay không
+  if (!cv || cv.candidateProfileId !== profileId) {
+    throw createError('Không tìm thấy CV đã chọn. Vui lòng chọn CV khác.', 400);
+  }
+  if (!(await resolveCvFilePath(cv.filePath))) {
+    throw createError('File của CV đã chọn không còn trên hệ thống. Vui lòng chọn CV khác.', 400);
+  }
+
+  return { id: cv.id, fileName: cv.fileName, fileType: cv.fileType };
 }
 
 // ===== Ứng tuyển =====
 
-async function applyForJob(userId, { jobId } = {}) {
+// body: { jobId, cvId }. cvId là CV ứng viên chọn gửi kèm đơn (T35g); đối chiếu vẫn dùng hồ sơ hiện tại
+async function applyForJob(userId, { jobId, cvId } = {}) {
   const id = parseId(jobId, 'Mã tin tuyển dụng');
   const profile = await getCandidateProfile(userId);
 
@@ -69,10 +106,10 @@ async function applyForJob(userId, { jobId } = {}) {
     },
   });
   if (!job) {
-    throw createError('Không tìm thấy tin tuyển dụng', 404);
+    throw createError('Không tìm thấy tin tuyển dụng.', 404);
   }
   if (!job.isOpen) {
-    throw createError('Vị trí đã đóng', 400);
+    throw createError('Tin tuyển dụng đã ngừng nhận đơn ứng tuyển.', 400);
   }
 
   // 2. Có ít nhất một CV đã xử lý xong
@@ -80,7 +117,7 @@ async function applyForJob(userId, { jobId } = {}) {
     where: { candidateProfileId: profile.id, status: 'COMPLETED' },
   });
   if (completedCvCount === 0) {
-    throw createError('Bạn cần upload và phân tích CV trước khi ứng tuyển', 400);
+    throw createError('Bạn cần tải CV lên và phân tích trước khi ứng tuyển.', 400);
   }
 
   // 3. Chưa từng ứng tuyển job này
@@ -88,8 +125,11 @@ async function applyForJob(userId, { jobId } = {}) {
     where: { candidateProfileId_jobId: { candidateProfileId: profile.id, jobId: job.id } },
   });
   if (existing) {
-    throw createError('Bạn đã ứng tuyển vị trí này', 400);
+    throw createError('Bạn đã ứng tuyển vị trí này.', 400);
   }
+
+  // 4. CV gửi kèm đơn: đúng CV ứng viên chọn, không phải CV mới nhất
+  const cv = await getCvToAttach(profile.id, cvId);
 
   // Chạy matcher ngay lúc nộp và lưu coverage để giữ nguyên giá trị tại thời điểm này.
   // Job chưa có requirement thì không có gì để đối chiếu -> lưu null thay vì 0.
@@ -104,12 +144,14 @@ async function applyForJob(userId, { jobId } = {}) {
         jobId: job.id,
         status: 'APPLIED',
         coverage,
+        cvId: cv.id,
       },
+      include: { cv: { select: CV_SUMMARY_SELECT } },
     });
   } catch (err) {
     // Hai request nộp cùng lúc: request sau vướng unique (candidateProfileId, jobId)
     if (err.code === 'P2002') {
-      throw createError('Bạn đã ứng tuyển vị trí này', 400);
+      throw createError('Bạn đã ứng tuyển vị trí này.', 400);
     }
     throw err;
   }
@@ -133,11 +175,15 @@ async function listMyApplications(userId) {
   const applications = await prisma.application.findMany({
     where: { candidateProfileId: profile.id },
     orderBy: [{ appliedAt: 'desc' }, { id: 'desc' }],
-    include: { job: { select: JOB_SUMMARY_SELECT } },
+    include: { job: { select: JOB_SUMMARY_SELECT }, cv: { select: CV_SUMMARY_SELECT } },
   });
 
+  // CV hiện tại chỉ cần cho đơn cũ chưa lưu CV
+  const hasLegacy = applications.some((application) => application.cvId === null);
+  const currentCv = hasLegacy ? await findCurrentCv(profile.id) : null;
+
   return {
-    items: applications.map((application) => toApplicationView(application, application.job)),
+    items: applications.map((application) => toApplicationView(application, application.job, currentCv)),
     note: COVERAGE_NOTE,
   };
 }
@@ -150,20 +196,20 @@ async function withdrawApplication(userId, applicationId) {
 
   const application = await prisma.application.findUnique({ where: { id } });
   if (!application) {
-    throw createError('Không tìm thấy đơn ứng tuyển', 404);
+    throw createError('Không tìm thấy đơn ứng tuyển.', 404);
   }
   if (application.candidateProfileId !== profile.id) {
-    throw createError('Bạn không có quyền với đơn ứng tuyển này', 403);
+    throw createError('Không có quyền thao tác trên đơn ứng tuyển này.', 403);
   }
   if (application.status !== 'APPLIED') {
-    throw createError('Không thể rút đơn khi nhà tuyển dụng đã xem xét', 400);
+    throw createError('Không thể rút đơn vì nhà tuyển dụng đã bắt đầu xem xét.', 400);
   }
 
   // Điều kiện status nằm ngay trong lệnh xóa: nếu recruiter vừa đổi trạng thái
   // giữa lúc đọc và lúc xóa thì không xóa nhầm
   const result = await prisma.application.deleteMany({ where: { id, status: 'APPLIED' } });
   if (result.count === 0) {
-    throw createError('Không thể rút đơn khi nhà tuyển dụng đã xem xét', 400);
+    throw createError('Không thể rút đơn vì nhà tuyển dụng đã bắt đầu xem xét.', 400);
   }
 
   return { id };
@@ -185,7 +231,7 @@ const STATUS_TRANSITIONS = {
 function parseStatus(value) {
   const status = typeof value === 'string' ? value.trim().toUpperCase() : '';
   if (!APPLICATION_STATUSES.includes(status)) {
-    throw createError(`Trạng thái phải là một trong: ${APPLICATION_STATUSES.join(', ')}`, 400);
+    throw createError(`Trạng thái đơn ứng tuyển không đúng.`, 400);
   }
   return status;
 }
@@ -197,7 +243,7 @@ function statusLabel(status) {
 async function getRecruiterProfile(userId) {
   const profile = await prisma.recruiterProfile.findUnique({ where: { userId } });
   if (!profile) {
-    throw createError('Không tìm thấy hồ sơ nhà tuyển dụng', 404);
+    throw createError('Không tìm thấy thông tin nhà tuyển dụng.', 404);
   }
   return profile;
 }
@@ -214,7 +260,7 @@ async function getManagedApplication(user, applicationId) {
     },
   });
   if (!application) {
-    throw createError('Không tìm thấy đơn ứng tuyển', 404);
+    throw createError('Không tìm thấy đơn ứng tuyển.', 404);
   }
 
   await assertCanManageJob(user, application.jobId);
@@ -237,17 +283,18 @@ async function listApplicationsForJob(userId, jobId, { status } = {}) {
     // Bằng coverage thì đơn nộp trước đứng trước.
     orderBy: [{ coverage: 'desc' }, { appliedAt: 'asc' }, { id: 'asc' }],
     include: {
+      // CV gửi kèm đơn (T35g) để HR bấm "Xem CV" đúng file ứng viên đã chọn
+      cv: { select: CV_SUMMARY_SELECT },
       candidateProfile: {
         select: {
           id: true,
           fullName: true,
-          // CV hiện tại của ứng viên (mới nhất đã phân tích) để HR bấm "Xem CV" (T35f).
-          // Đơn không lưu CV nào được dùng để nộp, nên lấy CV hiện tại thay vì CV lúc nộp
+          // CV hiện tại (mới nhất đã phân tích): chỉ dùng cho đơn cũ chưa lưu CV (cvId null)
           cvs: {
             where: { status: 'COMPLETED' },
             orderBy: [{ uploadedAt: 'desc' }, { id: 'desc' }],
             take: 1,
-            select: { id: true, fileName: true, fileType: true },
+            select: CV_SUMMARY_SELECT,
           },
         },
       },
@@ -265,7 +312,7 @@ async function listApplicationsForJob(userId, jobId, { status } = {}) {
         id: application.candidateProfile.id,
         fullName: application.candidateProfile.fullName,
       },
-      currentCv: application.candidateProfile.cvs[0] || null,
+      ...cvViewOf(application, application.candidateProfile.cvs[0]),
     })),
     note: COVERAGE_NOTE,
   };
@@ -278,14 +325,14 @@ async function updateApplicationStatus(user, applicationId, { status } = {}) {
 
   const allowed = STATUS_TRANSITIONS[currentStatus] || [];
   if (allowed.length === 0) {
-    throw createError(`Đơn đã ở trạng thái ${statusLabel(currentStatus)}, không thể đổi tiếp`, 400);
+    throw createError(`Đơn đã ở trạng thái ${statusLabel(currentStatus)}, không đổi được nữa.`, 400);
   }
   if (nextStatus === currentStatus) {
-    throw createError(`Đơn đang ở trạng thái ${statusLabel(currentStatus)}`, 400);
+    throw createError(`Đơn đang ở trạng thái ${statusLabel(currentStatus)}.`, 400);
   }
   if (!allowed.includes(nextStatus)) {
     throw createError(
-      `Không thể chuyển đơn từ ${statusLabel(currentStatus)} sang ${statusLabel(nextStatus)}`,
+      `Không thể chuyển đơn từ ${statusLabel(currentStatus)} sang ${statusLabel(nextStatus)}.`,
       400
     );
   }
@@ -297,7 +344,7 @@ async function updateApplicationStatus(user, applicationId, { status } = {}) {
     data: { status: nextStatus },
   });
   if (result.count === 0) {
-    throw createError('Trạng thái đơn vừa được thay đổi, vui lòng tải lại', 400);
+    throw createError('Trạng thái đơn vừa được thay đổi. Vui lòng tải lại trang.', 400);
   }
 
   // Thông báo cho ứng viên; lỗi chỉ ghi log, không làm hỏng việc đổi trạng thái
@@ -331,21 +378,21 @@ async function getApplicationDetail(user, applicationId) {
     include: { job: { select: { companyId: true } } },
   });
   if (!application) {
-    throw createError('Không tìm thấy đơn ứng tuyển', 404);
+    throw createError('Không tìm thấy đơn ứng tuyển.', 404);
   }
 
   if (user.role === 'CANDIDATE') {
     const profile = await getCandidateProfile(user.userId);
     if (application.candidateProfileId !== profile.id) {
-      throw createError('Bạn chỉ được xem đơn ứng tuyển của chính mình', 403);
+      throw createError('Bạn chỉ xem được đơn ứng tuyển của chính mình.', 403);
     }
   } else if (user.role === 'RECRUITER') {
     const profile = await getRecruiterProfile(user.userId);
     if (application.job.companyId !== profile.companyId) {
-      throw createError('Bạn không có quyền với đơn ứng tuyển này', 403);
+      throw createError('Không có quyền thao tác trên đơn ứng tuyển này.', 403);
     }
   } else {
-    throw createError('Bạn không có quyền truy cập', 403);
+    throw createError('Không có quyền thực hiện thao tác này.', 403);
   }
 
   // Ma trận tính LẠI từ dữ liệu hiện tại; coverageAtApply là giá trị đã lưu lúc nộp

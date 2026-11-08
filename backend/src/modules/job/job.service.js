@@ -9,7 +9,7 @@ function createError(message, statusCode) {
 function parseId(value, label) {
   const id = Number(value);
   if (!Number.isInteger(id) || id <= 0) {
-    throw createError(`${label} không hợp lệ`, 400);
+    throw createError(`${label} không hợp lệ.`, 400);
   }
   return id;
 }
@@ -18,10 +18,10 @@ function parseId(value, label) {
 async function getRecruiterProfile(userId) {
   const profile = await prisma.recruiterProfile.findUnique({ where: { userId } });
   if (!profile) {
-    throw createError('Không tìm thấy hồ sơ nhà tuyển dụng', 404);
+    throw createError('Không tìm thấy thông tin nhà tuyển dụng.', 404);
   }
   if (!profile.companyId) {
-    throw createError('Tài khoản chưa được gán công ty', 404);
+    throw createError('Tài khoản chưa được gán vào công ty. Vui lòng liên hệ quản trị viên.', 404);
   }
   return profile;
 }
@@ -33,10 +33,10 @@ async function getOwnedJob(userId, jobId) {
 
   const job = await prisma.job.findUnique({ where: { id } });
   if (!job) {
-    throw createError('Không tìm thấy tin tuyển dụng', 404);
+    throw createError('Không tìm thấy tin tuyển dụng.', 404);
   }
   if (job.companyId !== profile.companyId) {
-    throw createError('Bạn không có quyền với tin tuyển dụng này', 403);
+    throw createError('Không có quyền thao tác trên tin tuyển dụng này.', 403);
   }
 
   return { job, profile };
@@ -49,7 +49,7 @@ async function assertCanManageJob(user, jobId) {
 
   const job = await prisma.job.findUnique({ where: { id } });
   if (!job) {
-    throw createError('Không tìm thấy tin tuyển dụng', 404);
+    throw createError('Không tìm thấy tin tuyển dụng.', 404);
   }
   if (user.role === 'ADMIN') {
     return job;
@@ -57,7 +57,7 @@ async function assertCanManageJob(user, jobId) {
 
   const profile = await prisma.recruiterProfile.findUnique({ where: { userId: user.userId } });
   if (!profile || job.recruiterProfileId !== profile.id) {
-    throw createError('Bạn chỉ được chỉnh sửa tin tuyển dụng do mình đăng', 403);
+    throw createError('Chỉ người đăng tin mới sửa được tin tuyển dụng này.', 403);
   }
 
   return job;
@@ -68,12 +68,12 @@ async function createJob(userId, { title, description, location }) {
 
   const jobTitle = typeof title === 'string' ? title.trim() : '';
   if (!jobTitle) {
-    throw createError('Tiêu đề tin tuyển dụng không được để trống', 400);
+    throw createError('Vui lòng nhập tiêu đề tin tuyển dụng.', 400);
   }
 
   const jd = typeof description === 'string' ? description.trim() : '';
   if (!jd) {
-    throw createError('Mô tả công việc (JD) không được để trống', 400);
+    throw createError('Vui lòng nhập mô tả công việc.', 400);
   }
 
   return prisma.job.create({
@@ -162,7 +162,7 @@ async function getJobById(jobId) {
   });
 
   if (!job) {
-    throw createError('Không tìm thấy tin tuyển dụng', 404);
+    throw createError('Không tìm thấy tin tuyển dụng.', 404);
   }
 
   return job;
@@ -175,7 +175,7 @@ async function updateJob(user, jobId, { title, description, location }) {
   if (title !== undefined) {
     const value = typeof title === 'string' ? title.trim() : '';
     if (!value) {
-      throw createError('Tiêu đề tin tuyển dụng không được để trống', 400);
+      throw createError('Vui lòng nhập tiêu đề tin tuyển dụng.', 400);
     }
     data.title = value;
   }
@@ -184,7 +184,7 @@ async function updateJob(user, jobId, { title, description, location }) {
   if (description !== undefined) {
     const value = typeof description === 'string' ? description.trim() : '';
     if (!value) {
-      throw createError('Mô tả công việc (JD) không được để trống', 400);
+      throw createError('Vui lòng nhập mô tả công việc.', 400);
     }
     data.description = value;
     // JD đổi thì yêu cầu trích xuất lại JobRequirement
@@ -196,7 +196,7 @@ async function updateJob(user, jobId, { title, description, location }) {
   }
 
   if (Object.keys(data).length === 0) {
-    throw createError('Không có thông tin nào để cập nhật', 400);
+    throw createError('Chưa có thay đổi nào để lưu.', 400);
   }
 
   const updated = await prisma.job.update({
@@ -224,7 +224,7 @@ async function deleteJob(user, jobId) {
   const applicationCount = await prisma.application.count({ where: { jobId: job.id } });
   if (applicationCount > 0) {
     throw createError(
-      'Tin tuyển dụng đã có đơn ứng tuyển, hãy đóng tin thay vì xóa',
+      'Tin tuyển dụng đã có đơn ứng tuyển nên không thể xóa. Có thể đóng tin thay thế.',
       400
     );
   }

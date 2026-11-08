@@ -17,13 +17,13 @@ const EMPTY_FORM = { title: '', location: '', description: '' }
 
 // JD mẫu theo đúng cách bộ phân tích đọc JD (requirement.extractor.js, requirement.classifier.js)
 const JD_EXAMPLE = [
-  'MÔ TẢ CÔNG VIỆC',
+  'Mô tả công việc',
   '- Lập báo cáo tài chính định kỳ',
-  'YÊU CẦU CÔNG VIỆC',
+  'Yêu cầu công việc',
   '- Tối thiểu 2 năm kinh nghiệm kế toán tổng hợp',
   '- Thành thạo Excel, MISA',
   '- Ưu tiên ứng viên có chứng chỉ CPA',
-  'QUYỀN LỢI',
+  'Quyền lợi',
   '- Thưởng tháng 13, bảo hiểm đầy đủ',
 ].join('\n')
 
@@ -108,7 +108,7 @@ function JobForm({ jobId }) {
         setRequirements(job.requirements || [])
       })
       .catch((err) => {
-        if (!ignore) setLoadError(getErrorMessage(err, 'Không tải được tin tuyển dụng'))
+        if (!ignore) setLoadError(getErrorMessage(err, 'Không tải được tin tuyển dụng.'))
       })
       .finally(() => {
         if (!ignore) setLoading(false)
@@ -135,8 +135,8 @@ function JobForm({ jobId }) {
       description: form.description.trim(),
     }
     const errors = {}
-    if (!payload.title) errors.title = 'Vui lòng nhập tiêu đề tin'
-    if (!payload.description) errors.description = 'Vui lòng nhập mô tả công việc (JD)'
+    if (!payload.title) errors.title = 'Vui lòng nhập tiêu đề tin tuyển dụng.'
+    if (!payload.description) errors.description = 'Vui lòng nhập mô tả công việc.'
     setFieldErrors(errors)
     if (Object.keys(errors).length > 0) return
 
@@ -158,7 +158,7 @@ function JobForm({ jobId }) {
         setAskParse('changed')
       }
     } catch (err) {
-      setSaveError(getErrorMessage(err, 'Lưu tin thất bại, vui lòng thử lại'))
+      setSaveError(getErrorMessage(err, 'Chưa lưu được tin tuyển dụng. Vui lòng thử lại.'))
     } finally {
       setSaving(false)
     }
@@ -177,7 +177,7 @@ function JobForm({ jobId }) {
       setNeedsReparse(false)
       setParseResult({ count: list.length, mode, unresolvedCount })
     } catch (err) {
-      setParseError(getErrorMessage(err, 'Phân tích JD thất bại, vui lòng thử lại'))
+      setParseError(getErrorMessage(err, 'Chưa phân tích được yêu cầu. Vui lòng thử lại.'))
     } finally {
       setParsing(false)
     }
@@ -200,7 +200,7 @@ function JobForm({ jobId }) {
         {backLink}
         <h1>{pageTitle}</h1>
         <p className={styles.alertError} role="alert">
-          {forbidden ? 'Bạn chỉ được chỉnh sửa tin tuyển dụng do mình đăng.' : loadError}
+          {forbidden ? 'Chỉ người đăng tin mới sửa được tin tuyển dụng này.' : loadError}
         </p>
       </>
     )
@@ -250,11 +250,11 @@ function JobForm({ jobId }) {
             disabled={saving}
           />
           <Textarea
-            label="Mô tả công việc (JD)"
+            label="Mô tả công việc"
             name="description"
             required
             rows={18}
-            hint="Xem gợi ý cách viết JD bên cạnh để hệ thống tách yêu cầu chính xác."
+            hint="Viết theo gợi ý bên cạnh để tách yêu cầu chính xác hơn."
             value={form.description}
             onChange={handleChange}
             error={fieldErrors.description}
@@ -272,10 +272,10 @@ function JobForm({ jobId }) {
 
         <aside className={styles.tips} aria-labelledby="jd-tips-title">
           <h2 id="jd-tips-title" className={styles.tipsTitle}>
-            Gợi ý cách viết JD
+            Gợi ý cách viết mô tả công việc
           </h2>
           <ul className={styles.tipsList}>
-            <li>Có mục tiêu đề "YÊU CẦU CÔNG VIỆC" (hoặc "Yêu cầu:"). Mục "Quyền lợi", "Phúc lợi" không được phân tích.</li>
+            <li>Có mục "Yêu cầu công việc" hoặc "Yêu cầu:". Mục "Quyền lợi", "Phúc lợi" không được phân tích.</li>
             <li>Mỗi yêu cầu một dòng, bắt đầu bằng dấu "-" hoặc "•".</li>
             <li>Yêu cầu bắt buộc: dùng "Tối thiểu", "Bắt buộc", "Thành thạo", "Phải có".</li>
             <li>Yêu cầu ưu tiên: dùng "Ưu tiên", "là lợi thế", "Biết thêm".</li>
@@ -289,22 +289,22 @@ function JobForm({ jobId }) {
       {isEdit && (
         <section className={styles.section} aria-labelledby="requirements-title">
           <div className={styles.sectionHeader}>
-            <h2 id="requirements-title">Yêu cầu đã phân tích từ JD</h2>
+            <h2 id="requirements-title">Yêu cầu tách từ mô tả công việc</h2>
             <div className={styles.sectionActions}>
               {/* Bảng dưới chỉ đọc; đổi loại, thêm, xóa yêu cầu ở trang riêng (T34) */}
               <Link className={styles.secondaryLink} to={`/recruiter/jobs/${jobId}/requirements`}>
                 Chỉnh sửa yêu cầu
               </Link>
               <Button variant="secondary" onClick={handleParse} loading={parsing} disabled={jdDirty}>
-                {parsing ? 'Đang phân tích...' : requirements.length > 0 ? 'Phân tích lại JD' : 'Phân tích JD'}
+                {parsing ? 'Đang phân tích...' : requirements.length > 0 ? 'Phân tích lại yêu cầu' : 'Phân tích yêu cầu'}
               </Button>
             </div>
           </div>
 
-          {jdDirty && <p className={styles.muted}>Lưu thay đổi JD trước khi phân tích.</p>}
+          {jdDirty && <p className={styles.muted}>Lưu thay đổi mô tả công việc trước khi phân tích.</p>}
           {needsReparse && (
             <p className={styles.alertWarning} role="status">
-              JD đã thay đổi sau lần phân tích gần nhất, hãy phân tích lại để yêu cầu khớp với JD mới.
+              Mô tả công việc đã thay đổi sau lần phân tích gần nhất. Vui lòng phân tích lại yêu cầu.
             </p>
           )}
           {parseError && (
@@ -315,24 +315,24 @@ function JobForm({ jobId }) {
           {parseResult && (
             <p className={styles.alertSuccess} role="status">
               {parseResult.count > 0
-                ? `Đã phân tích JD: ${parseResult.count} yêu cầu.`
-                : 'Không tách được yêu cầu nào. Hãy kiểm tra JD có mục "YÊU CẦU CÔNG VIỆC" và mỗi yêu cầu một dòng.'}
+                ? `Đã phân tích, tìm được ${parseResult.count} yêu cầu.`
+                : 'Chưa tách được yêu cầu nào. Kiểm tra mô tả công việc có mục "Yêu cầu công việc" và mỗi yêu cầu một dòng.'}
             </p>
           )}
           {/* Chế độ rule: yêu cầu không có từ khóa bắt buộc / ưu tiên thì tạm để Ưu tiên */}
           {parseResult && parseResult.mode === 'rule' && parseResult.unresolvedCount > 0 && (
             <p className={styles.alertWarning} role="status">
-              {parseResult.unresolvedCount} yêu cầu chưa phân loại chắc chắn, đang để Ưu tiên, vui lòng kiểm tra lại
+              {parseResult.unresolvedCount} yêu cầu chưa phân loại chắc chắn, đang để Ưu tiên. Vui lòng kiểm tra lại.
             </p>
           )}
 
           {parsing ? (
-            <Loading text="Đang phân tích JD..." />
+            <Loading text="Đang phân tích yêu cầu..." />
           ) : (
             <Table
               columns={REQUIREMENT_COLUMNS}
               data={requirements}
-              emptyText="Chưa phân tích JD. Ứng viên chưa được đối chiếu với tin này cho tới khi phân tích."
+              emptyText="Chưa có yêu cầu. Ứng viên chỉ được đối chiếu sau khi phân tích yêu cầu."
             />
           )}
         </section>
@@ -341,7 +341,7 @@ function JobForm({ jobId }) {
       <Modal
         open={askParse !== null}
         onClose={() => setAskParse(null)}
-        title={askParse === 'changed' ? 'Phân tích lại JD?' : 'Phân tích JD ngay?'}
+        title={askParse === 'changed' ? 'Phân tích lại yêu cầu?' : 'Phân tích yêu cầu ngay?'}
         footer={
           <>
             <Button variant="secondary" onClick={() => setAskParse(null)}>
@@ -353,8 +353,8 @@ function JobForm({ jobId }) {
       >
         <p className={styles.modalText}>
           {askParse === 'changed'
-            ? 'JD vừa thay đổi nên các yêu cầu đã phân tích trước đó không còn khớp. Phân tích lại sẽ thay toàn bộ yêu cầu cũ.'
-            : 'Tin đã được tạo. Phân tích JD để hệ thống tách các yêu cầu tuyển dụng, dùng để đối chiếu với hồ sơ ứng viên.'}
+            ? 'Mô tả công việc vừa thay đổi nên yêu cầu cũ không còn khớp. Phân tích lại sẽ thay toàn bộ yêu cầu cũ.'
+            : 'Đã tạo tin tuyển dụng. Phân tích yêu cầu để đối chiếu với hồ sơ ứng viên.'}
         </p>
       </Modal>
     </>

@@ -22,7 +22,7 @@ async function getUser(req, res, next) {
 async function createRecruiter(req, res, next) {
   try {
     const data = await adminService.createRecruiter(req.body || {});
-    return success(res, data, 'Tạo tài khoản nhà tuyển dụng thành công', 201);
+    return success(res, data, 'Đã tạo tài khoản nhà tuyển dụng.', 201);
   } catch (err) {
     return next(err);
   }
@@ -40,7 +40,7 @@ async function getCompany(req, res, next) {
 async function updateStatus(req, res, next) {
   try {
     const data = await adminService.updateUserStatus(req.user.userId, req.params.id, req.body || {});
-    return success(res, data, data.isActive ? 'Đã mở khóa tài khoản' : 'Đã khóa tài khoản');
+    return success(res, data, data.isActive ? 'Đã mở khóa tài khoản.' : 'Đã khóa tài khoản');
   } catch (err) {
     return next(err);
   }
@@ -49,7 +49,7 @@ async function updateStatus(req, res, next) {
 async function updateRole(req, res, next) {
   try {
     const data = await adminService.updateUserRole(req.user.userId, req.params.id, req.body || {});
-    return success(res, data, 'Đổi role thành công');
+    return success(res, data, 'Đã đổi vai trò.');
   } catch (err) {
     return next(err);
   }
@@ -58,7 +58,7 @@ async function updateRole(req, res, next) {
 async function deleteUser(req, res, next) {
   try {
     const data = await adminService.deleteUser(req.user.userId, req.params.id);
-    return success(res, data, 'Xóa tài khoản thành công');
+    return success(res, data, 'Đã xóa tài khoản.');
   } catch (err) {
     return next(err);
   }
@@ -67,7 +67,7 @@ async function deleteUser(req, res, next) {
 async function updatePassword(req, res, next) {
   try {
     const data = await adminService.updateUserPassword(req.user.userId, req.params.id, req.body || {});
-    return success(res, data, 'Đặt lại mật khẩu thành công');
+    return success(res, data, 'Đã đặt lại mật khẩu.');
   } catch (err) {
     return next(err);
   }
@@ -76,7 +76,7 @@ async function updatePassword(req, res, next) {
 async function dashboard(req, res, next) {
   try {
     const data = await adminService.getDashboard();
-    return success(res, data, 'Lấy số liệu tổng quan thành công');
+    return success(res, data, 'Lấy số liệu tổng quan thành công.');
   } catch (err) {
     return next(err);
   }

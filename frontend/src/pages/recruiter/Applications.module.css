@@ -19,7 +19,11 @@
   }
 }
 
+/* Cột chữ chính có độ rộng tối thiểu (docs/design.md mục 7, T35g): cột CV có thêm ghi chú đơn cũ nên rộng hơn,
+   không có độ rộng tối thiểu thì họ tên bị ép bẻ thành từng mẩu; có rồi thì bảng cuộn ngang trong khung */
 .name {
+  display: block;
+  min-width: calc(var(--sidebar-width) * 0.85);
   font-weight: var(--weight-semibold);
   overflow-wrap: anywhere;
 }
@@ -101,4 +105,19 @@
   color: var(--color-danger-text);
   background-color: var(--color-danger-bg);
   border: var(--border-width) solid var(--color-danger-border);
+}
+
+/* Cột CV (T35g): nút Xem CV, đơn cũ chưa lưu CV có ghi chú nhỏ bên dưới */
+.cvCell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  min-width: calc(var(--sidebar-width) * 0.6);
+}
+
+.cvLegacy {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
 }

@@ -8,7 +8,7 @@ const NOTIFICATION_TYPES = {
 
 // Nhãn tiếng Việt của trạng thái đơn, dùng trong nội dung thông báo
 const APPLICATION_STATUS_LABELS = {
-  APPLIED: 'Đã nộp',
+  APPLIED: 'Đã ứng tuyển',
   REVIEWING: 'Đang xem xét',
   ACCEPTED: 'Đã chấp nhận',
   REJECTED: 'Đã từ chối',
@@ -23,7 +23,7 @@ function createError(message, statusCode) {
 function parseId(value, label) {
   const id = Number(value);
   if (!Number.isInteger(id) || id <= 0) {
-    throw createError(`${label} không hợp lệ`, 400);
+    throw createError(`${label} không hợp lệ.`, 400);
   }
   return id;
 }
@@ -36,13 +36,13 @@ function toText(value) {
 
 // "Ứng viên Nguyễn Văn A vừa ứng tuyển vị trí Kế toán tổng hợp"
 function buildNewApplicationMessage({ candidateName, jobTitle } = {}) {
-  return `Ứng viên ${toText(candidateName)} vừa ứng tuyển vị trí ${toText(jobTitle)}`;
+  return `Ứng viên ${toText(candidateName)} vừa ứng tuyển vị trí ${toText(jobTitle)}.`;
 }
 
 // "Đơn ứng tuyển Kế toán tổng hợp chuyển sang Đang xem xét"
 function buildStatusChangedMessage({ jobTitle, status } = {}) {
   const label = APPLICATION_STATUS_LABELS[status] || toText(status);
-  return `Đơn ứng tuyển ${toText(jobTitle)} chuyển sang ${label}`;
+  return `Đơn ứng tuyển vị trí ${toText(jobTitle)} đã chuyển sang ${label}.`;
 }
 
 // ===== Tạo thông báo (dành cho module khác gọi) =====
@@ -142,10 +142,10 @@ async function markAsRead(userId, notificationId) {
 
   const notification = await prisma.notification.findUnique({ where: { id } });
   if (!notification) {
-    throw createError('Không tìm thấy thông báo', 404);
+    throw createError('Không tìm thấy thông báo.', 404);
   }
   if (notification.userId !== userId) {
-    throw createError('Bạn không có quyền với thông báo này', 403);
+    throw createError('Bạn không có quyền với thông báo này.', 403);
   }
 
   // Đã đọc rồi thì trả nguyên trạng, không cần ghi lại

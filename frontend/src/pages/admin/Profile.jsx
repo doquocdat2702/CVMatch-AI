@@ -24,10 +24,7 @@ function AdminProfile() {
         </div>
       </dl>
 
-      <p className={styles.note}>
-        Quên mật khẩu quản trị viên: chức năng quên mật khẩu qua email chỉ dành cho ứng viên. Người quản lý máy chủ chạy
-        lệnh <code className={styles.code}>node scripts/reset-admin-password.js</code> trong thư mục backend để đặt lại.
-      </p>
+      <p className={styles.note}>Nếu quên mật khẩu, liên hệ bộ phận kỹ thuật để đặt lại.</p>
     </>
   )
 }

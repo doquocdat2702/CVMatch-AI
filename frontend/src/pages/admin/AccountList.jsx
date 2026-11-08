@@ -31,7 +31,7 @@ const CONFIRM = {
   lock: {
     title: 'Khóa tài khoản',
     text: (user) =>
-      `Khóa tài khoản ${user.email}? Có hiệu lực ngay: người dùng không đăng nhập và không thao tác được cho tới khi được mở khóa. Dữ liệu của tài khoản vẫn được giữ nguyên.`,
+      `Khóa tài khoản ${user.email}? Tài khoản không đăng nhập được cho tới khi được mở khóa. Dữ liệu vẫn được giữ nguyên.`,
     button: 'Khóa tài khoản',
     pending: 'Đang khóa...',
     done: (user) => `Đã khóa tài khoản ${user.email}.`,
@@ -53,10 +53,10 @@ const EMPTY_RESET_FORM = { newPassword: '', confirmPassword: '' }
 function validateReset(form) {
   const errors = {}
   if (form.newPassword.length < MIN_PASSWORD_LENGTH) {
-    errors.newPassword = `Mật khẩu mới phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự`
+    errors.newPassword = `Mật khẩu mới cần có ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`
   }
   if (form.confirmPassword !== form.newPassword) {
-    errors.confirmPassword = 'Mật khẩu xác nhận không khớp'
+    errors.confirmPassword = 'Mật khẩu xác nhận chưa khớp.'
   }
   return errors
 }
@@ -104,7 +104,7 @@ function AccountList() {
       })
       .catch((err) => {
         if (!ignore) {
-          setResult({ key: requestKey, data: null, error: getErrorMessage(err, 'Không tải được danh sách tài khoản') })
+          setResult({ key: requestKey, data: null, error: getErrorMessage(err, 'Không tải được danh sách tài khoản.') })
         }
       })
     return () => {
@@ -178,7 +178,7 @@ function AccountList() {
       setConfirm(null)
     } catch (err) {
       // Giữ hộp, hiện đúng câu của API (vd "Tài khoản đang có 3 tin tuyển dụng, không thể xóa...")
-      setConfirmError(getErrorMessage(err, 'Thao tác thất bại, vui lòng thử lại'))
+      setConfirmError(getErrorMessage(err, 'Chưa thực hiện được. Vui lòng thử lại.'))
       // Xóa nhà tuyển dụng / ứng viên bị 400 nghĩa là đã có dữ liệu tuyển dụng (tin hoặc đơn):
       // đánh dấu blocked để hộp đổi nút Xóa thành gợi ý khóa thay vì xóa
       const status = err.response ? err.response.status : null
@@ -198,7 +198,7 @@ function AccountList() {
       await updateUserStatus(user.id, true)
       setNotice({ type: 'success', text: `Đã mở khóa tài khoản ${user.email}.` })
     } catch (err) {
-      setNotice({ type: 'error', text: getErrorMessage(err, 'Mở khóa thất bại, vui lòng thử lại') })
+      setNotice({ type: 'error', text: getErrorMessage(err, 'Chưa mở khóa được. Vui lòng thử lại.') })
     } finally {
       await refreshList()
       setBusyId(null)
@@ -240,13 +240,13 @@ function AccountList() {
       await resetUserPassword(resetTarget.id, resetForm.newPassword)
       setNotice({
         type: 'success',
-        text: `Đã đặt lại mật khẩu cho ${resetTarget.email}. Hãy báo mật khẩu mới cho người dùng qua kênh nội bộ và nhắc họ đổi lại trong trang Hồ sơ.`,
+        text: `Đã đặt lại mật khẩu cho ${resetTarget.email}. Gửi mật khẩu mới cho người dùng qua kênh nội bộ và nhắc họ đổi lại ở trang Đổi mật khẩu.`,
       })
       // Xóa trắng để mật khẩu không nằm lại trong state
       setResetForm(EMPTY_RESET_FORM)
       setResetTarget(null)
     } catch (err) {
-      setResetError(getErrorMessage(err, 'Đặt lại mật khẩu thất bại, vui lòng thử lại'))
+      setResetError(getErrorMessage(err, 'Chưa đặt lại được mật khẩu. Vui lòng thử lại.'))
     } finally {
       setResetting(false)
     }
@@ -283,7 +283,7 @@ function AccountList() {
         // Backend chặn admin tự khóa, tự xóa, tự đặt lại mật khẩu: ẩn hết thao tác trên dòng của chính mình.
         // Mật khẩu của mình đổi ở trang Hồ sơ.
         if (currentUser && user.id === currentUser.id) {
-          return <span className={styles.muted}>Tài khoản của bạn</span>
+          return <span className={styles.muted}>Tài khoản đang đăng nhập</span>
         }
         return (
           <div className={styles.rowActions}>
@@ -354,7 +354,7 @@ function AccountList() {
           emptyText={filtered ? 'Không có tài khoản nào khớp bộ lọc.' : 'Chưa có tài khoản nào.'}
         />
         <p className={styles.note}>
-          Tài khoản nhà tuyển dụng đã đăng tin hoặc ứng viên đã nộp đơn không xóa được, chỉ khóa được.
+          Không xóa được tài khoản nhà tuyển dụng đã đăng tin hoặc ứng viên đã ứng tuyển, chỉ khóa được.
         </p>
         <div className={styles.pagination}>
           <Pagination page={page} totalPages={result.data.pagination.totalPages} onChange={handlePageChange} />
@@ -370,7 +370,7 @@ function AccountList() {
       <div className={styles.pageHeader}>
         <h1>Tài khoản</h1>
         <Link className={styles.primaryLink} to="/admin/recruiters/new">
-          Tạo tài khoản Recruiter
+          Tạo tài khoản nhà tuyển dụng
         </Link>
       </div>
       <p className={styles.intro}>
@@ -450,7 +450,7 @@ function AccountList() {
         )}
         {confirm && confirm.blocked && !confirm.user.isActive && (
           <p className={styles.modalHint}>
-            Tài khoản này đang bị khóa sẵn: người dùng không đăng nhập được, dữ liệu tuyển dụng vẫn được giữ.
+            Tài khoản này đã bị khóa. Người dùng không đăng nhập được, dữ liệu tuyển dụng vẫn được giữ.
           </p>
         )}
       </Modal>

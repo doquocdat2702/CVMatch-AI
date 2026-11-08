@@ -4,11 +4,11 @@ const { error } = require('../utils/response');
 function authorize(...roles) {
   return (req, res, next) => {
     if (!req.user) {
-      return error(res, 'Thiếu token xác thực', 401);
+      return error(res, 'Bạn cần đăng nhập để tiếp tục.', 401);
     }
 
     if (!roles.includes(req.user.role)) {
-      return error(res, 'Bạn không có quyền truy cập', 403);
+      return error(res, 'Không có quyền thực hiện thao tác này.', 403);
     }
 
     return next();

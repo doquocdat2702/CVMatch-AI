@@ -16,43 +16,43 @@ function handle(fn, message, statusCode) {
 module.exports = {
   createSkill: handle(
     (req) => itemsService.createSkill(req.user.userId, req.body || {}),
-    'Thêm kỹ năng thành công',
+    'Đã thêm kỹ năng.',
     201
   ),
   updateSkill: handle(
     (req) => itemsService.updateSkill(req.user.userId, req.params.id, req.body || {}),
-    'Cập nhật kỹ năng thành công'
+    'Đã cập nhật kỹ năng.'
   ),
   deleteSkill: handle(
     (req) => itemsService.deleteSkill(req.user.userId, req.params.id),
-    'Xóa kỹ năng thành công'
+    'Đã xóa kỹ năng.'
   ),
 
   createExperience: handle(
     (req) => itemsService.createExperience(req.user.userId, req.body || {}),
-    'Thêm kinh nghiệm thành công',
+    'Đã thêm kinh nghiệm.',
     201
   ),
   updateExperience: handle(
     (req) => itemsService.updateExperience(req.user.userId, req.params.id, req.body || {}),
-    'Cập nhật kinh nghiệm thành công'
+    'Đã cập nhật kinh nghiệm.'
   ),
   deleteExperience: handle(
     (req) => itemsService.deleteExperience(req.user.userId, req.params.id),
-    'Xóa kinh nghiệm thành công'
+    'Đã xóa kinh nghiệm.'
   ),
 
   createEducation: handle(
     (req) => itemsService.createEducation(req.user.userId, req.body || {}),
-    'Thêm học vấn thành công',
+    'Đã thêm học vấn.',
     201
   ),
   updateEducation: handle(
     (req) => itemsService.updateEducation(req.user.userId, req.params.id, req.body || {}),
-    'Cập nhật học vấn thành công'
+    'Đã cập nhật học vấn.'
   ),
   deleteEducation: handle(
     (req) => itemsService.deleteEducation(req.user.userId, req.params.id),
-    'Xóa học vấn thành công'
+    'Đã xóa học vấn.'
   ),
 };

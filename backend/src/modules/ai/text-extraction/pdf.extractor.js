@@ -15,7 +15,7 @@ async function extractFromPdf(filePath) {
   try {
     buffer = await fs.promises.readFile(filePath);
   } catch (err) {
-    throw createError('Không đọc được file PDF trên máy chủ');
+    throw createError('Không đọc được file CV. Vui lòng tải file lên lại.');
   }
 
   let parser;
@@ -25,7 +25,7 @@ async function extractFromPdf(filePath) {
     // pageJoiner rỗng để không chèn dòng đánh dấu số trang vào text
     result = await parser.getText({ pageJoiner: '\n' });
   } catch (err) {
-    throw createError('File PDF bị hỏng hoặc không đọc được nội dung');
+    throw createError('File PDF bị hỏng hoặc không đọc được. Vui lòng chọn file khác.');
   } finally {
     if (parser) {
       await parser.destroy().catch(() => {});
@@ -36,7 +36,7 @@ async function extractFromPdf(filePath) {
 
   if (!hasUsableText(text)) {
     throw createError(
-      'File PDF không chứa văn bản, có thể là bản scan. Vui lòng tải lên file PDF có text'
+      'File PDF không có nội dung chữ, có thể là bản scan. Vui lòng chọn file PDF có chữ.'
     );
   }
 

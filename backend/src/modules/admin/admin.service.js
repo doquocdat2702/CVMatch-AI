@@ -17,7 +17,7 @@ function createError(message, statusCode) {
 function parseId(value, label) {
   const id = Number(value);
   if (!Number.isInteger(id) || id <= 0) {
-    throw createError(`${label} không hợp lệ`, 400);
+    throw createError(`${label} không hợp lệ.`, 400);
   }
   return id;
 }
@@ -32,7 +32,7 @@ async function findRoleByName(roleName) {
   const role = name ? await prisma.role.findUnique({ where: { name } }) : null;
   if (!role) {
     const roles = await prisma.role.findMany({ select: { name: true }, orderBy: { id: 'asc' } });
-    throw createError(`Role phải là một trong: ${roles.map((r) => r.name).join(', ')}`, 400);
+    throw createError(`Vai trò không đúng. Vui lòng chọn lại vai trò.`, 400);
   }
   return role;
 }
@@ -49,7 +49,7 @@ function ensureNotSelf(adminId, userId, message) {
 async function getSingleCompany() {
   const company = await prisma.company.findFirst({ orderBy: { id: 'asc' } });
   if (!company) {
-    throw createError('Chưa có công ty: kiểm tra COMPANY_NAME trong .env rồi khởi động lại server', 400);
+    throw createError('Chưa thiết lập thông tin công ty. Vui lòng liên hệ quản trị viên.', 400);
   }
   return company;
 }
@@ -64,7 +64,7 @@ async function ensureNotLastActiveAdmin(user) {
     where: { id: { not: user.id }, isActive: true, role: { name: 'ADMIN' } },
   });
   if (otherActiveAdmins === 0) {
-    throw createError('Hệ thống phải còn ít nhất một quản trị viên', 400);
+    throw createError('Hệ thống cần còn ít nhất một quản trị viên đang hoạt động.', 400);
   }
 }
 
@@ -164,7 +164,7 @@ async function getUserDetail(userId) {
   });
 
   if (!user) {
-    throw createError('Không tìm thấy tài khoản', 404);
+    throw createError('Không tìm thấy tài khoản.', 404);
   }
 
   return { ...user, role: user.role.name };
@@ -176,30 +176,30 @@ async function getUserDetail(userId) {
 async function createRecruiter(body) {
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
   if (!email) {
-    throw createError('Email không được để trống', 400);
+    throw createError('Vui lòng nhập email.', 400);
   }
   if (!EMAIL_REGEX.test(email)) {
-    throw createError('Email không đúng định dạng', 400);
+    throw createError('Email không đúng định dạng.', 400);
   }
   if (typeof body.password !== 'string' || body.password.length < MIN_PASSWORD_LENGTH) {
-    throw createError(`Mật khẩu phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự`, 400);
+    throw createError(`Mật khẩu cần có ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`, 400);
   }
 
   const fullName = optionalText(body.fullName);
   if (!fullName) {
-    throw createError('Họ tên không được để trống', 400);
+    throw createError('Vui lòng nhập họ và tên.', 400);
   }
 
   const company = await getSingleCompany();
 
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
-    throw createError('Email đã được sử dụng', 400);
+    throw createError('Email này đã được dùng cho tài khoản khác.', 400);
   }
 
   const recruiterRole = await prisma.role.findUnique({ where: { name: 'RECRUITER' } });
   if (!recruiterRole) {
-    throw createError('Chưa có role RECRUITER trong hệ thống, hãy chạy seed trước', 500);
+    throw createError('Chưa thiết lập vai trò nhà tuyển dụng. Vui lòng liên hệ quản trị viên.', 500);
   }
 
   // Hash trước, không giữ transaction trong lúc bcrypt chạy
@@ -226,7 +226,7 @@ async function createRecruiter(body) {
   } catch (err) {
     // Hai request cùng email chạy song song: request sau vướng unique email
     if (err.code === 'P2002') {
-      throw createError('Email đã được sử dụng', 400);
+      throw createError('Email này đã được dùng cho tài khoản khác.', 400);
     }
     throw err;
   }
@@ -242,15 +242,15 @@ async function getCompany() {
 
 async function updateUserStatus(adminId, userId, { isActive } = {}) {
   const id = parseId(userId, 'Mã tài khoản');
-  ensureNotSelf(adminId, id, 'Không thể tự khóa hoặc mở khóa tài khoản của chính mình');
+  ensureNotSelf(adminId, id, 'Không thể khóa hoặc mở khóa tài khoản đang đăng nhập.');
 
   if (typeof isActive !== 'boolean') {
-    throw createError('isActive phải là true hoặc false', 400);
+    throw createError('Trạng thái tài khoản không đúng.', 400);
   }
 
   const user = await prisma.user.findUnique({ where: { id }, include: { role: true } });
   if (!user) {
-    throw createError('Không tìm thấy tài khoản', 404);
+    throw createError('Không tìm thấy tài khoản.', 404);
   }
   if (!isActive) {
     await ensureNotLastActiveAdmin(user);
@@ -262,13 +262,13 @@ async function updateUserStatus(adminId, userId, { isActive } = {}) {
 
 async function updateUserRole(adminId, userId, { roleName } = {}) {
   const id = parseId(userId, 'Mã tài khoản');
-  ensureNotSelf(adminId, id, 'Không thể tự đổi role của chính mình');
+  ensureNotSelf(adminId, id, 'Không thể đổi vai trò của tài khoản đang đăng nhập.');
 
   const role = await findRoleByName(roleName);
 
   // Hệ thống chỉ có một quản trị viên (do seed tạo), không nâng ai lên ADMIN
   if (role.name === 'ADMIN') {
-    throw createError('Không thể nâng tài khoản lên ADMIN, hệ thống chỉ có một quản trị viên', 400);
+    throw createError('Không thể đổi tài khoản thành quản trị viên. Hệ thống chỉ có một quản trị viên.', 400);
   }
 
   const user = await prisma.user.findUnique({
@@ -276,10 +276,10 @@ async function updateUserRole(adminId, userId, { roleName } = {}) {
     include: { role: true, candidateProfile: true, recruiterProfile: true },
   });
   if (!user) {
-    throw createError('Không tìm thấy tài khoản', 404);
+    throw createError('Không tìm thấy tài khoản.', 404);
   }
   if (user.roleId === role.id) {
-    throw createError(`Tài khoản đã có role ${role.name}`, 400);
+    throw createError(`Tài khoản đang có vai trò này.`, 400);
   }
 
   // Role mới khác role hiện tại, nên nếu đang là ADMIN thì đây là hạ role
@@ -315,7 +315,7 @@ async function updateUserRole(adminId, userId, { roleName } = {}) {
 
 async function deleteUser(adminId, userId) {
   const id = parseId(userId, 'Mã tài khoản');
-  ensureNotSelf(adminId, id, 'Không thể tự xóa tài khoản của chính mình');
+  ensureNotSelf(adminId, id, 'Không thể xóa tài khoản đang đăng nhập.');
 
   const user = await prisma.user.findUnique({
     where: { id },
@@ -331,7 +331,7 @@ async function deleteUser(adminId, userId) {
     },
   });
   if (!user) {
-    throw createError('Không tìm thấy tài khoản', 404);
+    throw createError('Không tìm thấy tài khoản.', 404);
   }
   await ensureNotLastActiveAdmin(user);
 
@@ -339,13 +339,13 @@ async function deleteUser(adminId, userId) {
   const { candidateProfile, recruiterProfile } = user;
   if (recruiterProfile && recruiterProfile._count.jobs > 0) {
     throw createError(
-      `Tài khoản đang có ${recruiterProfile._count.jobs} tin tuyển dụng, không thể xóa. Hãy khóa tài khoản thay vì xóa`,
+      `Tài khoản đang có ${recruiterProfile._count.jobs} tin tuyển dụng nên không thể xóa. Có thể khóa tài khoản thay thế.`,
       400
     );
   }
   if (candidateProfile && candidateProfile._count.applications > 0) {
     throw createError(
-      `Ứng viên đã có ${candidateProfile._count.applications} đơn ứng tuyển, không thể xóa. Hãy khóa tài khoản thay vì xóa`,
+      `Ứng viên đã có ${candidateProfile._count.applications} đơn ứng tuyển nên không thể xóa. Có thể khóa tài khoản thay thế.`,
       400
     );
   }
@@ -387,16 +387,16 @@ async function updateUserPassword(adminId, userId, { newPassword } = {}) {
   ensureNotSelf(
     adminId,
     id,
-    'Không thể đặt lại mật khẩu của chính mình tại đây, hãy dùng PUT /api/auth/change-password'
+    'Không thể đặt lại mật khẩu của tài khoản đang đăng nhập ở đây. Vui lòng dùng trang Đổi mật khẩu.'
   );
 
   if (typeof newPassword !== 'string' || newPassword.length < MIN_PASSWORD_LENGTH) {
-    throw createError(`Mật khẩu mới phải có ít nhất ${MIN_PASSWORD_LENGTH} ký tự`, 400);
+    throw createError(`Mật khẩu mới cần có ít nhất ${MIN_PASSWORD_LENGTH} ký tự.`, 400);
   }
 
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) {
-    throw createError('Không tìm thấy tài khoản', 404);
+    throw createError('Không tìm thấy tài khoản.', 404);
   }
 
   const hashedPassword = await hashPassword(newPassword);

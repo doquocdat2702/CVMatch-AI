@@ -9,7 +9,7 @@ const loginLimiter = rateLimit({
   skipSuccessfulRequests: true,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  handler: (req, res) => error(res, 'Bạn thử quá nhiều lần, vui lòng thử lại sau 15 phút', 429),
+  handler: (req, res) => error(res, 'Bạn đã thử quá nhiều lần. Vui lòng thử lại sau 15 phút.', 429),
 });
 
 // Quên mật khẩu: tối đa 5 lần mỗi 15 phút cho mỗi IP.
@@ -19,7 +19,7 @@ const forgotPasswordLimiter = rateLimit({
   limit: 5,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  handler: (req, res) => error(res, 'Bạn thử quá nhiều lần, vui lòng thử lại sau 15 phút', 429),
+  handler: (req, res) => error(res, 'Bạn đã thử quá nhiều lần. Vui lòng thử lại sau 15 phút.', 429),
 });
 
 module.exports = { loginLimiter, forgotPasswordLimiter };

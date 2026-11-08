@@ -82,6 +82,10 @@ Chữ thường cần ≥ 4.5:1. Viền ô nhập và viền focus (thành phầ
 | Dòng nhắc tải CV, nhãn "CV hiện tại" (`#0A4FA0` trên Xanh nhạt, T35f) | 6.98:1 | Đạt |
 | Mô tả trang, dấu "/" của breadcrumb (Chì trên Nền, T35f) | 5.99:1 | Đạt |
 | Breadcrumb "Việc làm", viền thẻ khi rê chuột (Xanh mực trên Nền, T35f) | 5.30:1 | Đạt |
+| Nhãn "Dùng để phân tích hồ sơ" (`#0A4FA0` trên Giấy, viền cùng màu, T35g) | 7.96:1 | Đạt |
+| Tên CV trên dòng CV đang chọn của hộp ứng tuyển (Mực đen trên Xanh nhạt, T35g) | 14.44:1 | Đạt |
+| Ngày tải trên dòng CV đang chọn (Chì trên Xanh nhạt, T35g) | 5.65:1 | Đạt |
+| Ô chữ viết tắt khu Tài khoản (`#0A4FA0` trên Xanh nhạt, T35g) | 6.98:1 | Đạt |
 | Chữ disabled trên nền disabled | 3.13:1 | WCAG miễn cho thành phần bị vô hiệu |
 
 ## 3. Font
@@ -144,6 +148,7 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
   Không dùng kiểu bo tròn viên thuốc.
 - Bóng: chỉ modal có bóng (`--shadow-modal`). Không bọc nội dung trong card đổ bóng
   (dropdown thông báo, menu tài khoản, footer cũng chỉ có viền).
+- Biến thêm ở T35g: `--account-mark-size` 56px (ô chữ viết tắt họ tên ở khung tóm tắt khu Tài khoản).
 - Biến thêm ở T35f: `--control-height-lg` 48px (ô tìm kiếm và nút Tìm ở khối mở đầu), `--touch-target` 44px
   (vùng bấm tối thiểu dưới 900px ở bố cục khách và ứng viên), `--aside-width` 320px (khung ứng tuyển dính),
   `--duration-pulse` 1200ms (nhịp mờ - rõ của khung xương khi đang tải).
@@ -234,7 +239,7 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
 │ Công ty TNHH ABC                                  (serif 48px, chữ trắng) │
 │ 29 vị trí đang tuyển                                         (Xanh nhạt) │
 │ ┌ dải Giấy ─────────────────────────────────────────────────────────────┐ │
-│ │ Tên vị trí, ví dụ: Kế toán        │ Địa điểm, ví dụ: Hà Nội   [ Tìm ] │ │
+│ │ Tên vị trí, ví dụ: Kế toán                                    [ Tìm ] │ │
 │ └───────────────────────────────────────────────────────────────────────┘ │
 │███████████████████████████████████████████████████████████████████████████│
 │ Tất cả (29)   Gợi ý theo CV của bạn (17)          (khách: h2 "Vị trí đang tuyển") │
@@ -252,11 +257,12 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
   HR / Admin vào "/" (MainLayout có Sidebar) thì khối nằm gọn trong vùng nội dung, bo 8px.
 - h1 gồm câu dẫn + tên công ty (`GET /company/public`, lỗi thì tên hệ thống); đang tải thì giữ chỗ để chữ không nhảy.
   "N vị trí đang tuyển": tổng số tin đang mở, không theo bộ lọc.
-- Tìm kiếm: 2 ô (tên vị trí, địa điểm) + nút Tìm trong một dải Giấy, dải là khung của ô (ô không viền riêng, viền
-  focus vẽ vào trong). Dùng đúng tham số `keyword` (lọc theo tiêu đề) và `location` của `GET /jobs`, nằm trên URL
-  (`?keyword=&location=`). Tìm thì về tab Tất cả, trang 1; sang tab Gợi ý thì bỏ bộ lọc. Dưới 900px 2 ô và nút xếp dọc.
-- Đang lọc: dòng "3 vị trí khớp với “kế toán” tại “Hà Nội”" + nút ghost "Xóa bộ lọc". Không có kết quả: khối rỗng
-  "Không có vị trí nào khớp với ..." + "Thử tên vị trí ngắn hơn hoặc bỏ địa điểm." + nút "Xóa bộ lọc".
+- Tìm kiếm (T35g bỏ ô địa điểm): một ô tên vị trí + nút Tìm trong một dải Giấy, dải là khung của ô (ô không viền
+  riêng, viền focus vẽ vào trong). Dùng tham số `keyword` của `GET /jobs` (lọc theo tiêu đề), nằm trên URL
+  (`?keyword=`); `?location=` của link cũ bị bỏ qua và xóa khi tìm. Địa điểm vẫn hiện trên thẻ tin và trang chi tiết.
+  Tìm thì về tab Tất cả, trang 1; sang tab Gợi ý thì bỏ bộ lọc. Dưới 900px ô và nút xếp dọc.
+- Đang lọc: dòng "3 vị trí khớp với “kế toán”" + nút ghost "Xóa bộ lọc". Không có kết quả: khối rỗng
+  "Không có vị trí nào khớp với “...”." + "Thử tên vị trí ngắn hơn hoặc một từ khóa khác." + nút "Xóa bộ lọc".
 - Thẻ tin (`JobCard`): tiêu đề serif 18px, địa điểm 14px đậm 500, đoạn đầu JD 2 dòng (`line-clamp`, Chì),
   "Đăng hôm nay / hôm qua / X ngày trước / ngày dd/mm/yyyy" 12px Chì, Badge "Đã ứng tuyển" ở chân thẻ.
   Một link duy nhất ở tiêu đề phủ kín thẻ bằng `::after`; viền focus vẽ trên lớp phủ (bao cả thẻ).
@@ -294,21 +300,100 @@ Vị trí khác đang tuyển: 3 thẻ                       └─────�
   (`position: sticky; bottom: 0`, nền Giấy, viền trên Viền đậm, tràn hết bề ngang, nút rộng hết thanh): dính ở đáy
   khi đang đọc, cuộn hết tin thì về đúng chỗ dưới JD nên không che phần cuối trang. Dòng thông tin mỗi mục một dòng.
 - Khách: "Ứng tuyển ngay" + câu "Đăng nhập để gửi CV và theo dõi đơn ứng tuyển." (ẩn trên thanh dính đáy).
-  Ứng viên: `ApplyAction variant="panel"` (nút rộng hết khung; trạng thái đơn và "Xem đơn" chung một dòng).
+  Ứng viên: `ApplyAction variant="panel"` (nút rộng hết khung; trạng thái đơn và "Xem đơn ứng tuyển" chung một dòng).
 
-### Trang của ứng viên: CV của tôi, Hồ sơ, Đơn ứng tuyển, Đổi mật khẩu (T35f)
+### Hộp ứng tuyển: chọn CV gửi kèm đơn (T35g)
+
+```
+Ứng tuyển: Chuyên viên Phân tích dữ liệu                              Đóng
+Chọn CV gửi kèm đơn
+( ) CV bản 3.pdf   Tải lên 06/11/2026 [Đã phân tích] [Dùng cho hồ sơ]   Xem
+( ) CV bản 2.pdf   Tải lên 06/11/2026 [Đã phân tích]                              Xem
+▌(•) CV bản 1.pdf  Tải lên 06/11/2026 [Đã phân tích]                              Xem   dòng đang chọn
+CV được chọn sẽ gửi kèm đơn ứng tuyển. Kết quả đối chiếu ... Lưu ý: hồ sơ của bạn chưa ...
+[Tải CV mới]  PDF hoặc DOCX, tối đa 5 MB. CV mới sẽ được phân tích để cập nhật hồ sơ.
+                                                        [Hủy] [Gửi đơn ứng tuyển]
+```
+
+- Nhóm radio trong `fieldset` (legend "Chọn CV gửi kèm đơn"), chọn sẵn CV mới nhất (API trả mới nhất trước); mỗi lần
+  mở hộp chọn lại CV mới nhất. Cả nhãn bấm được; nút "Xem" nằm ngoài nhãn nên bấm Xem không đổi lựa chọn.
+- Dòng đang chọn: nền Xanh nhạt + vạch trái 3px Xanh mực (`--border-accent-width`, như menu đang chọn).
+- Nhãn "Dùng cho hồ sơ" gắn cho CV đã phân tích có `parsedAt` mới nhất: nền Giấy, viền + chữ `#0A4FA0`
+  (nổi được trên dòng đang chọn).
+- Dưới danh sách: dòng chữ 12px màu Chì "CV được chọn sẽ gửi kèm đơn ứng tuyển. Kết quả đối chiếu dựa trên hồ sơ hiện
+  tại của bạn."; CV đang chọn khác CV dùng để phân tích thì thêm câu "Lưu ý: hồ sơ của bạn chưa được cập nhật từ CV
+  này." (`aria-live="polite"`).
+- "Tải CV mới" luôn có trong hộp: tải + phân tích (cùng API trang CV của tôi) rồi tự chọn CV đó; phân tích lỗi thì CV đã
+  tải vẫn được chọn (file gửi kèm được). Chưa có CV đã phân tích: khối Nền hướng dẫn tải CV, nút Gửi đơn bị khóa.
+- Gửi đúng `cvId` đang chọn. Nút trong hộp cao 44px dưới 900px (kể cả nút "Đóng", qua prop `closeButtonClassName`).
+
+### Khu "Tài khoản của tôi" (T35g): Hồ sơ, CV của tôi, Đơn ứng tuyển, Đổi mật khẩu
+
+```
+┌ tóm tắt (Giấy) ──────┐  Hồ sơ (serif 24)
+│ [NÁ] 56px            │  Nhà tuyển dụng xem các thông tin này khi bạn ứng tuyển.
+│ Nguyễn Thị Ánh       │  ┌ Thông tin cá nhân ─────────────────────────────┐
+│ anh@example.com      │  │ Email (chỉ đọc)      Họ và tên                 │
+│ ──────────────────── │  │ Số điện thoại        Địa chỉ        [Sửa thông tin] │
+│ Hồ sơ đã có 5/7 mục  │  └────────────────────────────────────────────────┘
+│ [=======-----]       │  ┌ Kỹ năng: chip "Excel  Từ điển" ...  ┐
+└──────────────────────┘  ┌ Kinh nghiệm: dòng thời gian ───────┐
+▌Hồ sơ                    ┌ Học vấn: dòng thời gian ───────────┐
+ CV của tôi
+ Đơn ứng tuyển
+ Đổi mật khẩu
+```
+
+- `AccountLayout` (components/layout) bọc 4 route `/candidate/profile`, `/candidate/cvs`, `/candidate/applications`,
+  `/candidate/change-password`; Kết quả phân tích (`/candidate/cvs/parsed`) và Chi tiết đối chiếu giữ bố cục riêng.
+- Máy tính: lưới `var(--sidebar-width) minmax(0, 1fr)`. Cột trái: khung tóm tắt (tờ Giấy) gồm ô chữ viết tắt
+  (`--account-mark-size` 56px, vuông bo 4px như Logo, nền Xanh nhạt, chữ `#0A4FA0` font tiêu đề; chữ đầu của từ đầu
+  và từ cuối họ tên), họ tên, email, "Hồ sơ đã có x/7 mục" + thanh trung tính (nền Viền, phần đã có màu Chì, như
+  coverage); 7 mục = họ tên, số điện thoại, địa chỉ, tiêu đề hồ sơ, có kỹ năng, có kinh nghiệm, có học vấn.
+  API không trả ngày tạo tài khoản cho ứng viên nên không có dòng "Tham gia".
+  Dưới là menu `NavLink` (aria-current) kiểu Sidebar: mục đang mở nền Xanh nhạt, chữ `#0A4FA0` đậm 600, vạch trái 3px.
+- Dưới 900px: khung tóm tắt thu gọn một dòng (ô chữ 40px, họ tên cắt "...", "Hồ sơ đã có x/7 mục" bên phải; ẩn email
+  và thanh), menu thành hàng tab cuộn ngang ngay dưới (chữ không xuống dòng, cao 44px, gạch chân 2px Xanh mực ở mục
+  đang mở, thanh cuộn mảnh); đổi trang thì hàng tab tự cuộn tới mục đang mở.
+- Trang con báo đổi dữ liệu hồ sơ qua `useOutletContext().refreshProfile` (lưu Hồ sơ, phân tích / xóa CV); đổi trang
+  trong khu cũng tải lại khung tóm tắt.
+- Hồ sơ: khối "Thông tin cá nhân" (form cũ, email chỉ đọc: hiện ở chế độ xem và có dòng "Email dùng để đăng nhập,
+  không đổi được ở đây" trong form), "Kỹ năng" (chip viền mảnh nền Nền bo 4px, tên như trong CV + nhãn nguồn màu Chì
+  Từ điển / AI / Tự nhập), "Kinh nghiệm", "Học vấn" (dòng thời gian: vạch trái 2px Viền, ô vuông 8px Xanh mực mỗi mục,
+  "03/2020 – hiện tại"). Ba khối sau chỉ đọc, có link "Chỉnh sửa ở Kết quả phân tích CV"; rỗng thì một câu hướng dẫn
+  + link dạng nút "Tải CV và phân tích".
+- CV của tôi: như T35f, nhãn "CV hiện tại" đổi thành "Dùng cho hồ sơ" (T35h) (cùng cách tính với hộp ứng tuyển), thêm
+  nhãn xám xanh "Đã gửi kèm N đơn". Bấm Xóa CV đã gửi kèm đơn: không mở hộp xác nhận, hiện ngay trong thẻ câu đỏ
+  "CV này đã được gửi kèm đơn ứng tuyển nên không thể xóa."
+- Đơn ứng tuyển: bỏ khối "CV nhà tuyển dụng xem được" chung; mỗi thẻ đơn có dòng "CV gửi kèm: <tên file> [Xem CV]",
+  đơn cũ chưa lưu CV kèm ghi chú "Đang hiển thị CV hiện tại của bạn" (HR: "... của ứng viên"). Thanh trên chỉ còn ô lọc trạng thái.
+  Trang Đơn của HR (cột CV) hiện cùng thông tin, ghi chú 12px Chì dưới nút.
+- Đổi mật khẩu (`ChangePasswordForm enhanced`): mỗi ô có nút chữ "Hiện" / "Ẩn" (`aria-pressed`) chung khung viền với
+  ô nhập (viền focus bao cả khung); danh sách 3 điều kiện cập nhật khi gõ, chỉ gồm quy tắc đã có: ít nhất 6 ký tự
+  (`MIN_PASSWORD_LENGTH`), khác mật khẩu hiện tại (backend), ô xác nhận trùng mật khẩu mới. Mỗi điều kiện có ô vuông
+  12px: rỗng viền Viền đậm (chưa đạt) / đặc Xanh lá (đạt), kèm chữ ẩn "đã đạt / chưa đạt" cho trình đọc màn hình;
+  danh sách nối với ô bằng `aria-describedby`, không `aria-live`. Thành công: khối xanh lá "Đã đổi mật khẩu" + câu
+  hướng dẫn. HR / Admin không truyền `enhanced` nên giữ đúng form cũ.
+
+### Trang của ứng viên: quy tắc chung (T35f)
 
 - Đầu trang `PageHeader`: h1 serif + một câu mô tả màu Chì, nút phụ (nếu có) bên phải.
 - Nội dung trong tờ Giấy viền mảnh (`Panel`; Hồ sơ, Đổi mật khẩu rộng bằng form), mỗi mục một khối, cách `--space-5`.
-- CV của tôi: khối "Tải CV lên" (vùng kéo thả giữ nguyên) rồi danh sách thẻ CV: tên file, ngày tải, nhãn "CV hiện tại",
-  Badge trạng thái; hàng thao tác Xem, Phân tích CV / Phân tích lại, Xem kết quả và Xuất CV mới (chỉ thẻ CV hiện tại,
-  vì kết quả phân tích là hồ sơ chung), Xóa tách riêng bên phải. Đầu trang có link "Kết quả phân tích CV".
-- Đơn ứng tuyển: thanh trên (CV nhà tuyển dụng xem được + ô lọc trạng thái) rồi danh sách thẻ đơn thay cho bảng:
-  tên tin (serif, link về tin), "Nộp ngày dd/mm/yyyy (X ngày trước)", Badge, tiến trình 3 bước, "Lúc nộp: z% yêu cầu
-  có bằng chứng"; Xem ma trận, Chi tiết đối chiếu bên trái, Rút đơn (chỉ khi Đã nộp) bên phải.
 - Trạng thái rỗng: một câu + một hành động chính ("Bạn chưa ứng tuyển vị trí nào." + "Xem việc làm";
   "Bạn chưa có CV nào." + "Tải CV lên"; lọc ra rỗng: "Không có đơn nào ở trạng thái này." + "Xem tất cả đơn").
-- Đổi mật khẩu: route của ứng viên truyền `siteStyle` cho trang dùng chung; HR / Admin giữ bố cục cũ (h1 + form).
+
+### Kết quả phân tích CV và Chi tiết đối chiếu: phần giải thích (T35g)
+
+- Kết quả phân tích: khung `details` "Cách hệ thống đọc CV của bạn" (tờ Giấy, tiêu đề đậm 600, cao tối
+  thiểu 40px / 44px dưới 900px), mở sẵn ở lần đầu vào trang (đánh dấu đã xem bằng localStorage, lỗi thì coi như lần
+  đầu), các lần sau thu gọn. 4 bước đánh số (là trình tự thật): Lấy chữ từ file / Nhận diện kỹ năng (từ điển, thêm AI
+  ở chế độ Hybrid) / Chuẩn hóa / Bạn kiểm tra và xác nhận; một dòng chế độ (vừa phân tích xong thì theo `mode` trang CV
+  của tôi chuyển sang qua state của router, mở lại trang về sau thì suy ra từ nguồn dữ liệu đang có và nói rõ là suy ra);
+  câu "Kết quả chỉ hỗ trợ đối chiếu, không dùng để đánh giá năng lực." màu Chì.
+- Mỗi mục có Badge nguồn bằng chữ tiếng Việt (`PROFILE_SOURCE_LABEL`: Từ điển / AI / Tự nhập, xám xanh) và Badge
+  trạng thái "Đã xác nhận" (xanh lá) / "Chưa xác nhận" (vàng).
+- Chi tiết đối chiếu: trên ma trận có chú thích 3 trạng thái (`dl`, Badge + một đoạn quy tắc 14px Chì, tờ Giấy),
+  viết theo đúng `matcher.js: resolveEvidence` và `evidence.finder.js` (xem `docs/cach-phan-tich-va-doi-chieu.md`).
 - Tiêu đề tab trình duyệt (`useDocumentTitle`): "<tên trang> | <VITE_APP_NAME>" ở trang chủ, chi tiết tin (tên tin),
   chi tiết đối chiếu, các trang ứng viên, trang công khai và trang đăng nhập / đăng ký. Rời trang thì về tên hệ thống,
   nên trang HR / Admin (chưa đặt tiêu đề riêng) chỉ hiện tên hệ thống.
@@ -348,7 +433,7 @@ Vị trí khác đang tuyển: 3 thẻ                       └─────�
 |---|---|
 | Khách, ứng viên (menu ngang, T35d) | Việc làm `/`, Giới thiệu `/about`, Liên hệ `/contact`. Ứng viên thêm AccountMenu: Hồ sơ `/candidate/profile`, CV của tôi `/candidate/cvs`, Đơn ứng tuyển `/candidate/applications`, Đổi mật khẩu `/candidate/change-password` (T35e), Đăng xuất |
 | Nhà tuyển dụng | Tổng quan `/recruiter/dashboard` (T35c), Hồ sơ `/recruiter/profile`, Đổi mật khẩu `/recruiter/change-password` (T35e), Công ty `/recruiter/company`, Tin tuyển dụng `/recruiter/jobs`, Ứng viên gợi ý `/recruiter/recommended-candidates` (T34), Đơn ứng tuyển `/recruiter/applications` |
-| Quản trị viên | Tổng quan `/admin/dashboard` (T35c), Tài khoản `/admin/users`, Tạo Recruiter `/admin/recruiters/new`, Phân quyền `/admin/roles`, Hồ sơ `/admin/profile` (T35), Đổi mật khẩu `/admin/change-password` (T35e) |
+| Quản trị viên | Tổng quan `/admin/dashboard` (T35c), Tài khoản `/admin/users`, Tạo nhà tuyển dụng `/admin/recruiters/new`, Phân quyền `/admin/roles`, Hồ sơ `/admin/profile` (T35), Đổi mật khẩu `/admin/change-password` (T35e) |
 
 - Mục "Việc làm" trỏ về `/`. Không có `/candidate/jobs`.
   `/`, `/jobs/:id`, `/about`, `/contact`, `/privacy`, `/terms` dùng `SiteLayout` cho khách và ứng viên, `MainLayout`
@@ -384,7 +469,8 @@ Trên điện thoại, khối Xanh mực thành dải phía trên form; Logo ở
 - Hàng dữ liệu: 14px, cao tối thiểu 44px, chỉ kẻ ngang, không tô sọc.
 - Cột số căn phải, dùng chữ số đều (`tabular-nums`); cột thao tác căn phải, nút cỡ nhỏ.
 - Rỗng: một hàng gộp mọi cột, chữ Chì căn giữa "Chưa có dữ liệu".
-- Cột chữ chính (tên vị trí, tiêu đề tin, email, tên file, yêu cầu) đặt độ rộng tối thiểu
+- Cột chữ chính (tên vị trí, tiêu đề tin, email, tên file, yêu cầu; họ tên ứng viên ở trang Đơn của HR từ T35g, khi cột CV
+  có thêm ghi chú đơn cũ) đặt độ rộng tối thiểu
   `calc(var(--sidebar-width) * 0.85)` trên khung nội dung của ô (thẻ khối, không đặt lên thẻ `<a>`):
   nội dung có `overflow-wrap: anywhere` làm bảng tự thu cột còn vài chữ cái, màn hình 375px sẽ bẻ chữ thành
   từng mẩu. Có độ rộng tối thiểu thì bảng cuộn ngang trong khung thay vì bẻ chữ (T35, sửa đủ ở T35c).
@@ -424,6 +510,9 @@ Trên điện thoại, khối Xanh mực thành dải phía trên form; Logo ở
 - `Modal` (T35f): thêm prop tùy chọn `closeButtonClassName` cho nút "Đóng" ở đầu modal (hộp ứng tuyển dùng để nút
   cao 44px trên điện thoại); không truyền thì như cũ.
 - `CvViewButton` (T35f): thêm prop `variant` (mặc định ghost như trong bảng; thẻ CV dùng secondary).
+- `ChangePasswordForm` (T35g): thêm prop tùy chọn `enhanced` (Hiện / Ẩn, danh sách điều kiện, khối thành công); không
+  truyền thì giữ nguyên form của HR / Admin.
+- `AccountLayout` (T35g, components/layout): khung khu Tài khoản của ứng viên (xem mục 6).
 - `Pagination`: "Trước", số trang, "Sau"; trang hiện tại nền Xanh nhạt; ẩn khi chỉ có 1 trang.
 - `Badge`: 12px đậm 600, bo 4px, có viền; màu theo prop `status` (mục 2).
 - `StatCard` (T35c, `components/dashboard/`): ô chỉ có viền, nhãn 14px Chì, con số `--text-xl` đậm 600 chữ số đều,

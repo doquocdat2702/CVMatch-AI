@@ -12,7 +12,7 @@ import { hasUnconfirmedItems } from './cvData'
 import styles from './CVExportModal.module.css'
 
 const TEMPLATES = [
-  { id: 'classic', name: 'Cổ điển', description: 'Một cột, hợp in đen trắng', Component: CVTemplateClassic },
+  { id: 'classic', name: 'Cổ điển', description: 'Một cột, dễ in đen trắng', Component: CVTemplateClassic },
   { id: 'modern', name: 'Hiện đại', description: 'Hai cột, liên hệ và kỹ năng bên trái', Component: CVTemplateModern },
 ]
 
@@ -65,7 +65,7 @@ function CVExportModal({ onClose }) {
         if (!ignore) setProfileData(result.data)
       })
       .catch((err) => {
-        if (!ignore) setError(getErrorMessage(err, 'Không tải được hồ sơ để xuất CV'))
+        if (!ignore) setError(getErrorMessage(err, 'Không tải được hồ sơ để xuất CV.'))
       })
       .finally(() => {
         if (!ignore) setLoading(false)
@@ -136,7 +136,7 @@ function CVExportModal({ onClose }) {
             {/* Vẫn cho xuất, không lọc bỏ mục chưa xác nhận: chỉ nhắc kiểm tra */}
             {hasUnconfirmedItems(profile) && (
               <p className={styles.warning} role="status">
-                Hồ sơ còn mục chưa xác nhận, nên kiểm tra lại trước khi xuất.
+                Hồ sơ còn mục chưa xác nhận. Bạn nên kiểm tra trước khi xuất CV.
               </p>
             )}
 
@@ -171,8 +171,8 @@ function CVExportModal({ onClose }) {
             </fieldset>
 
             <p className={styles.note}>
-              Khi hộp thoại in mở ra: chọn khổ giấy A4, chọn "Lưu dưới dạng PDF" nếu muốn lưu file, và bỏ tick "Đầu
-              trang và chân trang" (Headers and footers) để CV không bị in kèm ngày giờ và đường dẫn trang.
+              Trong hộp thoại in, chọn khổ A4 và "Lưu dưới dạng PDF" nếu muốn lưu file. Bỏ chọn "Đầu trang và chân
+              trang" để CV không in kèm ngày giờ và đường dẫn.
             </p>
           </div>
         )}
