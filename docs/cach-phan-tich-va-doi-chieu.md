@@ -1,6 +1,7 @@
 # Cách hệ thống phân tích CV, phân tích JD và đối chiếu yêu cầu
 
-Tài liệu mô tả đúng theo code hiện tại (T35g) để dùng khi viết khóa luận. Mỗi bước có dẫn `file: hàm`
+Tài liệu mô tả đúng theo code hiện tại (T35g, cập nhật ở Task F: chuẩn hóa tên kỹ năng, ghép theo tên, seed theo
+phòng ban, giữ cụm "A/B" là tên Skill) để dùng khi viết khóa luận. Mỗi bước có dẫn `file: hàm`
 (đường dẫn tính từ `backend/src/`). Không chứa key, mật khẩu hay dữ liệu thật; hai ví dụ cuối tài liệu dùng CV và JD
 tự viết, chạy bằng chính code của hệ thống ở chế độ rule.
 
@@ -62,10 +63,18 @@ Chế độ NLP đặt bằng biến `NLP_MODE` (`rule` hoặc `hybrid`, mặc �
 
 - Từ điển là **bảng `Skill` trong database** (`name` + `aliases` ngăn cách bằng dấu phẩy, do `prisma/seed.js` tạo),
   nạp một lần bằng `normalizer.js: loadSkillIndex` thành chỉ mục `khóa đã chuẩn hóa -> skillId`.
+- Seed có 133 Skill, nhóm theo phòng ban (Phát triển phần mềm, Ứng dụng di động, Kiểm thử, DevOps, Dữ liệu và AI,
+  Sản phẩm / phân tích nghiệp vụ, Thiết kế UI/UX, Quản lý dự án, IT nội bộ / bảo mật, Kinh doanh, Chăm sóc khách hàng,
+  Marketing, Nhân sự, Kế toán / tài chính, Hành chính / pháp chế, Ngoại ngữ) cộng nhóm kỹ thuật có từ trước. Không có
+  kỹ năng mềm mới. Alias tránh từ đơn lẻ dễ khớp nhầm ("go", "ads", "test", "api", "ai"...); một khóa chỉ thuộc
+  một Skill.
 - Mỗi dòng CV được chuẩn hóa nhưng giữ nguyên độ dài (`normalizeKeepLength`: bỏ dấu, chữ thường) để cắt lại đúng cụm
   gốc. Email, URL trong dòng bị che trước khi so (`blankOutContacts`).
 - So **nguyên cụm**, hai đầu không dính chữ hay số; **cụm dài xét trước**, ký tự đã thuộc cụm dài thì cụm ngắn không
   được đè lên ("java script" chỉ ra JavaScript, không thêm Java).
+- Bộ bóc CV không tách câu theo `/` mà khớp nguyên cụm, nên khóa có `/` ("CI/CD", "UI/UX", "TCP/IP" là alias của
+  Networking) khớp trực tiếp; khoảng trắng hai bên `/` không tính ("CI / CD" vẫn ra CI/CD, Task F5). "Excel/Word" ra
+  Excel (Word không có trong bảng Skill).
 - **Khóa ngắn dưới 3 ký tự** (QA, AI, JS...): chỉ nhận khi CV viết HOA đúng nguyên khóa và đứng riêng một từ
   (`MIN_DICTIONARY_KEY_LENGTH = 3`, cờ `uppercaseOnly`). Vì vậy "Ai cũng..." không ra Illustrator.
 - Mỗi `skillId` lấy một lần: `rawName` là cụm đúng như trong CV, `evidence` là dòng đầu tiên chứa cụm,
@@ -94,9 +103,11 @@ Chế độ NLP đặt bằng biến `NLP_MODE` (`rule` hoặc `hybrid`, mặc �
 
 ### 4.2 Gộp kết quả (`hybrid.parser.js: parseCV`)
 
-- **Kỹ năng** (`mergeSkills`): kỹ năng của NLP đứng trước (giữ evidence của NLP), sau đó kỹ năng từ điển. Mỗi kỹ năng
-  NLP được chuẩn hóa tên rồi tra `skillId`. Khử trùng (`dedupeSkills`) theo `skillId` nếu tra được, không tra được thì
-  theo tên canonical đã chuẩn hóa. Kỹ năng NLP có `source = 'NLP'`.
+- **Kỹ năng** (`mergeSkills`): kỹ năng của NLP đứng trước (giữ evidence của NLP), sau đó kỹ năng từ điển. Mọi kỹ năng
+  qua cùng bước chuẩn hóa `expandSkillName` (mục 6.1b) **trước khi gộp**: kỹ năng NLP bỏ phần mô tả trong ngoặc, kỹ
+  năng đã biết nằm trong ngoặc tách thành kỹ năng riêng (cùng evidence); kỹ năng từ điển đã có `skillId` và tên là
+  đúng cụm khớp khóa nên giữ nguyên. Khử trùng (`dedupeSkills`) theo `skillId` nếu tra được, không tra được thì theo
+  tên canonical đã chuẩn hóa (`skillNameKey`, bỏ phần trong ngoặc). Kỹ năng NLP có `source = 'NLP'`.
 - **Ngày của kinh nghiệm** (`resolveExperienceDates`): ưu tiên khoảng thời gian rule tìm được ngay trong
   evidence / mô tả; không có mới lấy ngày NLP trả (đọc bằng cùng hàm `parseDateValue`). **Học vấn**
   (`resolveEducationDates`) đọc ngày từ đúng dòng trong phần Học vấn có tên trường.
@@ -123,12 +134,30 @@ Chế độ NLP đặt bằng biến `NLP_MODE` (`rule` hoặc `hybrid`, mặc �
 
 - `normalizeText`: tách dấu (NFD) rồi bỏ dấu tiếng Việt, `đ -> d`, chữ thường, chỉ giữ chữ, số và `+ # / . & -`,
   gộp khoảng trắng. Dùng chung cho CV, JD và đối chiếu.
-- `normalizeSkillName`: tra `skill.dictionary.json` (62 mục `canonical` + `aliases`). Khớp thì trả tên chuẩn
+- `normalizeSkillName`: tra `skill.dictionary.json` (63 mục `canonical` + `aliases`; từ Task F, HTML và CSS là hai mục
+  riêng như hai Skill trong seed). Khớp thì trả tên chuẩn
   (vd "MS Excel" -> "Excel"), không khớp thì **giữ nguyên tên gốc**. Không so gần đúng, không đoán theo tiền tố; khóa
   bị hai mục tranh nhau thì bỏ hẳn. Quy tắc cứng: React khác React Native, Java khác JavaScript, Excel khác Excel VBA,
   SQL khác MySQL.
-- `resolveSkillId`: tra bảng `Skill` theo tên chuẩn (name + aliases). Không có thì `skillId = null`, **không tự tạo**
-  Skill mới.
+- `resolveSkillId` / `lookupSkillId`: bỏ phần trong ngoặc rồi tra bảng `Skill` (name + aliases) theo tên chuẩn của từ
+  điển, không thấy thì tra chính tên đó. Không có thì `skillId = null`, **không tự tạo** Skill mới.
+
+### 6.1b Phần trong ngoặc (`normalizer.js: stripParentheses`, `expandSkillName`, Task F1)
+
+Dùng chung cho kỹ năng của CV (rule, Gemini) và tên yêu cầu khi phân tích JD:
+
+- Bỏ phần trong `( )` hoặc `[ ]` (có lồng nhau; ngoặc mở không đóng thì phần sau ngoặc tính là trong ngoặc).
+  "JavaScript (ES6+)" -> JavaScript; "Microsoft Excel (nâng cao)" -> Microsoft Excel, tên chuẩn Excel.
+- Trong ngoặc có kỹ năng đã biết (khớp name / alias của bảng Skill) thì tách thành kỹ năng riêng. Thử cả đoạn trước
+  ("CI/CD", "C&B"), rồi tách theo `,` `;` "và" "hoặc" "and" "or", cụm chưa khớp thì tách tiếp theo `/` và `&`.
+  "Cơ sở dữ liệu (MySQL, PostgreSQL)" -> MySQL, PostgreSQL; "Java (Spring Boot)" -> Java, Spring Boot.
+- Phần ngoài ngoặc giữ lại khi là kỹ năng đã biết, hoặc khi trong ngoặc không có kỹ năng nào. Vì vậy "Cơ sở dữ liệu"
+  (không phải Skill) bị bỏ khi trong ngoặc đã có MySQL, PostgreSQL.
+- Cụm mô tả (năm, cấp độ, "nâng cao", "TOEIC 750", "JLPT N2") không khớp Skill nào nên không bị tách.
+- Khóa ngắn dưới 3 ký tự trong ngoặc theo cùng quy tắc với mục 3.2: chỉ nhận khi viết HOA đúng nguyên khóa và đứng
+  riêng ("(QA)" ra Quản lý chất lượng; "(qa)", "(ba năm)" không ra gì).
+- `skillNameKey`: khóa so tên kỹ năng = bỏ phần trong ngoặc + `normalizeText` (bỏ dấu, không phân biệt hoa thường,
+  gộp khoảng trắng). Dùng cho gộp kỹ năng và ghép theo tên khi đối chiếu (mục 8.1).
 
 ### 6.2 Ngày tháng (`rule.parser.js: parseDateValue`, `parseDateToken`)
 
@@ -146,7 +175,12 @@ Chế độ NLP đặt bằng biến `NLP_MODE` (`rule` hoặc `hybrid`, mặc �
 - Một dòng tách tiếp theo dấu `;`. `rawText` **giữ nguyên câu gốc** làm dẫn chứng.
 - `extractMinYears`: số năm nhỏ nhất trong câu theo các mẫu "tối thiểu / ít nhất / trên N năm", "N+ năm",
   "N-M năm", "N năm trở lên", "N years"... (1–50).
-- `splitCombinedNames` tách câu gộp nhiều kỹ năng theo `,` `/` `&` "và" "hoặc" "and" "or" (không tách trong ngoặc);
+- `splitCombinedNames` tách câu gộp nhiều kỹ năng theo `,` `/` `&` "và" "hoặc" "and" "or" (không tách trong ngoặc).
+  **Dấu `/` (Task F5, `protectSkillSlashes`)**: trước khi tách, cụm "A/B" (bỏ khoảng trắng hai bên `/`) khớp name hoặc
+  alias của một Skill thì giữ nguyên là một yêu cầu: "CI/CD", "UI/UX", "TCP/IP", "CI / CD". Còn lại tách như cũ:
+  "Excel/Word" -> Excel + Word, "MySQL / PostgreSQL" -> MySQL + PostgreSQL. Bảng Skill lấy từ chỉ mục service phân
+  tích JD đã nạp (`extractRequirements(description, { skillIndex })`); gọi không kèm chỉ mục thì tách theo `/` như cũ.
+  "C/C++" là tên Skill C/C++ nên giữ nguyên (alias "c++", "cpp", "c/c++"; không có alias "c" đơn lẻ);
   `cleanCandidateName` gọt cụm dẫn nhập / kết thúc (`LEADING_PHRASES`, `TRAILING_PHRASES`: "yêu cầu", "thành thạo",
   "sử dụng tốt", "ưu tiên ứng viên có", "là lợi thế", "is a plus"...);
   `isUsableName` loại tên dưới 2 ký tự, không có chữ cái hoặc dài hơn 12 từ.
@@ -161,7 +195,10 @@ Chế độ NLP đặt bằng biến `NLP_MODE` (`rule` hoặc `hybrid`, mặc �
   - `NLP_MODE=rule`: để `PREFERRED`, đếm vào `unresolvedCount` (giao diện nhắc HR kiểm tra lại).
   - `hybrid`: gộp mọi câu chưa quyết vào **một** lần gọi Gemini, bắt trả đúng một trong 3 giá trị; giá trị lạ cho một
     mục -> `OPTIONAL`. Thiếu key hoặc Gemini lỗi -> **503**, yêu cầu cũ của tin giữ nguyên.
-- Chuẩn hóa tên yêu cầu bằng `normalizeSkillName` + `resolveSkillId` (`normalizeName`), rồi trong một transaction
+- Chuẩn hóa tên yêu cầu bằng `expandSkillName` (`expandRequirementName`, mục 6.1b): "Microsoft Excel (nâng cao)" ->
+  Excel; "cơ sở dữ liệu (MySQL, PostgreSQL)" -> 2 yêu cầu MySQL, PostgreSQL cùng câu gốc, loại và số năm (như câu
+  gộp "Excel, MISA" vốn đã tách thành 2 yêu cầu). HR tự thêm / sửa một yêu cầu thì giữ tên HR nhập, `skillId` tra sau
+  khi bỏ phần trong ngoặc (`normalizeName`); quyết định này đã được chủ dự án duyệt. Sau đó trong một transaction
   **xóa toàn bộ yêu cầu cũ và ghi bộ mới**. API trả `{ requirements, mode, unresolvedCount }`.
 
 ## 8. Đối chiếu yêu cầu với hồ sơ
@@ -177,9 +214,22 @@ ký tự; chỗ tìm thấy nằm gọn trong một mục từ điển dài hơn
 
 | Nguồn | EXACT | PARTIAL | NONE |
 |---|---|---|---|
-| Kỹ năng (`matchOneSkill`) | cùng `skillId`; hoặc trùng tên sau chuẩn hóa (bỏ dấu, không phân biệt hoa thường) | cùng một mục từ điển nhưng gọi bằng tên khác (alias); hoặc tên khớp một phần theo từ, xét cả hai chiều | hai `skillId` khác nhau; hai tên thuộc hai mục từ điển khác nhau; không khớp |
+| Kỹ năng (`matchOneSkill`) | cùng `skillId`; hoặc trùng tên sau chuẩn hóa (bỏ dấu, không phân biệt hoa thường; từ Task F bỏ cả phần trong ngoặc) | cùng một mục từ điển nhưng gọi bằng tên khác (alias); bên thiếu `skillId` tra tên ra **cùng** Skill với bên kia (Task F2); hoặc tên khớp một phần theo từ, xét cả hai chiều | hai `skillId` khác nhau; bên thiếu `skillId` tra tên ra Skill **khác** (Task F2); hai tên thuộc hai mục từ điển khác nhau; không khớp |
 | Kinh nghiệm (`findExperienceEvidence`) | (không có) | tên yêu cầu (hoặc alias) xuất hiện trong vị trí, tên công ty, mô tả hay evidence: **luôn PARTIAL** vì chỉ suy ra từ mô tả | không thấy |
 | Học vấn (`findEducationEvidence`) | trường / ngành / bằng **trùng nguyên văn** sau chuẩn hóa | có chứa tên yêu cầu | không thấy |
+
+**Ghép theo tên khi thiếu `skillId` (Task F2).** Yêu cầu hoặc kỹ năng của ứng viên có `skillId = null` (lưu trước khi
+bảng Skill có kỹ năng đó, hoặc tên ngoài từ điển) vẫn được ghép theo tên. Task F2 chỉ mở rộng **cách tìm** bằng chứng,
+**không** đổi quy tắc trạng thái:
+
+- Trùng tên sau chuẩn hóa (`skillNameKey`) -> EXACT, đúng quy tắc "trùng tên sau chuẩn hóa" đã có.
+- Bên thiếu `skillId` tra tên trong bảng Skill (`lookupSkillId`; chỉ mục nạp một lần mỗi lượt đối chiếu, gợi ý việc
+  làm / ứng viên nạp một lần cho cả vòng lặp). Tra ra **cùng** Skill với bên kia -> PARTIAL (như "cùng mục từ điển,
+  gọi bằng alias khác"), **khác** Skill -> NONE (như "hai `skillId` khác nhau"). Một bên tra không ra thì xét tiếp như cũ.
+- Ghép theo tên không được nâng ngang ghép theo `skillId` đã lưu: hai kỹ năng cùng Skill nhưng một bên lưu khi chưa có
+  Skill chỉ ra UNCERTAIN; phân tích lại CV / JD để lưu `skillId` thì ra SUPPORTED. Quyết định đã được chủ dự án duyệt.
+- Khớp một phần theo từ vẫn xét trên tên đầy đủ (kể cả phần trong ngoặc), nên kỹ năng cũ "Cơ sở dữ liệu (MySQL,
+  PostgreSQL)" vẫn khớp một phần với yêu cầu MySQL như trước.
 
 ### 8.2 Yêu cầu có số năm (`matcher.js: resolveEvidence`, `evidence.finder.js: checkYearsRequirement`)
 
@@ -309,3 +359,8 @@ tích (rule không lưu kinh nghiệm) sẽ ra coverage khác, vì vậy coverag
 - Bộ tách JD dựa trên tiêu đề phần và từ khóa: câu mô tả công việc cũng có thể thành yêu cầu, câu không có từ khóa
   thì không phân loại được bằng rule (chế độ rule để PREFERRED, HR nên kiểm tra lại).
 - Đối chiếu dùng hồ sơ hiện tại, không dùng file CV gửi kèm đơn (mục 9).
+- Skill Go (đã duyệt, theo quy tắc khóa ngắn): rule chỉ nhận "GO" viết HOA đứng riêng hoặc "Golang"; "Go" viết hoa
+  chữ đầu trong CV không được bóc bằng rule (Gemini trả tên "Go" thì vẫn tra ra Skill Go).
+- Cụm "A/B" chỉ giữ nguyên khi cả cụm là name / alias của một Skill (mục 7.1); "thiết kế UI/UX" ra một yêu cầu nhưng
+  không gắn Skill vì cả tên dài hơn alias (khớp một phần theo từ khi đối chiếu).
+- Phần mô tả trong ngoặc bị bỏ khỏi tên kỹ năng ("nâng cao", "3 năm"); câu gốc và evidence vẫn giữ nguyên văn.

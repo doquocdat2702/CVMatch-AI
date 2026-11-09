@@ -10,6 +10,7 @@
 const prisma = require('../../../config/prisma');
 const { findEvidence, checkYearsRequirement } = require('./evidence.finder');
 const { calculateCoverage } = require('./coverage');
+const { loadSkillIndex } = require('../normalization/normalizer');
 
 const STATUS_BY_MATCH_TYPE = {
   EXACT: 'SUPPORTED',
@@ -43,8 +44,8 @@ function toStatus(matchType) {
 //   có kinh nghiệm liên quan nhưng thiếu năm -> PARTIAL
 //   không có kinh nghiệm liên quan nhưng có kỹ năng / học vấn -> PARTIAL
 //   không có gì                              -> NONE
-function resolveEvidence(requirement, profile) {
-  const found = findEvidence(requirement, profile);
+function resolveEvidence(requirement, profile, skillIndex) {
+  const found = findEvidence(requirement, profile, { skillIndex });
   const years = checkYearsRequirement(requirement, profile.experiences);
 
   if (!years) {
@@ -82,7 +83,9 @@ function resolveEvidence(requirement, profile) {
   return { matchType: 'NONE', evidence: null };
 }
 
-async function matchJobWithCandidate(jobId, candidateProfileId) {
+// options.skillIndex: chỉ mục bảng Skill (loadSkillIndex) để ghép kỹ năng theo tên khi thiếu skillId (F2).
+// Gọi nhiều lần liên tiếp (gợi ý việc làm / ứng viên) thì truyền sẵn để không phải đọc lại bảng Skill
+async function matchJobWithCandidate(jobId, candidateProfileId, options = {}) {
   const jobKey = parseId(jobId, 'Mã tin tuyển dụng');
   const candidateKey = parseId(candidateProfileId, 'Mã ứng viên');
 
@@ -107,8 +110,9 @@ async function matchJobWithCandidate(jobId, candidateProfileId) {
     throw createError('Không tìm thấy hồ sơ ứng viên.', 404);
   }
 
+  const skillIndex = options.skillIndex || (await loadSkillIndex());
   const matrix = job.requirements.map((requirement) => {
-    const { matchType, evidence } = resolveEvidence(requirement, candidate);
+    const { matchType, evidence } = resolveEvidence(requirement, candidate, skillIndex);
     return {
       requirement: {
         id: requirement.id,

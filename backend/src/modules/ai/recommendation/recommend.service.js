@@ -6,6 +6,7 @@
 
 const prisma = require('../../../config/prisma');
 const { matchJobWithCandidate } = require('../matching/matcher');
+const { loadSkillIndex } = require('../normalization/normalizer');
 const { COVERAGE_NOTE } = require('../matching/coverage');
 
 const DEFAULT_LIMIT = 10;
@@ -103,9 +104,11 @@ async function recommendJobsForCandidate(candidateProfileId, limit = DEFAULT_LIM
     select: { id: true },
   });
 
+  // Đọc bảng Skill một lần cho cả vòng lặp (ghép kỹ năng theo tên, F2)
+  const skillIndex = await loadSkillIndex();
   const items = [];
   for (const job of jobs) {
-    const result = await matchJobWithCandidate(job.id, candidate.id);
+    const result = await matchJobWithCandidate(job.id, candidate.id, { skillIndex });
     items.push({ job: result.job, ...toItem(result) });
   }
 
@@ -149,9 +152,10 @@ async function recommendCandidatesForJob(jobId, limit = DEFAULT_LIMIT) {
     select: { id: true },
   });
 
+  const skillIndex = await loadSkillIndex();
   const items = [];
   for (const candidate of candidates) {
-    const result = await matchJobWithCandidate(job.id, candidate.id);
+    const result = await matchJobWithCandidate(job.id, candidate.id, { skillIndex });
     items.push({ candidate: result.candidate, ...toItem(result) });
   }
 

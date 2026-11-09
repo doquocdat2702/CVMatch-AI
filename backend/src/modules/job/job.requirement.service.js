@@ -7,6 +7,7 @@ const {
   normalizeSkillName,
   resolveSkillId,
   loadSkillIndex,
+  expandSkillName,
 } = require('../ai/normalization/normalizer');
 
 const MAX_NAME_LENGTH = 255;
@@ -56,12 +57,24 @@ function parseMinYears(value) {
   return years;
 }
 
-// Chuẩn hóa tên theo từ điển rồi tra skillId, giống luồng kỹ năng của CV
+// Chuẩn hóa tên theo từ điển rồi tra skillId, giống luồng kỹ năng của CV.
+// Dùng khi HR tự thêm / sửa một yêu cầu: giữ tên HR nhập (theo tên chuẩn của từ điển),
+// skillId tra sau khi bỏ phần trong ngoặc (F1: "Excel (nâng cao)" vẫn gắn Skill Excel)
 async function normalizeName(rawName, skillIndex) {
   const { canonical } = normalizeSkillName(rawName);
   const normalizedName = canonical.slice(0, MAX_NAME_LENGTH);
   const skillId = await resolveSkillId(normalizedName, skillIndex);
   return { normalizedName, skillId };
+}
+
+// Khi phân tích JD: chuẩn hóa tên yêu cầu cùng cách với kỹ năng của CV (F1, expandSkillName).
+// "Microsoft Excel (nâng cao)" -> Excel; "cơ sở dữ liệu (MySQL, PostgreSQL)" -> 2 yêu cầu MySQL, PostgreSQL
+// (cùng câu gốc, loại, số năm), như câu gộp "Excel, MISA" vốn đã tách thành 2 yêu cầu
+function expandRequirementName(rawName, skillIndex) {
+  return expandSkillName(rawName, skillIndex).map((item) => ({
+    normalizedName: item.canonical.slice(0, MAX_NAME_LENGTH),
+    skillId: item.skillId,
+  }));
 }
 
 async function findJobOrThrow(jobId) {
@@ -98,28 +111,29 @@ async function parseJobDescription(user, jobId) {
     throw createError('Tin tuyển dụng chưa có mô tả công việc để phân tích.', 400);
   }
 
-  const extracted = extractRequirements(description);
+  // Nạp bảng Skill đúng một lần cho cả danh sách (bộ tách cần để giữ nguyên "CI/CD", "UI/UX"... F5)
+  const skillIndex = await loadSkillIndex();
+  const extracted = extractRequirements(description, { skillIndex });
   // Gọi LLM TRƯỚC khi mở transaction: chế độ hybrid còn mục rule không phân loại được mà thiếu key
   // hoặc LLM lỗi thì classifyBatch throw 503 tại đây, JobRequirement cũ giữ nguyên
   const { types, unresolvedCount } = await classifyBatch(extracted);
 
-  // Nạp bảng Skill đúng một lần cho cả danh sách
-  const skillIndex = await loadSkillIndex();
   const rows = [];
   for (let i = 0; i < extracted.length; i += 1) {
     const item = extracted[i];
-    const { normalizedName, skillId } = await normalizeName(item.candidateName, skillIndex);
-    if (!normalizedName) {
-      continue;
+    for (const { normalizedName, skillId } of expandRequirementName(item.candidateName, skillIndex)) {
+      if (!normalizedName) {
+        continue;
+      }
+      rows.push({
+        jobId: job.id,
+        rawText: item.rawText,
+        normalizedName,
+        skillId,
+        type: REQUIREMENT_TYPES.includes(types[i]) ? types[i] : 'OPTIONAL',
+        minYears: item.minYears,
+      });
     }
-    rows.push({
-      jobId: job.id,
-      rawText: item.rawText,
-      normalizedName,
-      skillId,
-      type: REQUIREMENT_TYPES.includes(types[i]) ? types[i] : 'OPTIONAL',
-      minYears: item.minYears,
-    });
   }
 
   const requirements = await prisma.$transaction(async (tx) => {

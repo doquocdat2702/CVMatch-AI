@@ -573,7 +573,11 @@ function buildDictionaryMatchers(skillIndex) {
       skillId,
       // Khóa ngắn chỉ nhận khi CV viết HOA đúng nguyên khóa (QA, AI, JS...)
       uppercaseOnly: key.length < MIN_DICTIONARY_KEY_LENGTH,
-      regex: new RegExp(`(?<![a-z0-9])${escapeRegExp(key).replace(/ /g, '\\s+')}(?![a-z0-9])`, 'g'),
+      // Khoảng trắng hai bên "/" không tính (F5, cùng quy tắc với bộ tách JD): "CI / CD" vẫn khớp khóa "ci/cd"
+      regex: new RegExp(
+        `(?<![a-z0-9])${escapeRegExp(key).replace(/ /g, '\\s+').replace(/\//g, '\\s*/\\s*')}(?![a-z0-9])`,
+        'g'
+      ),
     }));
 }
 
@@ -611,7 +615,7 @@ function extractSkillsByDictionary(rawText, skillIndex) {
 
         const rawName = line.slice(start, end).trim();
         // Kiểm lại bằng chính hàm chuẩn hóa T14: cụm cắt ra phải chuẩn hóa về đúng khóa từ điển
-        if (foundSkillIds.has(skillId) || normalizeText(rawName) !== key) {
+        if (foundSkillIds.has(skillId) || normalizeText(rawName).replace(/\s*\/\s*/g, '/') !== key) {
           continue;
         }
         foundSkillIds.add(skillId);

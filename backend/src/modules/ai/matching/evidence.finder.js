@@ -18,13 +18,26 @@
 //      -> "React" không khớp trong "làm app bằng React Native",
 //         "Excel" không khớp trong "viết macro Excel VBA".
 //
+// Ghép theo tên (F2): yêu cầu hoặc kỹ năng của ứng viên chưa có skillId (lưu trước khi bảng Skill có kỹ năng đó,
+// hoặc tên ngoài từ điển) thì so theo tên đã chuẩn hóa (normalizer.js: skillNameKey, bỏ phần trong ngoặc) và tra
+// tên đó trong bảng Skill. CHỈ mở rộng cách tìm, mức kết quả giữ đúng quy tắc cũ:
+//   trùng tên sau chuẩn hóa                         -> EXACT   (quy tắc "trùng tên sau chuẩn hóa")
+//   hai tên tra ra cùng một Skill (name / alias)    -> PARTIAL (như "cùng mục từ điển, gọi bằng alias khác")
+//   hai tên tra ra hai Skill khác nhau              -> NONE    (như "hai skillId khác nhau")
+//
 // requirement     : { normalizedName, skillId, minYears, rawText }  (JobRequirement)
 // candidateSkills : [{ skillId, rawName, evidence }]                (CandidateSkill)
 // experiences     : [{ position, companyName, startDate, endDate, description, evidence }]
 // educations      : [{ school, major, degree }]
 
 const dictionary = require('../normalization/skill.dictionary.json');
-const { normalizeText, normalizeSkillName } = require('../normalization/normalizer');
+const {
+  normalizeText,
+  normalizeSkillName,
+  skillNameKey,
+  lookupSkillId,
+  stripParentheses,
+} = require('../normalization/normalizer');
 const { calculateYears } = require('../cv-parser/rule.parser');
 
 const MATCH_RANK = { NONE: 0, PARTIAL: 1, EXACT: 2 };
@@ -175,10 +188,22 @@ function pickSnippet(text, search) {
   return hit || original;
 }
 
+// Tên yêu cầu dùng để tìm bằng chứng: bỏ phần trong ngoặc (F1), chỉ có phần trong ngoặc thì giữ nguyên
 function requirementName(requirement) {
-  return requirement && typeof requirement.normalizedName === 'string'
-    ? requirement.normalizedName.trim()
-    : '';
+  const name =
+    requirement && typeof requirement.normalizedName === 'string' ? requirement.normalizedName.trim() : '';
+  return stripParenthesesName(name);
+}
+
+function stripParenthesesName(name) {
+  const { base } = stripParentheses(name);
+  return base || name;
+}
+
+// Hai tên kỹ năng trùng nhau sau chuẩn hóa (bỏ dấu, không phân biệt hoa thường, bỏ phần trong ngoặc)
+function isSameSkillName(a, b) {
+  const left = skillNameKey(a);
+  return left.length > 0 && left === skillNameKey(b);
 }
 
 function hasId(value) {
@@ -195,9 +220,13 @@ function hasId(value) {
 //   'Java'           vs 'JavaScript'      -> NONE
 //   'Excel'          vs 'Excel VBA'       -> NONE
 
-function matchOneSkill(requirement, candidateSkill) {
+function matchOneSkill(requirement, candidateSkill, skillIndex) {
+  // Bản bỏ ngoặc dùng để so trùng tên và tra Skill; bản đầy đủ dùng cho khớp một phần theo từ,
+  // để kỹ năng cũ "Cơ sở dữ liệu (MySQL, PostgreSQL)" vẫn khớp một phần với yêu cầu MySQL như trước
+  const reqFull = typeof requirement.normalizedName === 'string' ? requirement.normalizedName.trim() : '';
+  const rawFull = typeof candidateSkill.rawName === 'string' ? candidateSkill.rawName.trim() : '';
   const reqName = requirementName(requirement);
-  const rawName = typeof candidateSkill.rawName === 'string' ? candidateSkill.rawName.trim() : '';
+  const rawName = stripParenthesesName(rawFull);
 
   // EXACT: trùng skillId
   if (hasId(requirement.skillId) && hasId(candidateSkill.skillId)) {
@@ -212,9 +241,19 @@ function matchOneSkill(requirement, candidateSkill) {
     return 'NONE';
   }
 
-  // EXACT: trùng tên sau chuẩn hóa, không phân biệt hoa thường
-  if (isSameText(reqName, rawName)) {
+  // EXACT: trùng tên sau chuẩn hóa, không phân biệt hoa thường (từ F1 bỏ cả phần trong ngoặc)
+  if (isSameSkillName(reqName, rawName)) {
     return 'EXACT';
+  }
+
+  // F2: bên chưa có skillId thì tra tên trong bảng Skill. Cùng Skill qua tên khác -> PARTIAL,
+  // hai Skill khác nhau -> NONE. Một bên tra không ra thì xét tiếp như cũ
+  if (skillIndex) {
+    const reqId = hasId(requirement.skillId) ? requirement.skillId : lookupSkillId(reqName, skillIndex);
+    const candId = hasId(candidateSkill.skillId) ? candidateSkill.skillId : lookupSkillId(rawName, skillIndex);
+    if (hasId(reqId) && hasId(candId)) {
+      return reqId === candId ? 'PARTIAL' : 'NONE';
+    }
   }
 
   const reqCanonical = dictionaryCanonical(reqName);
@@ -228,18 +267,19 @@ function matchOneSkill(requirement, candidateSkill) {
 
   // PARTIAL: khớp một phần theo từ, xét cả hai chiều
   const reqSearch = buildSearchTerms(reqName);
-  if (textContainsTerms(rawName, reqSearch)) {
+  if (textContainsTerms(rawFull, reqSearch)) {
     return 'PARTIAL';
   }
   const candSearch = buildSearchTerms(rawName);
-  if (textContainsTerms(reqName, candSearch)) {
+  if (textContainsTerms(reqFull, candSearch)) {
     return 'PARTIAL';
   }
 
   return 'NONE';
 }
 
-function findSkillEvidence(requirement, candidateSkills) {
+// skillIndex (tùy chọn): chỉ mục bảng Skill (loadSkillIndex) để ghép theo tên khi thiếu skillId (F2)
+function findSkillEvidence(requirement, candidateSkills, skillIndex) {
   if (!requirement || !Array.isArray(candidateSkills)) {
     return noEvidence();
   }
@@ -250,7 +290,7 @@ function findSkillEvidence(requirement, candidateSkills) {
       continue;
     }
 
-    const matchType = matchOneSkill(requirement, candidateSkill);
+    const matchType = matchOneSkill(requirement, candidateSkill, skillIndex);
     if (matchType === 'NONE') {
       continue;
     }
@@ -427,10 +467,11 @@ function checkYearsRequirement(requirement, experiences) {
 // Chạy lần lượt skill -> experience -> education, trả kết quả tốt nhất.
 // Bằng mức thì giữ nguồn chạy trước. Gặp EXACT thì dừng.
 
-function findEvidence(requirement, candidateProfile) {
+// options.skillIndex: chỉ mục bảng Skill, truyền vào để ghép kỹ năng theo tên khi thiếu skillId (F2)
+function findEvidence(requirement, candidateProfile, options = {}) {
   const profile = candidateProfile || {};
   const finders = [
-    () => findSkillEvidence(requirement, profile.skills),
+    () => findSkillEvidence(requirement, profile.skills, options.skillIndex),
     () => findExperienceEvidence(requirement, profile.experiences),
     () => findEducationEvidence(requirement, profile.educations),
   ];

@@ -123,7 +123,31 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 - Parse ở chế độ rule chỉ thay kỹ năng chưa xác nhận có source RULE, giữ kỹ năng từ NLP.
 - Khóa ngắn < 3 ký tự (QA, AI, JS...) chỉ khớp khi viết HOA và đứng riêng.
 - Seed: MySQL, PostgreSQL, SQL Server là Skill riêng, tách khỏi SQL (quy tắc T14). Illustrator không có alias "ai".
+- **Seed theo phòng ban (Task F2)**: 133 Skill, nhóm bằng comment trong `prisma/seed.js`: Phát triển phần mềm, Ứng dụng
+  di động, Kiểm thử, DevOps / hạ tầng, Dữ liệu và AI, Sản phẩm / phân tích nghiệp vụ, Thiết kế UI/UX, Quản lý dự án,
+  IT nội bộ / bảo mật, Kinh doanh, Chăm sóc khách hàng, Marketing, Nhân sự, Kế toán / tài chính, Hành chính / pháp chế,
+  Ngoại ngữ, cộng nhóm kỹ thuật có từ trước. Không thêm kỹ năng mềm. Một khóa (name / alias) chỉ thuộc một Skill; tên đã
+  là alias của Skill khác thì không thêm Skill mới (Project Management, C&B, Tiếng Anh, Customer Support). Không dùng
+  alias từ đơn dễ khớp nhầm ("go", "ads", "test", "api", "ai", "ml"...). `skill.dictionary.json` tách HTML, CSS thành 2 mục.
+- **Chuẩn hóa tên kỹ năng (Task F1)**, `normalizer.js: expandSkillName`, dùng chung cho kỹ năng CV (rule, Gemini, trước
+  bước gộp theo skillId) và tên yêu cầu khi phân tích JD: bỏ phần trong ngoặc ("JavaScript (ES6+)" -> JavaScript);
+  trong ngoặc là Skill đã biết thì tách riêng ("Cơ sở dữ liệu (MySQL, PostgreSQL)" -> MySQL, PostgreSQL); trong ngoặc
+  là mô tả thì bỏ. Khóa ngắn trong ngoặc theo đúng quy tắc viết HOA. HR tự thêm / sửa yêu cầu thì giữ tên nhập.
+  **Đã duyệt (F5-A2)**: áp dụng cho cả tên yêu cầu khi phân tích mô tả công việc.
+- **Ghép theo tên (Task F2, đã duyệt F5-A1)**: bên thiếu skillId được ghép theo tên đã chuẩn hóa (`skillNameKey`) và
+  tra bảng Skill; KHÔNG đổi quy tắc trạng thái: trùng tên -> EXACT, tra ra cùng Skill -> PARTIAL, khác Skill -> NONE.
+  Phân tích lại CV / JD thì skillId được lưu và ra EXACT. Chi tiết: `docs/cach-phan-tich-va-doi-chieu.md` mục 6.1b, 8.1.
+- **Skill Go (đã duyệt F5-A3)**: rule chỉ nhận "GO" viết HOA đứng riêng hoặc "Golang" (quy tắc khóa ngắn); Gemini trả
+  "Go" vẫn tra ra Skill Go.
+- **Dấu "/" (Task F5)**: bộ tách yêu cầu JD (`requirement.extractor.js: protectSkillSlashes`) giữ nguyên cụm "A/B" (bỏ
+  khoảng trắng hai bên "/") khi cả cụm là name / alias của một Skill: CI/CD, UI/UX, TCP/IP (alias của Networking).
+  Còn lại tách như cũ ("Excel/Word", "MySQL / PostgreSQL"). Bộ bóc CV khớp nguyên cụm, bỏ khoảng trắng hai bên "/"
+  ("CI / CD" ra CI/CD). Skill C/C++ (alias c++, cpp, c/c++; không có alias "c" đơn lẻ) giữ nguyên "C/C++",
+  "C++" trong CV ra C/C++. UI Design bỏ alias "thiet ke ui" vì chiếm mất "thiết kế UI/UX".
 - Retry gọi LLM CHỈ với lỗi tạm thời (mạng, timeout, 5xx); KHÔNG retry 429, 401, 403.
+- **Gemini trả phí (Task F4, đã kiểm bằng fetch giả)**: 429 gọi 1 lần, không thử lại, CV / JD trả 503 câu "Phân tích
+  bằng AI đang tạm gián đoạn...". Tên model đọc từ `GEMINI_MODEL` trong .env (không đặt thì `gemini-3.5-flash`, env.js).
+  `.env.example` có ghi chú dùng key của project bật billing + giới hạn quota.
 - `EXTRACT_TIMEOUT_MS` (mặc định 15000).
 - Hạn mức Gemini miễn phí rất thấp: làm việc/test hằng ngày dùng `NLP_MODE=rule`; demo và đánh giá dùng hybrid.
 
@@ -214,6 +238,7 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 | 8b Gia cố & thống kê | G1–G6, G7 (công ty cố định theo COMPANY_NAME, seed an toàn) | Xong |
 | Kiểm thử backend | smoke / timeout / nlp-fail / real-mail | Xong |
 | 9 Frontend | T26, T27, T28, T29, T29b, T30, T31, T32, T33, T34, T35, T35b, T35c, T35d, T35e, T35f, T35g, T35h | Xong |
+| 9b Dữ liệu & chuẩn hóa | Task F: F1, F2, F4, F5 (giữ cụm "A/B" là tên Skill), tin mẫu theo phòng ban (F3 làm trước đó) | Xong (chưa chạy trên DB thật) |
 | 10 Đánh giá | **T36**–T38 | **Tiếp theo: T36** |
 
 ### Lưu ý cho các task còn lại
@@ -304,6 +329,13 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   Quản trị viên, "mô tả công việc" thay JD, "tỉ lệ (yêu cầu) có bằng chứng" thay coverage trên giao diện; trạng thái đơn
   Đã ứng tuyển / Đang xem xét / Đã chấp nhận / Đã từ chối; CV Đang phân tích / Phân tích lỗi. Message test trên máy
   (smoke, test-timeout, test-nlp-fail, test-real-mail) đã đổi theo câu mới.
+- **Task F (đã xong, chủ dự án tự commit)**: tin mẫu `scripts/seed-demo-jobs.js` đổi thành 17 tin theo phòng ban
+  (15 mở + 2 đóng, JD chỉ dùng tên / alias của seed, 114 yêu cầu đều gắn Skill khi tách bằng rule). Không trùng theo
+  (tiêu đề + HR) như cũ; `--remove` xét cả tiêu đề tin mẫu bản trước (`LEGACY_DEMO_TITLES`, đã duyệt F5-A4; điều kiện
+  xóa giữ nguyên: đúng HR, chưa có đơn, hỏi y/N). Từ F5 tin DevOps và UI/UX dùng CI/CD, UI/UX ở dòng yêu cầu
+  (115 yêu cầu, đều gắn Skill). Tin cùng tiêu đề đã có
+  thì bị bỏ qua (JD cũ giữ nguyên), muốn thay JD thì chạy `--remove` trước. Unit test chuẩn hóa (file local):
+  `node --env-file=.env.test scripts/test-normalize.js`. DB thật CHƯA chạy seed mới.
 - **T36–T38**: so sánh rule vs hybrid trên cùng bộ dữ liệu. Trước bảo vệ cần bộ **dữ liệu demo thật**
   (job đa ngành, JD đầy đủ, CV mẫu phân tích hybrid để ma trận có đủ xanh/vàng/đỏ).
 
@@ -320,8 +352,9 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 - Các file test (`backend/scripts/lib/`, `smoke-test.js`, `test-*.js` trừ `test-extract.js`) nằm trong .gitignore,
   chỉ lưu trên máy. Sao lưu thư mục `backend/scripts` ra ngoài sau mỗi lần sửa.
 - Nhánh "admin cuối cùng" là lớp bảo vệ dự phòng, không kích hoạt được qua API.
-- `.env.test` nên khai báo `COMPANY_NAME` (như `.env.test.example`). Thiếu thì dotenv trong env.js nạp bù từ `.env`
-  và server test đổi tên công ty trong DB test thành tên công ty thật.
+- **`.env.test` BẮT BUỘC khai báo `COMPANY_NAME`** (như `.env.test.example`; từ F5 đã có, cùng tên với `.env`:
+  "Công Ty TNHH DTSOFTWARE"). Thiếu thì dotenv trong env.js nạp bù từ `.env` và server test / seed đổi tên công ty
+  trong DB test theo `.env`.
 - `npm run dev` (nodemon, dùng `.env` = cvmatch) tự khởi động lại khi file trong `backend/` đổi, và mỗi lần khởi động
   đều chạy `ensureSingleCompany` trên cvmatch. Khi AI sửa code backend lúc khởi động, chủ dự án dừng `npm run dev` trước.
 

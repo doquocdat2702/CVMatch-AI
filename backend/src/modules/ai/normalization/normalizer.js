@@ -111,16 +111,168 @@ async function loadSkillIndex() {
   return index;
 }
 
+// ===== Phần trong ngoặc của tên kỹ năng (F1) =====
+// "JavaScript (ES6+)"                  -> base "JavaScript", inner ["ES6+"]
+// "Cơ sở dữ liệu (MySQL, PostgreSQL)"  -> base "Cơ sở dữ liệu", inner ["MySQL, PostgreSQL"]
+// Nhận ( ) và [ ], có lồng nhau; ngoặc mở không đóng thì phần sau ngoặc tính là trong ngoặc.
+
+const PAREN_GROUP = /[([]([^()[\]]*)[)\]]/g;
+
+function collapseSpaces(text) {
+  return typeof text === 'string' ? text.replace(/\s+/g, ' ').trim() : '';
+}
+
+function stripParentheses(raw) {
+  let base = typeof raw === 'string' ? raw : '';
+  const inner = [];
+
+  // Lặp để xử lý ngoặc lồng: lần đầu bỏ ngoặc trong cùng, lần sau bỏ ngoặc ngoài
+  let previous;
+  do {
+    previous = base;
+    base = base.replace(PAREN_GROUP, (match, content) => {
+      inner.push(content);
+      return ' ';
+    });
+  } while (base !== previous);
+
+  const openAt = base.search(/[([]/);
+  if (openAt !== -1) {
+    inner.push(base.slice(openAt + 1));
+    base = base.slice(0, openAt);
+  }
+
+  base = collapseSpaces(base.replace(/[)\]]/g, ' ')).replace(/^[\s,;:–-]+|[\s,;:–-]+$/g, '');
+  return { base, inner: inner.map(collapseSpaces).filter(Boolean) };
+}
+
+// Khóa so tên kỹ năng: bỏ phần trong ngoặc, rồi normalizeText (bỏ dấu, chữ thường, gộp khoảng trắng).
+// Dùng chung cho gộp kỹ năng khi phân tích CV và ghép theo tên khi đối chiếu (F2)
+function skillNameKey(raw) {
+  const { base } = stripParentheses(raw);
+  return normalizeText(base || raw);
+}
+
+// Tra skillId theo tên (bỏ phần trong ngoặc): thử tên chuẩn của skill.dictionary.json trước,
+// rồi tới chính tên đó (bảng Skill có thể có name / alias mà từ điển JSON chưa có). Không khớp trả null.
+function lookupSkillId(name, skillIndex) {
+  if (!skillIndex || typeof name !== 'string') {
+    return null;
+  }
+  const { base } = stripParentheses(name);
+  const target = base || collapseSpaces(name.replace(/[()[\]]/g, ' '));
+  if (!target) {
+    return null;
+  }
+
+  const { canonical } = normalizeSkillName(target);
+  for (const key of [normalizeText(canonical), normalizeText(target)]) {
+    if (key && skillIndex.has(key)) {
+      return skillIndex.get(key);
+    }
+  }
+  return null;
+}
+
+// Khóa dưới 3 ký tự là khóa ngắn (như MIN_DICTIONARY_KEY_LENGTH của rule.parser.js)
+const MIN_KEY_LENGTH = 3;
+const INNER_SEPARATOR = /\s*[,;]\s*|\s+(?:và|hoặc|and|or)\s+/i;
+
+// Một cụm trong ngoặc có phải kỹ năng đã biết không. Khóa ngắn dưới 3 ký tự (QA, BA, AI, HR...)
+// chỉ nhận khi viết HOA đúng nguyên khóa và đứng riêng, cùng quy tắc với bóc kỹ năng bằng từ điển
+function innerPartSkillId(part, skillIndex) {
+  const text = collapseSpaces(part);
+  const key = normalizeText(text);
+  if (!key) {
+    return null;
+  }
+  if (key.length < MIN_KEY_LENGTH && text !== key.toUpperCase()) {
+    return null;
+  }
+  return lookupSkillId(text, skillIndex);
+}
+
+// Các kỹ năng đã biết trong một đoạn ngoặc. Cả đoạn là một kỹ năng ("CI/CD", "C&B") thì lấy nguyên;
+// không thì tách theo , ; và / hoặc / and / or, cụm nào chưa khớp thì thử tách tiếp theo / và &.
+// Cụm mô tả (năm, cấp độ, "nâng cao", "TOEIC 750"...) không khớp Skill nào nên bị bỏ qua
+function findInnerSkills(content, skillIndex) {
+  const wholeId = innerPartSkillId(content, skillIndex);
+  if (wholeId !== null) {
+    return [{ name: collapseSpaces(content), skillId: wholeId }];
+  }
+
+  const found = [];
+  for (const part of content.split(INNER_SEPARATOR)) {
+    const partId = innerPartSkillId(part, skillIndex);
+    if (partId !== null) {
+      found.push({ name: collapseSpaces(part), skillId: partId });
+      continue;
+    }
+    for (const piece of part.split(/[/&]/)) {
+      const pieceId = innerPartSkillId(piece, skillIndex);
+      if (pieceId !== null) {
+        found.push({ name: collapseSpaces(piece), skillId: pieceId });
+      }
+    }
+  }
+  return found;
+}
+
+// Chuẩn hóa MỘT tên kỹ năng thành một hay nhiều kỹ năng (F1), dùng chung cho kỹ năng của CV
+// (rule, Gemini) và tên yêu cầu khi phân tích JD:
+//   "JavaScript (ES6+)"                 -> JavaScript
+//   "Microsoft Excel (nâng cao)"        -> Microsoft Excel (tên chuẩn Excel)
+//   "Cơ sở dữ liệu (MySQL, PostgreSQL)" -> MySQL, PostgreSQL (phần ngoài ngoặc không phải kỹ năng đã biết nên bỏ)
+//   "Java (Spring Boot)"                -> Java, Spring Boot
+// Trả [{ name, canonical, skillId }]: name là tên đã bỏ ngoặc, canonical theo skill.dictionary.json.
+function expandSkillName(raw, skillIndex) {
+  const original = collapseSpaces(raw);
+  if (!original) {
+    return [];
+  }
+
+  const { base, inner } = stripParentheses(original);
+  const innerSkills = [];
+  for (const content of inner) {
+    innerSkills.push(...findInnerSkills(content, skillIndex));
+  }
+
+  const items = [];
+  const baseName = base || collapseSpaces(original.replace(/[()[\]]/g, ' '));
+  const baseId = lookupSkillId(baseName, skillIndex);
+  // Phần ngoài ngoặc giữ lại khi là kỹ năng đã biết, hoặc khi trong ngoặc không có kỹ năng nào
+  if (baseName && (baseId !== null || innerSkills.length === 0)) {
+    items.push({ name: baseName, skillId: baseId });
+  }
+  items.push(...innerSkills);
+
+  const seenIds = new Set();
+  const seenNames = new Set();
+  const result = [];
+  for (const item of items) {
+    const nameKey = normalizeText(item.name);
+    if ((item.skillId !== null && seenIds.has(item.skillId)) || seenNames.has(nameKey)) {
+      continue;
+    }
+    if (item.skillId !== null) {
+      seenIds.add(item.skillId);
+    }
+    seenNames.add(nameKey);
+    result.push({ ...item, canonical: normalizeSkillName(item.name).canonical });
+  }
+  return result;
+}
+
 // Tra bảng Skill theo tên canonical. Không khớp trả null, KHÔNG tự tạo Skill mới.
 // Truyền sẵn index khi xử lý hàng loạt để khỏi query lại nhiều lần.
+// Từ F1: bỏ phần trong ngoặc trước khi tra ("Excel (nâng cao)" -> Excel)
 async function resolveSkillId(canonical, skillIndex) {
-  const key = normalizeText(canonical);
-  if (!key) {
+  if (!normalizeText(canonical)) {
     return null;
   }
 
   const index = skillIndex || (await loadSkillIndex());
-  return index.has(key) ? index.get(key) : null;
+  return lookupSkillId(canonical, index);
 }
 
 module.exports = {
@@ -128,4 +280,8 @@ module.exports = {
   normalizeSkillName,
   resolveSkillId,
   loadSkillIndex,
+  stripParentheses,
+  skillNameKey,
+  lookupSkillId,
+  expandSkillName,
 };

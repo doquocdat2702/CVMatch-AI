@@ -44,6 +44,8 @@
 
 // ===== Tiện ích =====
 
+const { normalizeText } = require('../normalization/normalizer');
+
 const COMBINING_MARKS = new RegExp(
   '[' + String.fromCharCode(768) + '-' + String.fromCharCode(879) + ']',
   'g'
@@ -412,7 +414,7 @@ function cleanCandidateName(text) {
 // ===== Tách câu gộp nhiều yêu cầu =====
 
 // Tách theo dấu phẩy, gạch chéo, "và", "hoặc", "and", "or";
-// KHÔNG tách phần nằm trong ngoặc đơn.
+// KHÔNG tách phần nằm trong ngoặc đơn, KHÔNG tách "/" của cụm là tên một Skill (F5).
 const LIST_SEPARATOR_REGEX = /\s*(?:,|\/|&|\bva\b|\bhoac\b|\band\b|\bor\b)\s*/gi;
 
 // Che nội dung trong ngoặc bằng placeholder để dấu phẩy bên trong không bị tách.
@@ -426,7 +428,43 @@ function maskParentheses(text) {
   return { masked, stored };
 }
 
-function splitCombinedNames(text) {
+// Cụm "A/B" (bỏ khoảng trắng hai bên dấu "/") khớp name / alias của một Skill thì KHÔNG tách (F5):
+// "CI/CD", "UI/UX", "TCP/IP" giữ nguyên một yêu cầu; "Excel/Word", "MySQL / PostgreSQL" vẫn tách.
+// Trả về text đã gộp khoảng trắng quanh "/" của các cụm giữ nguyên, cùng danh sách vị trí "/" không được tách.
+// Không có skillIndex (gọi hàm ngoài luồng phân tích JD) thì tách theo "/" như trước.
+const SLASH_PAIR_REGEX = /([^\s,;&/()]+)\s*\/\s*([^\s,;&/()]+)/g;
+
+function protectSkillSlashes(text, skillIndex) {
+  if (!skillIndex || !text.includes('/')) {
+    return { text, protectedSlashes: [] };
+  }
+
+  let result = '';
+  let cursor = 0;
+  const protectedSlashes = [];
+  SLASH_PAIR_REGEX.lastIndex = 0;
+  let match = SLASH_PAIR_REGEX.exec(text);
+  while (match) {
+    const joined = `${match[1]}/${match[2]}`;
+    const key = normalizeText(joined);
+    if (key && skillIndex.has(key)) {
+      result += text.slice(cursor, match.index);
+      protectedSlashes.push(result.length + match[1].length);
+      result += joined;
+      cursor = match.index + match[0].length;
+      SLASH_PAIR_REGEX.lastIndex = cursor;
+    } else {
+      // Không khớp: lùi về ngay sau "/" để vế phải còn ghép được với cụm kế tiếp ("Excel/CI/CD")
+      SLASH_PAIR_REGEX.lastIndex = match.index + match[0].indexOf('/', match[1].length) + 1;
+    }
+    match = SLASH_PAIR_REGEX.exec(text);
+  }
+  result += text.slice(cursor);
+  return { text: result, protectedSlashes };
+}
+
+function splitCombinedNames(rawText, skillIndex) {
+  const { text, protectedSlashes } = protectSkillSlashes(rawText, skillIndex);
   const { masked, stored } = maskParentheses(text);
 
   // Tách trên bản bỏ dấu để \bva\b, \bhoac\b khớp được, rồi map vị trí về chuỗi gốc
@@ -436,7 +474,8 @@ function splitCombinedNames(text) {
 
   let match = LIST_SEPARATOR_REGEX.exec(stripped);
   while (match) {
-    if (match[0].length > 0) {
+    const isProtectedSlash = match[0].trim() === '/' && protectedSlashes.includes(match.index + match[0].indexOf('/'));
+    if (match[0].length > 0 && !isProtectedSlash) {
       boundaries.push({ start: match.index, end: match.index + match[0].length });
     }
     match = LIST_SEPARATOR_REGEX.exec(stripped);
@@ -473,10 +512,11 @@ function isUsableName(name) {
 
 // ===== Hàm chính =====
 
-// extractRequirements(description) -> [{ rawText, candidateName, minYears }]
+// extractRequirements(description, { skillIndex }) -> [{ rawText, candidateName, minYears }]
 // rawText giữ NGUYÊN câu gốc; một câu gộp nhiều kỹ năng sinh nhiều phần tử
 // có cùng rawText và cùng minYears.
-function extractRequirements(description) {
+// skillIndex (tùy chọn, loadSkillIndex): để giữ nguyên cụm "A/B" là tên một Skill (F5, xem protectSkillSlashes)
+function extractRequirements(description, { skillIndex } = {}) {
   if (typeof description !== 'string' || !description.trim()) {
     return [];
   }
@@ -531,7 +571,7 @@ function extractRequirements(description) {
       const minYears = extractMinYears(rawText);
       const names = [];
 
-      splitCombinedNames(rawText).forEach((part) => {
+      splitCombinedNames(rawText, skillIndex).forEach((part) => {
         const name = cleanCandidateName(part);
         if (isUsableName(name)) {
           names.push(name);

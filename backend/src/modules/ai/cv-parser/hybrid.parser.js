@@ -4,7 +4,12 @@
 // Chế độ hybrid: chạy cả hai, kỹ năng của NLP và của từ điển gộp lại, mỗi kỹ năng một lần.
 const { parseByRule, extractDateRanges, extractSkillsByDictionary, parseDateValue } = require('./rule.parser');
 const { parseByNlp } = require('./nlp.parser');
-const { normalizeText, normalizeSkillName, resolveSkillId, loadSkillIndex } = require('../normalization/normalizer');
+const {
+  normalizeSkillName,
+  loadSkillIndex,
+  skillNameKey,
+  expandSkillName,
+} = require('../normalization/normalizer');
 
 const SOURCE_RULE = 'RULE';
 const SOURCE_NLP = 'NLP';
@@ -69,22 +74,33 @@ function dedupeSkills(skills, keyOf = (skill) => skill.rawName.toLowerCase()) {
   return result;
 }
 
-// Gộp kỹ năng NLP (đứng trước, giữ evidence của NLP) với kỹ năng bóc bằng từ điển.
-// Cùng một kỹ năng thì chỉ giữ một: so theo skillId nếu tra được bảng Skill,
-// không tra được thì so theo tên đã chuẩn hóa (T14).
-async function mergeSkills(nlpSkills, ruleSkills, skillIndex) {
-  const withIds = [];
-  for (const skill of nlpSkills) {
-    const rawName = typeof skill.rawName === 'string' ? skill.rawName.trim() : '';
-    const { canonical } = normalizeSkillName(rawName);
-    const skillId = rawName ? await resolveSkillId(canonical, skillIndex) : null;
-    withIds.push({ ...skill, rawName, skillId, source: SOURCE_NLP });
+// Chuẩn hóa tên một kỹ năng (F1, normalizer.js: expandSkillName): bỏ phần mô tả trong ngoặc,
+// kỹ năng đã biết nằm trong ngoặc thì tách thành kỹ năng riêng, cùng evidence với kỹ năng gốc.
+// Kỹ năng bóc bằng từ điển đã có skillId và rawName là đúng cụm khớp khóa từ điển (không có ngoặc)
+// nên giữ nguyên
+function expandSkill(skill, skillIndex) {
+  if (skill.skillId !== null && skill.skillId !== undefined) {
+    return [skill];
   }
+  const rawName = typeof skill.rawName === 'string' ? skill.rawName.trim() : '';
+  return expandSkillName(rawName, skillIndex).map((item) => ({
+    ...skill,
+    rawName: item.name,
+    skillId: item.skillId,
+  }));
+}
 
-  return dedupeSkills([...withIds, ...ruleSkills], (skill) =>
+// Gộp kỹ năng NLP (đứng trước, giữ evidence của NLP) với kỹ năng bóc bằng từ điển.
+// Mọi kỹ năng qua cùng bước chuẩn hóa F1 TRƯỚC khi gộp. Cùng một kỹ năng thì chỉ giữ một:
+// so theo skillId nếu tra được bảng Skill, không tra được thì so theo tên đã chuẩn hóa (T14, bỏ ngoặc từ F1).
+async function mergeSkills(nlpSkills, ruleSkills, skillIndex) {
+  const nlpWithSource = nlpSkills.map((skill) => ({ ...skill, skillId: null, source: SOURCE_NLP }));
+  const expanded = [...nlpWithSource, ...ruleSkills].flatMap((skill) => expandSkill(skill, skillIndex));
+
+  return dedupeSkills(expanded, (skill) =>
     skill.skillId !== null && skill.skillId !== undefined
       ? `id:${skill.skillId}`
-      : `name:${normalizeText(normalizeSkillName(skill.rawName).canonical)}`
+      : `name:${skillNameKey(normalizeSkillName(skill.rawName).canonical)}`
   );
 }
 
