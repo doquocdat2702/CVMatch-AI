@@ -1,3 +1,26 @@
+/* Link quay lại danh sách (T35i): chữ nhỏ Xanh mực trên tiêu đề */
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+}
+
+.backLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (max-width: 900px) {
+  .backLink {
+    min-height: var(--touch-target);
+    margin-bottom: 0;
+  }
+}
+
 .intro {
   max-width: var(--form-max);
   margin: 0 0 var(--space-6);

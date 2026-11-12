@@ -1,6 +1,6 @@
 import styles from './Panel.module.css'
 
-// Khối nội dung của trang ứng viên (T35f): nền Giấy, viền mảnh, không đổ bóng, đặt trên nền Nền của SiteLayout.
+// Khối nội dung của trang ứng viên (T35f) và khu Tài khoản của HR / Admin (T35i): nền Giấy, viền mảnh, không đổ bóng.
 //   title: tiêu đề mục (h2), không có thì khối chỉ có nội dung
 //   width: 'form' giới hạn bề ngang bằng form (trang Hồ sơ, Đổi mật khẩu); mặc định rộng hết vùng nội dung
 function Panel({ title, width, children }) {

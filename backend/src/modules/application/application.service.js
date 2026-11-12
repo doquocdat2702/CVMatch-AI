@@ -318,6 +318,76 @@ async function listApplicationsForJob(userId, jobId, { status } = {}) {
   };
 }
 
+// Đơn của MỌI tin do chính nhà tuyển dụng này đăng, gồm cả tin đã đóng (T35i, chế độ "Tất cả tin của tôi").
+// Lọc theo status, phân trang phía server (mặc định 1 / 10), mới nộp trước.
+// Một lần count + một lần findMany (Prisma gom quan hệ theo lô), không truy vấn theo từng đơn
+async function listMyJobsApplications(userId, { status, page, limit } = {}) {
+  const profile = await getRecruiterProfile(userId);
+
+  let currentPage = Number(page);
+  if (!Number.isInteger(currentPage) || currentPage <= 0) {
+    currentPage = 1;
+  }
+  let pageSize = Number(limit);
+  if (!Number.isInteger(pageSize) || pageSize <= 0) {
+    pageSize = 10;
+  }
+
+  const where = { job: { recruiterProfileId: profile.id } };
+  if (status !== undefined && status !== '') {
+    where.status = parseStatus(status);
+  }
+
+  const [total, applications] = await Promise.all([
+    prisma.application.count({ where }),
+    prisma.application.findMany({
+      where,
+      orderBy: [{ appliedAt: 'desc' }, { id: 'desc' }],
+      skip: (currentPage - 1) * pageSize,
+      take: pageSize,
+      include: {
+        job: { select: { id: true, title: true, isOpen: true } },
+        cv: { select: CV_SUMMARY_SELECT },
+        candidateProfile: {
+          select: {
+            id: true,
+            fullName: true,
+            // CV hiện tại: chỉ dùng cho đơn cũ chưa lưu CV (cvId null), như listApplicationsForJob
+            cvs: {
+              where: { status: 'COMPLETED' },
+              orderBy: [{ uploadedAt: 'desc' }, { id: 'desc' }],
+              take: 1,
+              select: CV_SUMMARY_SELECT,
+            },
+          },
+        },
+      },
+    }),
+  ]);
+
+  return {
+    items: applications.map((application) => ({
+      id: application.id,
+      status: application.status,
+      coverage: application.coverage,
+      appliedAt: application.appliedAt,
+      job: { id: application.job.id, title: application.job.title, isOpen: application.job.isOpen },
+      candidate: {
+        id: application.candidateProfile.id,
+        fullName: application.candidateProfile.fullName,
+      },
+      ...cvViewOf(application, application.candidateProfile.cvs[0]),
+    })),
+    pagination: {
+      page: currentPage,
+      limit: pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize),
+    },
+    note: COVERAGE_NOTE,
+  };
+}
+
 async function updateApplicationStatus(user, applicationId, { status } = {}) {
   const application = await getManagedApplication(user, applicationId);
   const nextStatus = parseStatus(status);
@@ -422,6 +492,7 @@ module.exports = {
   listMyApplications,
   withdrawApplication,
   listApplicationsForJob,
+  listMyJobsApplications,
   updateApplicationStatus,
   getApplicationDetail,
 };

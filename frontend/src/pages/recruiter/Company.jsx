@@ -4,6 +4,9 @@ import Button from '../../components/common/Button'
 import Input from '../../components/common/Input'
 import Loading from '../../components/common/Loading'
 import Textarea from '../../components/common/Textarea'
+import PageHeader from '../../components/layout/PageHeader'
+import Panel from '../../components/layout/Panel'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import { getErrorMessage } from '../../utils/apiError'
 import styles from './Company.module.css'
 
@@ -16,6 +19,9 @@ const FIELDS = [
 ]
 
 const EMPTY_FORM = { name: '', description: '', address: '', website: '' }
+
+const PAGE_TITLE = 'Thông tin công ty'
+const PAGE_DESCRIPTION = 'Thông tin dùng chung cho mọi nhà tuyển dụng của công ty, hiển thị trên các tin tuyển dụng.'
 
 function pickFields(company) {
   return {
@@ -32,8 +38,10 @@ function isWebLink(value) {
 }
 
 // Hệ thống phục vụ một công ty: mọi nhà tuyển dụng cùng xem và sửa thông tin công ty này
-// (PUT /companies/me sửa đúng công ty của người đang đăng nhập). Tên công ty chỉ đọc
+// (PUT /companies/me sửa đúng công ty của người đang đăng nhập). Tên công ty chỉ đọc.
+// T35i: nằm trong khu "Tài khoản", trình bày như trang Hồ sơ (Panel xem chỉ đọc 2 cột, "Sửa thông tin" mở form)
 function Company() {
+  useDocumentTitle(PAGE_TITLE)
   const [company, setCompany] = useState(EMPTY_FORM)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -130,7 +138,7 @@ function Company() {
   if (loadError) {
     return (
       <>
-        <h1>Công ty</h1>
+        <PageHeader title={PAGE_TITLE} description={PAGE_DESCRIPTION} />
         <p className={styles.alertError} role="alert">
           {loadError}
         </p>
@@ -142,22 +150,16 @@ function Company() {
   }
 
   // Tên công ty: chỉ đọc ở cả chế độ xem lẫn chế độ sửa
-  const nameRow = (
-    <div>
-      <dt className={styles.term}>Tên công ty</dt>
-      <dd className={styles.value}>
-        {company.name}
-        <span className={styles.readonlyNote}>Tên công ty được thiết lập sẵn, không sửa tại đây</span>
-      </dd>
-    </div>
+  const nameValue = (
+    <>
+      {company.name}
+      <span className={styles.readonlyNote}>Tên công ty được thiết lập sẵn, không sửa tại đây</span>
+    </>
   )
 
   return (
     <>
-      <h1>Công ty</h1>
-      <p className={styles.intro}>
-        Thông tin dùng chung cho mọi nhà tuyển dụng của công ty, hiển thị trên các tin tuyển dụng.
-      </p>
+      <PageHeader title={PAGE_TITLE} description={PAGE_DESCRIPTION} />
 
       {saved && (
         <p className={styles.alertSuccess} role="status">
@@ -165,70 +167,79 @@ function Company() {
         </p>
       )}
 
-      {editing && <dl className={styles.details}>{nameRow}</dl>}
+      <Panel title="Thông tin chung">
+        {editing ? (
+          <form className={styles.form} onSubmit={handleSubmit} noValidate>
+            {saveError && (
+              <p className={styles.alertError} role="alert">
+                {saveError}
+              </p>
+            )}
 
-      {editing ? (
-        <form className={styles.form} onSubmit={handleSubmit} noValidate>
-          {saveError && (
-            <p className={styles.alertError} role="alert">
-              {saveError}
-            </p>
-          )}
+            <div className={styles.readonlyField}>
+              <span className={styles.term}>Tên công ty</span>
+              <span className={styles.value}>{nameValue}</span>
+            </div>
 
-          {FIELDS.map((field) =>
-            field.type === 'textarea' ? (
-              <Textarea
-                key={field.name}
-                label={field.label}
-                name={field.name}
-                rows={6}
-                value={form[field.name]}
-                onChange={handleChange}
-                disabled={saving}
-              />
-            ) : (
-              <Input
-                key={field.name}
-                label={field.label}
-                name={field.name}
-                type={field.type || 'text'}
-                required={field.required}
-                maxLength={field.maxLength}
-                autoComplete={field.autoComplete}
-                hint={field.hint}
-                value={form[field.name]}
-                onChange={handleChange}
-                error={fieldErrors[field.name]}
-                disabled={saving}
-              />
-            ),
-          )}
+            {FIELDS.map((field) =>
+              field.type === 'textarea' ? (
+                <Textarea
+                  key={field.name}
+                  label={field.label}
+                  name={field.name}
+                  rows={6}
+                  value={form[field.name]}
+                  onChange={handleChange}
+                  disabled={saving}
+                />
+              ) : (
+                <Input
+                  key={field.name}
+                  label={field.label}
+                  name={field.name}
+                  type={field.type || 'text'}
+                  required={field.required}
+                  maxLength={field.maxLength}
+                  autoComplete={field.autoComplete}
+                  hint={field.hint}
+                  value={form[field.name]}
+                  onChange={handleChange}
+                  error={fieldErrors[field.name]}
+                  disabled={saving}
+                />
+              ),
+            )}
 
-          <div className={styles.actions}>
-            <Button type="submit" loading={saving}>
-              {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
-            </Button>
-            <Button variant="secondary" onClick={cancelEdit} disabled={saving}>
-              Hủy
-            </Button>
-          </div>
-        </form>
-      ) : (
-        <>
-          <dl className={styles.details}>
-            {nameRow}
-            {FIELDS.map((field) => (
-              <div key={field.name}>
-                <dt className={styles.term}>{field.label}</dt>
-                <dd className={field.type === 'textarea' ? `${styles.value} ${styles.multiline}` : styles.value}>
-                  {renderValue(field)}
-                </dd>
+            <div className={styles.actions}>
+              <Button type="submit" loading={saving}>
+                {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
+              </Button>
+              <Button variant="secondary" onClick={cancelEdit} disabled={saving}>
+                Hủy
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <dl className={styles.details}>
+              <div className={styles.wide}>
+                <dt className={styles.term}>Tên công ty</dt>
+                <dd className={styles.value}>{nameValue}</dd>
               </div>
-            ))}
-          </dl>
-          <Button onClick={startEdit}>Sửa thông tin công ty</Button>
-        </>
-      )}
+              {/* Tên, giới thiệu chiếm cả hàng; địa chỉ, website mỗi ô một cột */}
+              {FIELDS.map((field) => (
+                <div key={field.name} className={field.type === 'textarea' ? styles.wide : undefined}>
+                  <dt className={styles.term}>{field.label}</dt>
+                  <dd className={field.type === 'textarea' ? `${styles.value} ${styles.multiline}` : styles.value}>
+                    {renderValue(field)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <Button onClick={startEdit}>Sửa thông tin</Button>
+          </>
+        )}
+      </Panel>
     </>
   )
 }

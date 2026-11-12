@@ -368,7 +368,8 @@ function AccountList() {
   return (
     <>
       <div className={styles.pageHeader}>
-        <h1>Tài khoản</h1>
+        {/* T35i: "Tài khoản người dùng" để không trùng mục "Tài khoản" (hồ sơ của chính admin) trên Sidebar */}
+        <h1>Tài khoản người dùng</h1>
         <Link className={styles.primaryLink} to="/admin/recruiters/new">
           Tạo tài khoản nhà tuyển dụng
         </Link>

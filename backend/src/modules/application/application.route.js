@@ -11,8 +11,10 @@ const candidateOrRecruiter = [authenticate, authorize('CANDIDATE', 'RECRUITER')]
 
 router.post('/', candidateOnly, applicationController.apply);
 
-// /my và /job/:jobId phải khai báo TRƯỚC /:id
+// /my, /mine và /job/:jobId phải khai báo TRƯỚC /:id
 router.get('/my', candidateOnly, applicationController.listMine);
+// Đơn của mọi tin do nhà tuyển dụng đang đăng nhập đăng (T35i)
+router.get('/mine', recruiterOnly, applicationController.listMyJobs);
 router.get('/job/:jobId', recruiterOnly, applicationController.listByJob);
 
 router.get('/:id', candidateOrRecruiter, applicationController.detail);

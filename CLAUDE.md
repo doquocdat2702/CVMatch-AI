@@ -80,6 +80,10 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 - Xóa tài khoản có dữ liệu tuyển dụng (recruiter có job, ứng viên có đơn) -> 400, gợi ý khóa thay vì xóa.
 - Đổi role sang RECRUITER/CANDIDATE mà chưa có hồ sơ -> tự tạo hồ sơ tối thiểu. Đổi sang đúng role hiện tại -> 400.
 - PATCH status nhận `{ isActive: true | false }`, không toggle.
+- Đơn của mọi tin do chính HR đăng (T35i, endpoint đã duyệt trong task): `GET /api/applications/mine`, chỉ RECRUITER,
+  gồm cả tin đã đóng, `?status=&page=&limit=` (mặc định 1 / 10, status sai -> 400), mới nộp trước; mỗi đơn trả
+  `job { id, title, isOpen }` (Job không có trường status), `candidate { id, fullName }`, `cv`, `cvLegacy`, `coverage`,
+  kèm `pagination` và `note`. Một lần count + một lần findMany (không N+1). Đổi trạng thái vẫn qua `assertCanManageJob`.
 
 ### 4.3 Bảo mật
 - Rate limit đăng nhập: tối đa 10 lần SAI / 15 phút / IP (đăng nhập đúng không tính) -> 429.
@@ -191,11 +195,15 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   Trang chủ chỉ tìm theo tên vị trí (`?keyword=`), **đã bỏ ô / lọc địa điểm** (T35g; địa điểm vẫn hiện trên thẻ tin).
 - HR: `/recruiter/dashboard`, `/recruiter/profile`, `/recruiter/change-password` (T35e), `/recruiter/company`,
   `/recruiter/jobs` (+ `/new`, `/:id/edit`, `/:id/requirements`), `/recruiter/recommended-candidates`, `/recruiter/applications`.
-  Đăng nhập xong vào `/recruiter/dashboard` (từ T35c).
+  Đăng nhập xong vào `/recruiter/dashboard` (từ T35c). Từ T35i Sidebar HR: Tổng quan, Tin tuyển dụng, Ứng viên gợi ý,
+  Đơn ứng tuyển, Tài khoản (`/recruiter/profile`; khu Tài khoản gồm Hồ sơ / Thông tin công ty / Đổi mật khẩu).
 - Admin: `/admin/dashboard`, `/admin/users`, `/admin/recruiters/new`, `/admin/roles`, `/admin/profile` (T35, đã duyệt),
-  `/admin/change-password` (T35e). Đăng nhập xong vào `/admin/dashboard` (từ T35c).
+  `/admin/change-password` (T35e). Đăng nhập xong vào `/admin/dashboard` (từ T35c). Từ T35i Sidebar admin: Tổng quan,
+  Tài khoản người dùng (`/admin/users`, sáng cả ở `/admin/recruiters/new`, mở trang tạo bằng nút trên danh sách), Phân
+  quyền, Tài khoản (`/admin/profile`; khu Tài khoản gồm Hồ sơ / Đổi mật khẩu).
 - Đổi mật khẩu (T35e): 3 route trên, mỗi route chỉ cho đúng role (sai role -> /403), dùng chung trang
-  `pages/common/ChangePassword` (h1 + ChangePasswordForm). Trang Hồ sơ của cả 3 role không còn form mật khẩu.
+  `pages/common/ChangePassword`. Trang Hồ sơ của cả 3 role không còn form mật khẩu. Từ T35i cả 3 role cùng một kiểu
+  (PageHeader + Panel + ChangePasswordForm có Hiện / Ẩn, danh sách điều kiện; đã bỏ prop `enhanced`, `siteStyle`).
 - Đăng xuất (T35e, cả 3 role): xóa phiên rồi về `/` (bố cục khách), không mang theo trang cũ. `logout()` và
   `navigate('/')` đặt trong cùng `startTransition` (BrowserRouter của React Router 7 đổi route trong transition;
   nếu xóa phiên render trước, ProtectedRoute đẩy về /login). Hành vi axiosClient khi gặp 401 giữ nguyên.
@@ -208,6 +216,9 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   AccountMenu (T35d, chỉ ứng viên; họ tên lấy từ `profileName` trong AuthContext, T35e),
   Logo (T35e: ô chữ 28px + tên, link về trang chủ theo role), SiteFooter + FooterIcons (T35e, chỉ SiteLayout).
   Đã xóa PublicLayout (T35e).
+- Khu Tài khoản (T35i): `AccountLayout` chỉ trình bày (prop `items`, `navLabel`, `summary`, `outletContext`); dữ liệu
+  thẻ tóm tắt do `components/layout/AccountAreas.jsx` tải: `CandidateAccountLayout`, `RecruiterAccountLayout`,
+  `AdminAccountLayout`. Trang con gọi `useOutletContext().refreshProfile` sau khi lưu hồ sơ.
 - `ChangePasswordForm` (từ T35e chỉ dùng ở trang Đổi mật khẩu riêng), `RequirementEvidenceMatrix` (props thuần, HR dùng lại),
   `ApplyAction`, `components/cv-export/` (buildCVData + 2 mẫu CV Cổ điển / Hiện đại),
   `components/dashboard/` (T35c: StatCard, BarChart vẽ bằng div + CSS).
@@ -237,7 +248,7 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 | 1–8 Backend | T01–T25, T22b | Xong |
 | 8b Gia cố & thống kê | G1–G6, G7 (công ty cố định theo COMPANY_NAME, seed an toàn) | Xong |
 | Kiểm thử backend | smoke / timeout / nlp-fail / real-mail | Xong |
-| 9 Frontend | T26, T27, T28, T29, T29b, T30, T31, T32, T33, T34, T35, T35b, T35c, T35d, T35e, T35f, T35g, T35h | Xong |
+| 9 Frontend | T26, T27, T28, T29, T29b, T30, T31, T32, T33, T34, T35, T35b, T35c, T35d, T35e, T35f, T35g, T35h, T35i | Xong |
 | 9b Dữ liệu & chuẩn hóa | Task F: F1, F2, F4, F5 (giữ cụm "A/B" là tên Skill), tin mẫu theo phòng ban (F3 làm trước đó) | Xong (chưa chạy trên DB thật) |
 | 10 Đánh giá | **T36**–T38 | **Tiếp theo: T36** |
 
@@ -336,6 +347,16 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   (115 yêu cầu, đều gắn Skill). Tin cùng tiêu đề đã có
   thì bị bỏ qua (JD cũ giữ nguyên), muốn thay JD thì chạy `--remove` trước. Unit test chuẩn hóa (file local):
   `node --env-file=.env.test scripts/test-normalize.js`. DB thật CHƯA chạy seed mới.
+- **T35i (đã xong, chưa commit)**: menu admin bỏ "Tạo nhà tuyển dụng" (nút "Tạo tài khoản nhà tuyển dụng" có sẵn trên
+  trang danh sách, h1 và mục Sidebar đổi thành "Tài khoản người dùng", trang tạo có link "Quay lại danh sách tài khoản").
+  Khu Tài khoản cho HR / Admin cùng bố cục với ứng viên, đặt trong MainLayout (mục 5); thẻ tóm tắt HR: chữ viết tắt,
+  họ tên, email, Badge "Nhà tuyển dụng", tên công ty, "Hồ sơ đã có x/3 mục" (họ tên, số điện thoại, chức vụ); admin:
+  chữ đầu email, email, Badge "Quản trị viên". Hồ sơ HR xem chỉ đọc lưới 2 cột + "Sửa thông tin"; Thông tin công ty cùng
+  kiểu (tên luôn chỉ đọc); Hồ sơ admin chỉ đọc (Email, Vai trò; `GET /auth/me` không trả trạng thái). Sidebar tự tính
+  mục sáng theo danh sách đường dẫn (`matches`). Trang Đơn ứng tuyển của HR: lựa chọn đầu "Tất cả tin của tôi" = không
+  có `?jobId` (mặc định; `jobId` không phải tin của mình cũng về đây), dùng `GET /applications/mine` phân trang phía
+  server 9 dòng, thêm cột "Tin tuyển dụng" (link trang sửa tin, "Đã đóng"); chọn một tin như cũ. Smoke có 6 ca mới cho
+  `/applications/mine` (67 endpoint).
 - **T36–T38**: so sánh rule vs hybrid trên cùng bộ dữ liệu. Trước bảo vệ cần bộ **dữ liệu demo thật**
   (job đa ngành, JD đầy đủ, CV mẫu phân tích hybrid để ma trận có đủ xanh/vàng/đỏ).
 

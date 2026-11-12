@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import { getMyRecruiterProfile, updateMyRecruiterProfile } from '../../api/recruiter.api'
 import Button from '../../components/common/Button'
 import Input from '../../components/common/Input'
 import Loading from '../../components/common/Loading'
+import PageHeader from '../../components/layout/PageHeader'
+import Panel from '../../components/layout/Panel'
+import { useAuth } from '../../hooks/useAuth'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import { getErrorMessage } from '../../utils/apiError'
 import styles from './Profile.module.css'
 
@@ -15,6 +20,8 @@ const FIELDS = [
 
 const EMPTY_FORM = { fullName: '', phone: '', position: '' }
 
+const PAGE_DESCRIPTION = 'Thông tin cá nhân của tài khoản nhà tuyển dụng.'
+
 function pickFields(profile) {
   return {
     fullName: profile.fullName || '',
@@ -23,14 +30,20 @@ function pickFields(profile) {
   }
 }
 
-// Hồ sơ nhà tuyển dụng. Công ty do quản trị viên gán khi cấp tài khoản nên chỉ hiển thị, không sửa.
+// Hồ sơ nhà tuyển dụng trong khu "Tài khoản" (T35i): Panel "Thông tin cá nhân" xem chỉ đọc dạng lưới 2 cột,
+// "Sửa thông tin" chuyển Panel sang form (email, công ty chỉ đọc). Công ty do hệ thống gán (G7) nên chỉ hiện tên
 function RecruiterProfile() {
+  useDocumentTitle('Hồ sơ')
+  const { user } = useAuth()
+  // Thẻ tóm tắt của khu Tài khoản: lưu xong thì đọc lại họ tên, mức đầy đủ của hồ sơ
+  const account = useOutletContext()
   const [profile, setProfile] = useState(EMPTY_FORM)
   const [companyName, setCompanyName] = useState('')
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
 
+  // Chế độ sửa: form là bản nháp, chỉ ghi vào profile khi lưu thành công
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [fieldErrors, setFieldErrors] = useState({})
@@ -71,6 +84,7 @@ function RecruiterProfile() {
     setEditing(true)
   }
 
+  // Hủy: bỏ bản nháp, hồ sơ giữ nguyên như trước khi sửa
   function cancelEdit() {
     setEditing(false)
     setSaveError('')
@@ -103,6 +117,7 @@ function RecruiterProfile() {
       setProfile(pickFields(result.data))
       setEditing(false)
       setSaved(true)
+      if (account) account.refreshProfile()
     } catch (err) {
       setSaveError(getErrorMessage(err, 'Chưa lưu được hồ sơ. Vui lòng thử lại.'))
     } finally {
@@ -117,7 +132,7 @@ function RecruiterProfile() {
   if (loadError) {
     return (
       <>
-        <h1>Hồ sơ</h1>
+        <PageHeader title="Hồ sơ" description={PAGE_DESCRIPTION} />
         <p className={styles.alertError} role="alert">
           {loadError}
         </p>
@@ -128,19 +143,12 @@ function RecruiterProfile() {
     )
   }
 
-  // Công ty: chỉ đọc ở cả chế độ xem lẫn chế độ sửa, chỉ hiện tên
-  // (server tự gán công ty duy nhất khi khởi động, G7)
-  const companyRow = (
-    <div>
-      <dt className={styles.term}>Công ty</dt>
-      <dd className={styles.value}>{companyName || <span className={styles.empty}>Chưa được gán</span>}</dd>
-    </div>
-  )
+  const email = user ? user.email : ''
+  const companyValue = companyName || <span className={styles.empty}>Chưa được gán</span>
 
   return (
     <>
-      <h1>Hồ sơ</h1>
-      <p className={styles.intro}>Thông tin cá nhân của tài khoản nhà tuyển dụng.</p>
+      <PageHeader title="Hồ sơ" description={PAGE_DESCRIPTION} />
 
       {saved && (
         <p className={styles.alertSuccess} role="status">
@@ -148,15 +156,20 @@ function RecruiterProfile() {
         </p>
       )}
 
-      {editing ? (
-        <>
-          <dl className={styles.details}>{companyRow}</dl>
+      <Panel title="Thông tin cá nhân">
+        {editing ? (
           <form className={styles.form} onSubmit={handleSubmit} noValidate>
             {saveError && (
               <p className={styles.alertError} role="alert">
                 {saveError}
               </p>
             )}
+
+            <div className={styles.readonlyField}>
+              <span className={styles.term}>Email</span>
+              <span className={styles.value}>{email}</span>
+              <span className={styles.readonlyHint}>Email dùng để đăng nhập, không đổi được ở đây.</span>
+            </div>
 
             {FIELDS.map((field) => (
               <Input
@@ -175,6 +188,12 @@ function RecruiterProfile() {
               />
             ))}
 
+            {/* Công ty: chỉ đọc ở cả chế độ xem lẫn chế độ sửa, chỉ hiện tên */}
+            <div className={styles.readonlyField}>
+              <span className={styles.term}>Công ty</span>
+              <span className={styles.value}>{companyValue}</span>
+            </div>
+
             <div className={styles.actions}>
               <Button type="submit" loading={saving}>
                 {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
@@ -184,23 +203,30 @@ function RecruiterProfile() {
               </Button>
             </div>
           </form>
-        </>
-      ) : (
-        <>
-          <dl className={styles.details}>
-            {FIELDS.map((field) => (
-              <div key={field.name}>
-                <dt className={styles.term}>{field.label}</dt>
-                <dd className={styles.value}>
-                  {profile[field.name] || <span className={styles.empty}>Chưa cập nhật</span>}
-                </dd>
+        ) : (
+          <>
+            <dl className={styles.details}>
+              <div>
+                <dt className={styles.term}>Email</dt>
+                <dd className={styles.value}>{email}</dd>
               </div>
-            ))}
-            {companyRow}
-          </dl>
-          <Button onClick={startEdit}>Sửa thông tin</Button>
-        </>
-      )}
+              {FIELDS.map((field) => (
+                <div key={field.name}>
+                  <dt className={styles.term}>{field.label}</dt>
+                  <dd className={styles.value}>
+                    {profile[field.name] || <span className={styles.empty}>Chưa cập nhật</span>}
+                  </dd>
+                </div>
+              ))}
+              <div>
+                <dt className={styles.term}>Công ty</dt>
+                <dd className={styles.value}>{companyValue}</dd>
+              </div>
+            </dl>
+            <Button onClick={startEdit}>Sửa thông tin</Button>
+          </>
+        )}
+      </Panel>
     </>
   )
 }

@@ -1,6 +1,7 @@
 import styles from './PageHeader.module.css'
 
-// Đầu trang của các trang ứng viên (T35f): h1 serif + một câu mô tả ngắn, nút chính (nếu có) bên phải.
+// Đầu trang của các trang ứng viên (T35f) và khu Tài khoản của HR / Admin (T35i): h1 serif + một câu mô tả ngắn,
+// nút chính (nếu có) bên phải.
 // Dưới 900px nút xuống dưới câu mô tả.
 function PageHeader({ title, description, actions }) {
   return (

@@ -1,15 +1,11 @@
-.intro {
-  margin: 0 0 var(--space-6);
-  color: var(--color-text-muted);
-}
+/* Hồ sơ nhà tuyển dụng trong khu Tài khoản (T35i): cùng kiểu với Hồ sơ ứng viên (pages/candidate/Profile) */
 
-/* Chế độ xem: nhãn nhỏ màu Chì, giá trị bên dưới */
+/* Chế độ xem: nhãn nhỏ màu Chì, giá trị bên dưới; máy tính 2 cột */
 .details {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  max-width: var(--form-max);
-  margin: 0 0 var(--space-6);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4) var(--space-6);
+  margin: 0 0 var(--space-5);
 }
 
 .term {
@@ -20,8 +16,6 @@
 }
 
 .value {
-  display: flex;
-  flex-direction: column;
   margin: 0;
   overflow-wrap: anywhere;
 }
@@ -38,6 +32,19 @@
   max-width: var(--form-max);
 }
 
+/* Email, công ty chỉ đọc trong form: nhãn + giá trị (+ gợi ý), cùng nhịp với ô nhập */
+.readonlyField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.readonlyHint {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -47,7 +54,6 @@
 
 .alertSuccess,
 .alertError {
-  max-width: var(--form-max);
   margin: 0 0 var(--space-4);
   padding: var(--space-3);
   font-size: var(--text-sm);
@@ -65,4 +71,10 @@
   color: var(--color-danger-text);
   background-color: var(--color-danger-bg);
   border: var(--border-width) solid var(--color-danger-border);
+}
+
+@media (max-width: 900px) {
+  .details {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

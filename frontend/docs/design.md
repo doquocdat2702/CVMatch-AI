@@ -373,7 +373,46 @@ CV được chọn sẽ gửi kèm đơn ứng tuyển. Kết quả đối chi�
   (`MIN_PASSWORD_LENGTH`), khác mật khẩu hiện tại (backend), ô xác nhận trùng mật khẩu mới. Mỗi điều kiện có ô vuông
   12px: rỗng viền Viền đậm (chưa đạt) / đặc Xanh lá (đạt), kèm chữ ẩn "đã đạt / chưa đạt" cho trình đọc màn hình;
   danh sách nối với ô bằng `aria-describedby`, không `aria-live`. Thành công: khối xanh lá "Đã đổi mật khẩu" + câu
-  hướng dẫn. HR / Admin không truyền `enhanced` nên giữ đúng form cũ.
+  hướng dẫn. Từ T35i đây là kiểu duy nhất cho cả 3 role (đã bỏ prop `enhanced` và form cũ).
+
+### Khu "Tài khoản" của nhà tuyển dụng và quản trị viên (T35i)
+
+```
+Sidebar chính   ┌ tóm tắt (Giấy) ──────┐  Hồ sơ (serif 24)
+ Tổng quan      │ [TH] 56px            │  Thông tin cá nhân của tài khoản nhà tuyển dụng.
+ Tin tuyển dụng │ Trần Thu Hằng        │  ┌ Thông tin cá nhân ───────────────────────┐
+ Ứng viên gợi ý │ hang@congty.vn       │  │ Email               Họ và tên            │
+ Đơn ứng tuyển  │ [Nhà tuyển dụng]     │  │ Số điện thoại       Chức vụ              │
+▌Tài khoản      │ Công Ty TNHH ...     │  │ Công ty                                  │
+                │ ──────────────────── │  │ [Sửa thông tin]                          │
+                │ Hồ sơ đã có 3/3 mục  │  └──────────────────────────────────────────┘
+                │ [============]       │
+                └──────────────────────┘
+                ▌Hồ sơ
+                 Thông tin công ty
+                 Đổi mật khẩu
+```
+
+- Cùng khung `AccountLayout` với ứng viên, đặt trong vùng nội dung của `MainLayout` (Sidebar chính vẫn ở bên trái).
+  `AccountLayout` chỉ trình bày, nhận prop `items` (menu con), `navLabel`, `summary` ({ fullName, email, badge, meta,
+  progress }) và `outletContext`; dữ liệu do khung theo role trong `components/layout/AccountAreas.jsx` tải:
+  `CandidateAccountLayout`, `RecruiterAccountLayout`, `AdminAccountLayout`.
+- Thẻ tóm tắt nhà tuyển dụng: ô chữ viết tắt họ tên, họ tên, email, Badge xám xanh "Nhà tuyển dụng", tên công ty
+  (14px), đường kẻ Viền, "Hồ sơ đã có x/3 mục" + thanh trung tính (3 mục = họ tên, số điện thoại, chức vụ: đúng các
+  trường `PUT /recruiters/me`; công ty do hệ thống gán nên không tính). Quản trị viên: ô chữ lấy chữ đầu email, email
+  (một dòng, không lặp), Badge "Quản trị viên", không có dòng x/y mục.
+- Menu con: nhà tuyển dụng Hồ sơ / Thông tin công ty / Đổi mật khẩu; quản trị viên Hồ sơ / Đổi mật khẩu.
+- Sidebar chính chỉ còn một mục "Tài khoản" (trỏ tới trang Hồ sơ của role), sáng ở mọi trang trong khu.
+- Hồ sơ nhà tuyển dụng: `PageHeader` + `Panel` "Thông tin cá nhân", xem chỉ đọc lưới 2 cột nhãn / giá trị (Email, Họ và
+  tên, Số điện thoại, Chức vụ, Công ty; trống thì "Chưa cập nhật" màu Chì, công ty chưa có thì "Chưa được gán").
+  "Sửa thông tin" đổi Panel sang form (email, công ty chỉ đọc), "Lưu thay đổi" / "Hủy"; lưu xong về chế độ xem, báo
+  "Đã lưu thay đổi.", thẻ tóm tắt đọc lại ngay (`refreshProfile`).
+- Thông tin công ty: `Panel` "Thông tin chung", lưới 2 cột (tên công ty và giới thiệu chiếm cả hàng, địa chỉ / website
+  mỗi ô một cột); tên công ty luôn chỉ đọc kèm "Tên công ty được thiết lập sẵn, không sửa tại đây" (cả trong form).
+- Hồ sơ quản trị viên: `Panel` "Thông tin tài khoản" chỉ đọc (Email, Vai trò; `GET /auth/me` không trả trạng thái nên
+  không có dòng Trạng thái), không có nút Sửa, dòng 12px Chì "Nếu quên mật khẩu, liên hệ bộ phận kỹ thuật để đặt lại."
+- Dưới 900px: như ứng viên (tóm tắt một dòng: ô chữ, họ tên, "Hồ sơ đã có x/y mục"; ẩn email, Badge, công ty, thanh;
+  menu con thành hàng tab cuộn ngang). Sidebar chính đã thành hàng menu trên nên không bị chồng hai cột.
 
 ### Trang của ứng viên: quy tắc chung (T35f)
 
@@ -396,7 +435,8 @@ CV được chọn sẽ gửi kèm đơn ứng tuyển. Kết quả đối chi�
   viết theo đúng `matcher.js: resolveEvidence` và `evidence.finder.js` (xem `docs/cach-phan-tich-va-doi-chieu.md`).
 - Tiêu đề tab trình duyệt (`useDocumentTitle`): "<tên trang> | <VITE_APP_NAME>" ở trang chủ, chi tiết tin (tên tin),
   chi tiết đối chiếu, các trang ứng viên, trang công khai và trang đăng nhập / đăng ký. Rời trang thì về tên hệ thống,
-  nên trang HR / Admin (chưa đặt tiêu đề riêng) chỉ hiện tên hệ thống.
+  nên trang HR / Admin (chưa đặt tiêu đề riêng) chỉ hiện tên hệ thống; từ T35i các trang trong khu Tài khoản của
+  HR / Admin (Hồ sơ, Thông tin công ty, Đổi mật khẩu) có tiêu đề riêng.
 
 ### Footer của SiteLayout (`SiteFooter`, T35e)
 
@@ -424,16 +464,16 @@ CV được chọn sẽ gửi kèm đơn ứng tuyển. Kết quả đối chi�
 ### Trang Đổi mật khẩu (T35e)
 
 - `/candidate/change-password`, `/recruiter/change-password`, `/admin/change-password`, mỗi route chỉ cho đúng role,
-  trong layout của role. Trang chỉ có h1 "Đổi mật khẩu" + `ChangePasswordForm` (form không còn h2 và đường kẻ riêng).
-  Trang Hồ sơ của cả 3 role không còn form mật khẩu.
+  trong khu Tài khoản của role. Từ T35i cả 3 role cùng một kiểu: `PageHeader` "Đổi mật khẩu" + câu mô tả, `Panel` rộng
+  bằng form chứa `ChangePasswordForm` (Hiện / Ẩn, danh sách điều kiện). Trang Hồ sơ của cả 3 role không có form mật khẩu.
 
 ### Menu theo role
 
 | Role | Mục menu → đường dẫn |
 |---|---|
 | Khách, ứng viên (menu ngang, T35d) | Việc làm `/`, Giới thiệu `/about`, Liên hệ `/contact`. Ứng viên thêm AccountMenu: Hồ sơ `/candidate/profile`, CV của tôi `/candidate/cvs`, Đơn ứng tuyển `/candidate/applications`, Đổi mật khẩu `/candidate/change-password` (T35e), Đăng xuất |
-| Nhà tuyển dụng | Tổng quan `/recruiter/dashboard` (T35c), Hồ sơ `/recruiter/profile`, Đổi mật khẩu `/recruiter/change-password` (T35e), Công ty `/recruiter/company`, Tin tuyển dụng `/recruiter/jobs`, Ứng viên gợi ý `/recruiter/recommended-candidates` (T34), Đơn ứng tuyển `/recruiter/applications` |
-| Quản trị viên | Tổng quan `/admin/dashboard` (T35c), Tài khoản `/admin/users`, Tạo nhà tuyển dụng `/admin/recruiters/new`, Phân quyền `/admin/roles`, Hồ sơ `/admin/profile` (T35), Đổi mật khẩu `/admin/change-password` (T35e) |
+| Nhà tuyển dụng (T35i) | Tổng quan `/recruiter/dashboard` (T35c), Tin tuyển dụng `/recruiter/jobs`, Ứng viên gợi ý `/recruiter/recommended-candidates` (T34), Đơn ứng tuyển `/recruiter/applications`, Tài khoản `/recruiter/profile` (sáng cả ở `/recruiter/company`, `/recruiter/change-password`) |
+| Quản trị viên (T35i) | Tổng quan `/admin/dashboard` (T35c), Tài khoản người dùng `/admin/users` (sáng cả ở `/admin/recruiters/new`), Phân quyền `/admin/roles`, Tài khoản `/admin/profile` (sáng cả ở `/admin/change-password`) |
 
 - Mục "Việc làm" trỏ về `/`. Không có `/candidate/jobs`.
   `/`, `/jobs/:id`, `/about`, `/contact`, `/privacy`, `/terms` dùng `SiteLayout` cho khách và ứng viên, `MainLayout`
@@ -446,6 +486,15 @@ CV được chọn sẽ gửi kèm đơn ứng tuyển. Kết quả đối chi�
 - Trang chính của role (đăng nhập xong vào đây): `/candidate` → `/`, `/recruiter` → `/recruiter/dashboard`,
   `/admin` → `/admin/dashboard` (T35c). Không còn trang tạm "Chức năng đang được xây dựng".
 - Trạng thái tài khoản (T35) dùng Badge: Đang hoạt động (`ACTIVE`, xanh lá), Đã khóa (`LOCKED`, đỏ).
+- Sidebar (T35i) tự tính mục đang sáng (đúng đường dẫn hoặc trang con, cộng danh sách `matches` của mục) và gắn
+  `aria-current="page"` như NavLink, để một mục sáng ở nhiều đường dẫn. Trang "Tạo tài khoản nhà tuyển dụng" không
+  còn mục riêng: mở bằng nút trên trang "Tài khoản người dùng" (h1 đổi theo tên mục), có link "Quay lại danh sách tài
+  khoản" (14px đậm 500 Xanh mực, cao 44px dưới 900px) trên tiêu đề.
+- Đơn ứng tuyển của nhà tuyển dụng (T35i): ô chọn tin có lựa chọn đầu "Tất cả tin của tôi", là mặc định khi URL không
+  có `?jobId` (chọn lại thì bỏ `?jobId`; `jobId` không phải tin của mình cũng về lựa chọn này). Chế độ này gộp đơn của
+  mọi tin mình đăng (cả tin đã đóng, `GET /applications/mine`, mới nộp trước, phân trang phía server 9 dòng) và có thêm
+  cột "Tin tuyển dụng" sau cột Ứng viên: tên tin là link tới trang sửa tin, tin đã đóng có dòng 12px Chì "Đã đóng".
+  Chọn một tin thì ẩn cột này, như trước (coverage giảm dần, phân trang phía client).
 
 ### Trang đăng nhập (khối điểm nhấn)
 
@@ -510,9 +559,11 @@ Trên điện thoại, khối Xanh mực thành dải phía trên form; Logo ở
 - `Modal` (T35f): thêm prop tùy chọn `closeButtonClassName` cho nút "Đóng" ở đầu modal (hộp ứng tuyển dùng để nút
   cao 44px trên điện thoại); không truyền thì như cũ.
 - `CvViewButton` (T35f): thêm prop `variant` (mặc định ghost như trong bảng; thẻ CV dùng secondary).
-- `ChangePasswordForm` (T35g): thêm prop tùy chọn `enhanced` (Hiện / Ẩn, danh sách điều kiện, khối thành công); không
-  truyền thì giữ nguyên form của HR / Admin.
-- `AccountLayout` (T35g, components/layout): khung khu Tài khoản của ứng viên (xem mục 6).
+- `ChangePasswordForm` (T35g; T35i bỏ prop `enhanced`): một kiểu duy nhất cho 3 role (Hiện / Ẩn, danh sách điều kiện,
+  khối thành công).
+- `AccountLayout` (T35g, components/layout): khung khu Tài khoản; từ T35i nhận menu và thẻ tóm tắt qua prop, dùng cho
+  cả 3 role qua `AccountAreas.jsx` (xem mục 6).
+- `PageHeader`, `Panel` (T35f): từ T35i dùng thêm trong khu Tài khoản của nhà tuyển dụng và quản trị viên.
 - `Pagination`: "Trước", số trang, "Sau"; trang hiện tại nền Xanh nhạt; ẩn khi chỉ có 1 trang.
 - `Badge`: 12px đậm 600, bo 4px, có viền; màu theo prop `status` (mục 2).
 - `StatCard` (T35c, `components/dashboard/`): ô chỉ có viền, nhãn 14px Chì, con số `--text-xl` đậm 600 chữ số đều,

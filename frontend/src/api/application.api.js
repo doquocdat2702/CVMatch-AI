@@ -34,6 +34,14 @@ export async function getJobApplications(jobId, { status } = {}) {
   return response.data
 }
 
+// Nhà tuyển dụng: đơn của MỌI tin mình đăng, gồm tin đã đóng (T35i). Mới nộp trước, phân trang phía server.
+// data: { items: [{ id, status, coverage, appliedAt, job: { id, title, isOpen }, candidate: { id, fullName },
+//   cv, cvLegacy }], pagination: { page, limit, total, totalPages }, note }
+export async function getMyJobsApplications({ status, page, limit } = {}) {
+  const response = await axiosClient.get('/applications/mine', { params: { status, page, limit } })
+  return response.data
+}
+
 // Nhà tuyển dụng đổi trạng thái đơn: APPLIED -> REVIEWING -> ACCEPTED | REJECTED, APPLIED -> REJECTED
 export async function updateApplicationStatus(id, status) {
   const response = await axiosClient.patch(`/applications/${id}/status`, { status })

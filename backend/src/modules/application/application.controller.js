@@ -45,6 +45,16 @@ async function listByJob(req, res, next) {
   }
 }
 
+// Nhà tuyển dụng: đơn của mọi tin mình đăng (T35i), ?status=&page=&limit=
+async function listMyJobs(req, res, next) {
+  try {
+    const data = await applicationService.listMyJobsApplications(req.user.userId, req.query || {});
+    return success(res, data, 'Lấy danh sách đơn ứng tuyển thành công.');
+  } catch (err) {
+    return next(err);
+  }
+}
+
 async function updateStatus(req, res, next) {
   try {
     const data = await applicationService.updateApplicationStatus(
@@ -67,4 +77,4 @@ async function detail(req, res, next) {
   }
 }
 
-module.exports = { apply, listMine, withdraw, listByJob, updateStatus, detail };
+module.exports = { apply, listMine, withdraw, listByJob, listMyJobs, updateStatus, detail };

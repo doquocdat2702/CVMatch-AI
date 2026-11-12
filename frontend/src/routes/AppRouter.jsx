@@ -3,7 +3,7 @@ import { AuthProvider } from '../context/AuthContext'
 import ProtectedRoute from './ProtectedRoute'
 import MainLayout from '../components/layout/MainLayout'
 import SiteLayout from '../components/layout/SiteLayout'
-import AccountLayout from '../components/layout/AccountLayout'
+import { AdminAccountLayout, CandidateAccountLayout, RecruiterAccountLayout } from '../components/layout/AccountAreas'
 import { useAuth } from '../hooks/useAuth'
 import JobBoard from '../pages/candidate/JobBoard'
 import JobDetail from '../pages/candidate/JobDetail'
@@ -101,11 +101,11 @@ function AppRouter() {
                   Giữ bố cục riêng, không nằm trong khu Tài khoản (T35g) */}
               <Route path="cvs/parsed" element={<ParsedCV />} />
               {/* Khu "Tài khoản của tôi" (T35g): cột tóm tắt + menu bên trái, trang bên phải */}
-              <Route element={<AccountLayout />}>
+              <Route element={<CandidateAccountLayout />}>
                 <Route path="profile" element={<Profile />} />
                 <Route path="cvs" element={<CVUpload />} />
                 <Route path="applications" element={<MyApplications />} />
-                <Route path="change-password" element={<ChangePassword siteStyle />} />
+                <Route path="change-password" element={<ChangePassword />} />
               </Route>
             </Route>
           </Route>
@@ -116,9 +116,13 @@ function AppRouter() {
             <Route index element={<Navigate to="/recruiter/dashboard" replace />} />
             <Route element={<MainLayout />}>
               <Route path="dashboard" element={<RecruiterDashboard />} />
-              <Route path="profile" element={<RecruiterProfile />} />
-              <Route path="change-password" element={<ChangePassword />} />
-              <Route path="company" element={<Company />} />
+              {/* Khu "Tài khoản" (T35i): cùng bố cục với ứng viên, nằm trong vùng nội dung của MainLayout.
+                  Sidebar chỉ có một mục "Tài khoản", sáng ở cả 3 trang */}
+              <Route element={<RecruiterAccountLayout />}>
+                <Route path="profile" element={<RecruiterProfile />} />
+                <Route path="company" element={<Company />} />
+                <Route path="change-password" element={<ChangePassword />} />
+              </Route>
               <Route path="jobs" element={<JobList />} />
               <Route path="jobs/new" element={<JobForm />} />
               <Route path="jobs/:id/edit" element={<EditJobRoute />} />
@@ -138,8 +142,11 @@ function AppRouter() {
               <Route path="users" element={<AccountList />} />
               <Route path="recruiters/new" element={<CreateRecruiter />} />
               <Route path="roles" element={<RoleManagement />} />
-              <Route path="profile" element={<AdminProfile />} />
-              <Route path="change-password" element={<ChangePassword />} />
+              {/* Khu "Tài khoản" (T35i), như nhà tuyển dụng */}
+              <Route element={<AdminAccountLayout />}>
+                <Route path="profile" element={<AdminProfile />} />
+                <Route path="change-password" element={<ChangePassword />} />
+              </Route>
             </Route>
           </Route>
 

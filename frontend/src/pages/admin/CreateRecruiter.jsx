@@ -107,6 +107,10 @@ function CreateRecruiter() {
 
   return (
     <>
+      {/* T35i: trang này không còn mục riêng trên Sidebar (mục "Tài khoản người dùng" sáng), có link quay lại */}
+      <Link className={styles.backLink} to="/admin/users">
+        Quay lại danh sách tài khoản
+      </Link>
       <h1>Tạo tài khoản nhà tuyển dụng</h1>
       <p className={styles.intro}>
         Cấp tài khoản cho nhà tuyển dụng của công ty. Sau khi tạo, gửi email và mật khẩu qua kênh nội bộ để người dùng

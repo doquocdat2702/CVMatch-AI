@@ -63,6 +63,21 @@
   overflow-wrap: anywhere;
 }
 
+/* Nhãn vai trò (Badge) + dòng phụ (tên công ty của nhà tuyển dụng), T35i */
+.meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.metaText {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  overflow-wrap: anywhere;
+}
+
 .progress {
   display: flex;
   flex-direction: column;
@@ -148,7 +163,7 @@
     gap: 0;
   }
 
-  /* Một dòng: ô chữ nhỏ, họ tên, "Hồ sơ x/y" bên phải; bỏ email và thanh */
+  /* Một dòng: ô chữ nhỏ, họ tên, "Hồ sơ x/y" bên phải; bỏ email, nhãn vai trò, công ty và thanh */
   .summary {
     flex-direction: row;
     align-items: center;
@@ -176,6 +191,7 @@
   }
 
   .email,
+  .meta,
   .track {
     display: none;
   }

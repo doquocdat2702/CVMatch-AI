@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { getJobApplications, updateApplicationStatus } from '../../api/application.api'
+import { getJobApplications, getMyJobsApplications, updateApplicationStatus } from '../../api/application.api'
 import { getMyJobs } from '../../api/job.api'
 import Badge from '../../components/common/Badge'
 import Button from '../../components/common/Button'
@@ -14,7 +14,7 @@ import CandidateMatrixModal from '../../components/matching/CandidateMatrixModal
 import { getErrorMessage } from '../../utils/apiError'
 import { formatDate, formatNumber } from '../../utils/format'
 import { APPLICATION_STATUS_LABEL } from '../../utils/labels'
-import { paginate, readPage, withPage } from '../../utils/pagination'
+import { PAGE_SIZE, paginate, readPage, withPage } from '../../utils/pagination'
 import styles from './Applications.module.css'
 
 const STATUSES = ['APPLIED', 'REVIEWING', 'ACCEPTED', 'REJECTED']
@@ -44,9 +44,13 @@ function jobOptionLabel(job) {
   return job.isOpen ? job.title : `${job.title} (đã đóng)`
 }
 
+// Lựa chọn đầu tiên của ô chọn tin (T35i): giá trị rỗng = không có ?jobId trên URL
+const ALL_JOBS_OPTION = { value: '', label: 'Tất cả tin của tôi' }
+
 // Đơn ứng tuyển vào tin của chính nhà tuyển dụng này.
 // Tin, trạng thái lọc và trang nằm trên URL (?jobId=&status=&page=), tải lại trang vẫn giữ.
-// API trả cả danh sách đơn của tin: phân trang phía client (D1)
+// Không có ?jobId (mặc định, T35i) = "Tất cả tin của tôi": GET /applications/mine, phân trang phía server,
+// có thêm cột "Tin tuyển dụng". Chọn một tin: GET /applications/job/:id trả cả danh sách, phân trang phía client (D1)
 function Applications() {
   const [searchParams, setSearchParams] = useSearchParams()
   const page = readPage(searchParams)
@@ -85,18 +89,27 @@ function Applications() {
     }
   }, [jobsReloadKey])
 
-  // jobId trên URL phải là tin của mình, không thì dùng tin đầu tiên; status sai thì coi như không lọc
+  // jobId trên URL phải là tin của mình, không thì xem tất cả tin; status sai thì coi như không lọc
   const paramJobId = searchParams.get('jobId')
-  const selectedJob = jobs ? jobs.find((job) => String(job.id) === paramJobId) || jobs[0] || null : null
+  const selectedJob = jobs ? jobs.find((job) => String(job.id) === paramJobId) || null : null
   const jobId = selectedJob ? String(selectedJob.id) : ''
+  const allJobs = !selectedJob
   const paramStatus = searchParams.get('status')
   const statusFilter = STATUSES.includes(paramStatus) ? paramStatus : ''
-  const requestKey = jobId ? `${jobId}:${statusFilter}:${reloadKey}` : null
+  // Chế độ tất cả tin phân trang phía server nên trang nằm trong khóa; chế độ một tin phân trang phía client
+  const requestKey =
+    jobs && jobs.length > 0 ? `${jobId || 'all'}:${statusFilter}:${allJobs ? page : ''}:${reloadKey}` : null
+
+  // Một lần gọi API theo chế độ đang chọn (dùng cả khi tải lần đầu lẫn khi lấy lại sau đổi trạng thái)
+  function fetchApplications() {
+    const status = statusFilter || undefined
+    return allJobs ? getMyJobsApplications({ status, page, limit: PAGE_SIZE }) : getJobApplications(jobId, { status })
+  }
 
   useEffect(() => {
     if (!requestKey) return undefined
     let ignore = false
-    getJobApplications(jobId, { status: statusFilter || undefined })
+    fetchApplications()
       .then((response) => {
         if (!ignore) setResult({ key: requestKey, data: response.data, error: '' })
       })
@@ -108,7 +121,17 @@ function Applications() {
     return () => {
       ignore = true
     }
-  }, [jobId, statusFilter, requestKey])
+    // fetchApplications chỉ đọc jobId, statusFilter, page: đều đã nằm trong requestKey
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestKey])
+
+  // Chế độ tất cả tin: trang trên URL vượt quá số trang thật (vd đơn vừa đổi trạng thái khi đang lọc) thì về trang cuối
+  const serverPagination = allJobs && result.key === requestKey && result.data ? result.data.pagination : null
+  useEffect(() => {
+    if (serverPagination && serverPagination.totalPages > 0 && page > serverPagination.totalPages) {
+      setSearchParams(withPage(searchParams, serverPagination.totalPages), { replace: true })
+    }
+  }, [serverPagination, page, searchParams, setSearchParams])
 
   function handleJobsRetry() {
     setJobsError('')
@@ -116,7 +139,8 @@ function Applications() {
     setJobsReloadKey((key) => key + 1)
   }
 
-  // Đổi tin hoặc trạng thái lọc: dựng lại URL chỉ gồm jobId, status nên ?page= bị bỏ, về trang 1
+  // Đổi tin hoặc trạng thái lọc: dựng lại URL chỉ gồm jobId, status nên ?page= bị bỏ, về trang 1.
+  // jobId rỗng (Tất cả tin của tôi) thì bỏ hẳn ?jobId
   function updateParams(changes) {
     const next = { jobId, status: statusFilter, ...changes }
     // Bỏ tham số rỗng cho URL gọn
@@ -133,7 +157,7 @@ function Applications() {
   // Lấy lại danh sách sau khi đổi trạng thái (kể cả khi lỗi) để luôn khớp với backend
   async function refreshList() {
     try {
-      const response = await getJobApplications(jobId, { status: statusFilter || undefined })
+      const response = await fetchApplications()
       setResult({ key: requestKey, data: response.data, error: '' })
     } catch {
       // Giữ danh sách đang hiện, lần tải trang sau sẽ lấy lại
@@ -177,6 +201,20 @@ function Applications() {
 
   // ===== Bảng =====
 
+  // Cột "Tin tuyển dụng" chỉ có ở chế độ tất cả tin: link tới trang sửa tin (mọi tin ở đây đều do chính HR đăng)
+  const jobColumn = {
+    key: 'job',
+    title: 'Tin tuyển dụng',
+    render: (application) => (
+      <span className={styles.jobCell}>
+        <Link className={styles.link} to={`/recruiter/jobs/${application.job.id}/edit`}>
+          {application.job.title}
+        </Link>
+        {!application.job.isOpen && <span className={styles.muted}>Đã đóng</span>}
+      </span>
+    ),
+  }
+
   const columns = [
     {
       key: 'candidate',
@@ -185,6 +223,7 @@ function Applications() {
         <span className={styles.name}>{application.candidate.fullName || 'Chưa có họ tên'}</span>
       ),
     },
+    ...(allJobs ? [jobColumn] : []),
     { key: 'appliedAt', title: 'Ngày ứng tuyển', render: (application) => formatDate(application.appliedAt) },
     {
       // CV ứng viên chọn gửi kèm đơn (T35g). Đơn cũ chưa lưu CV: CV hiện tại của ứng viên kèm ghi chú
@@ -287,18 +326,19 @@ function Applications() {
         </>
       )
     } else {
-      const { pageItems, page: currentPage, totalPages } = paginate(result.data.items, page)
+      // Tất cả tin: server đã cắt trang; một tin: cắt trang phía client
+      const { pageItems, page: currentPage, totalPages } = allJobs
+        ? {
+            pageItems: result.data.items,
+            page: Math.min(page, Math.max(1, result.data.pagination.totalPages)),
+            totalPages: Math.max(1, result.data.pagination.totalPages),
+          }
+        : paginate(result.data.items, page)
+      let emptyText = allJobs ? 'Các tin đã đăng chưa có đơn ứng tuyển nào.' : 'Tin này chưa có đơn ứng tuyển nào.'
+      if (statusFilter) emptyText = `Không có đơn nào ở trạng thái "${statusLabel(statusFilter)}".`
       list = (
         <>
-          <Table
-            columns={columns}
-            data={pageItems}
-            emptyText={
-              statusFilter
-                ? `Không có đơn nào ở trạng thái "${statusLabel(statusFilter)}".`
-                : 'Tin này chưa có đơn ứng tuyển nào.'
-            }
-          />
+          <Table columns={columns} data={pageItems} emptyText={emptyText} />
           <div className={styles.pagination}>
             <Pagination page={currentPage} totalPages={totalPages} onChange={handlePageChange} />
           </div>
@@ -314,7 +354,7 @@ function Applications() {
           <Select
             label="Tin tuyển dụng"
             name="jobId"
-            options={jobs.map((job) => ({ value: String(job.id), label: jobOptionLabel(job) }))}
+            options={[ALL_JOBS_OPTION, ...jobs.map((job) => ({ value: String(job.id), label: jobOptionLabel(job) }))]}
             value={jobId}
             onChange={(event) => updateParams({ jobId: event.target.value })}
             disabled={updatingId !== null}
@@ -352,9 +392,13 @@ function Applications() {
 
       {content}
 
+      {/* Chế độ tất cả tin: tên tin lấy từ chính dòng (application.job); modal mở theo applicationId
+          nên luôn đối chiếu đúng tin của dòng */}
       {matrixTarget && (
         <CandidateMatrixModal
-          title={`Đối chiếu: ${matrixTarget.candidate.fullName || 'Ứng viên'} - ${selectedJob ? selectedJob.title : ''}`}
+          title={`Đối chiếu: ${matrixTarget.candidate.fullName || 'Ứng viên'} - ${
+            matrixTarget.job ? matrixTarget.job.title : selectedJob ? selectedJob.title : ''
+          }`}
           applicationId={matrixTarget.id}
           onClose={() => setMatrixTarget(null)}
         />

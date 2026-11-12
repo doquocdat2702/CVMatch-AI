@@ -28,6 +28,21 @@
   overflow-wrap: anywhere;
 }
 
+/* Cột "Tin tuyển dụng" (T35i, chế độ tất cả tin): tên tin là link, tin đã đóng có dòng "Đã đóng" nhỏ bên dưới */
+.jobCell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  min-width: calc(var(--sidebar-width) * 0.85);
+  overflow-wrap: anywhere;
+}
+
+.jobCell .muted {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+}
+
 /* Dropdown đổi trạng thái trong bảng: đủ rộng cho chữ dài nhất, không kéo giãn cột */
 .statusSelect {
   min-width: calc(var(--sidebar-width) * 0.85);
