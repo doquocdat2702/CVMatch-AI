@@ -446,7 +446,8 @@ const SECTION_PATTERNS = {
   skills: /^(ky nang|ky nang chuyen mon|ky nang ca nhan|chuyen mon|skills|skill|technical skills|soft skills|core skills)$/,
   projects: /^(du an|cac du an|du an tieu bieu|projects|project|personal projects)$/,
   certifications: /^(chung chi|chung nhan|bang cap va chung chi|certifications|certification|certificates|certificate|licenses)$/,
-  objective: /^(muc tieu|muc tieu nghe nghiep|gioi thieu ban than|tom tat|objective|career objective|summary|professional summary|profile|about me)$/,
+  // T35l: thêm các tiêu đề mục tiêu mới (khớp OBJECTIVE_HEADING bên dưới) để các mục khác dừng đúng chỗ
+  objective: /^(muc tieu|muc tieu nghe nghiep|muc tieu cong viec|dinh huong nghe nghiep|gioi thieu ban than|gioi thieu|ve toi|tom tat|objective|career objective|career goal|career goals|summary|professional summary|profile summary|profile|about me)$/,
 };
 
 const SECTION_KEYS = ['education', 'experience', 'skills', 'projects', 'certifications', 'objective'];
@@ -522,6 +523,131 @@ function splitSections(rawText) {
   }
 
   return sections;
+}
+
+// ===== Hàm: extractObjective (T35k, mở rộng tiêu đề ở T35l) =====
+// Mục tiêu nghề nghiệp: đoạn nằm dưới một tiêu đề trong OBJECTIVE_HEADING, lấy tới tiêu đề mục kế tiếp, tối đa
+// 1000 ký tự. So tiêu đề sau khi chuẩn hóa (normalizeHeading): không phân biệt hoa thường, có dấu hay không dấu, bỏ số
+// thứ tự / ký hiệu đầu dòng và dấu hai chấm cuối. Tiêu đề có thể kèm nội dung cùng dòng ("Mục tiêu: ...").
+// Không tìm thấy thì null (tầng trên giữ nguyên giá trị cũ).
+// Tiêu đề nhận dạng: Mục tiêu nghề nghiệp, Mục tiêu công việc, Mục tiêu, Định hướng nghề nghiệp, Giới thiệu bản thân,
+// Giới thiệu, Về tôi, Tóm tắt, Career Objective, Objective, Career Goal(s), Summary, Professional Summary, About Me,
+// Profile Summary. KHÔNG nhận "Profile" đứng một mình: mục đó thường là thông tin cá nhân (điện thoại, địa chỉ);
+// "Profile" vẫn là tiêu đề dừng (gặp nó thì hết phần mục tiêu).
+// Test case:
+//   "MỤC TIÊU NGHỀ NGHIỆP\nTrở thành kế toán\ntrưởng trong 3 năm.\nKINH NGHIỆM\n..." -> "Trở thành kế toán trưởng trong 3 năm."
+//   "Mục tiêu: Phát triển sự nghiệp kiểm thử.\nKỹ năng\nSelenium"          -> "Phát triển sự nghiệp kiểm thử."
+//   "dinh huong nghe nghiep:\nTrở thành trưởng nhóm.\nHọc vấn"              -> "Trở thành trưởng nhóm."
+//   "PROFILE\n0912 345 678\nKinh nghiệm\n..."                               -> null (NO_HEADING)
+//   "Kinh nghiệm\n..." (không có tiêu đề mục tiêu)                          -> null
+
+const OBJECTIVE_MAX_LENGTH = 1000;
+const OBJECTIVE_HEADING =
+  /^(muc tieu nghe nghiep|muc tieu cong viec|muc tieu|dinh huong nghe nghiep|gioi thieu ban than|gioi thieu|ve toi|tom tat|career objective|objective|career goals?|summary|professional summary|about me|profile summary)$/;
+// Tiêu đề thường gặp mà splitSections không tách riêng: gặp là hết phần mục tiêu
+const OTHER_HEADING =
+  /^(thong tin ca nhan|thong tin lien he|lien he|so thich|hoat dong|hoat dong ngoai khoa|giai thuong|thanh tich|ngoai ngu|nguoi tham chieu|tham chieu|thong tin them|personal information|personal details|contact|contact information|interests|hobbies|activities|awards|achievements|languages|references|additional information)$/;
+const BULLET_LINE = /^[-•*+–]\s*/;
+
+// Như detectSectionKey: bỏ dấu, chữ thường, bỏ số thứ tự / ký hiệu hai đầu; T35l bỏ thêm các ký hiệu trang trí hay
+// gặp trước tiêu đề trong CV làm bằng Word / Canva (■ ◆ ● ► ➤ ✓ #...)
+function normalizeHeading(text) {
+  return removeDiacritics(text.trim())
+    .toLowerCase()
+    .replace(/^[\d\s.)•*+\-–—|■□◆◇●○►▶▪▫➤✓✔#]+/, '')
+    .replace(/[\s:：.•*+\-–—|■□◆◇●○►▶▪▫➤✓✔#]+$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Dòng tiêu đề viết HOA đứng riêng (vd "THÔNG TIN CÁ NHÂN"): ngắn, có chữ, không có chữ thường, không kết thúc bằng dấu câu
+function isUppercaseHeading(line) {
+  return (
+    line.length >= 3 &&
+    line.length <= 40 &&
+    /\p{L}/u.test(line) &&
+    line === line.toLocaleUpperCase('vi') &&
+    !/[.,;!?]$/.test(line)
+  );
+}
+
+function isHeadingLine(line) {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.length > 60) return false;
+  if (detectSectionKey(trimmed)) return true;
+  const normalized = normalizeHeading(trimmed);
+  return OBJECTIVE_HEADING.test(normalized) || OTHER_HEADING.test(normalized) || isUppercaseHeading(trimmed);
+}
+
+// Cắt tối đa 1000 ký tự, ưu tiên cắt ở khoảng trắng để không đứt giữa từ. Dùng chung cho kết quả của Gemini
+function clampObjective(text) {
+  if (typeof text !== 'string') return null;
+  const cleaned = text
+    .replace(/[ \t]+/g, ' ')
+    .replace(/ *\n */g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  if (!cleaned) return null;
+  if (cleaned.length <= OBJECTIVE_MAX_LENGTH) return cleaned;
+  const cut = cleaned.slice(0, OBJECTIVE_MAX_LENGTH);
+  const lastSpace = cut.search(/\s\S*$/);
+  return (lastSpace > OBJECTIVE_MAX_LENGTH * 0.8 ? cut.slice(0, lastSpace) : cut).trim();
+}
+
+// PDF ngắt dòng giữa câu: nối các dòng thường bằng khoảng trắng; dòng trống tách đoạn; gạch đầu dòng xuống dòng riêng
+function joinObjectiveLines(lines) {
+  let text = '';
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) {
+      if (text && !text.endsWith('\n')) text += '\n';
+      continue;
+    }
+    if (BULLET_LINE.test(line)) {
+      text += `${text && !text.endsWith('\n') ? '\n' : ''}- ${line.replace(BULLET_LINE, '')}`;
+      continue;
+    }
+    text += text && !text.endsWith('\n') ? ` ${line}` : line;
+  }
+  return text;
+}
+
+// Kết quả kèm lý do (T35l, để backend ghi log khi không điền được mục tiêu):
+//   { objective: chuỗi | null, reason: null | 'NO_TEXT' | 'NO_HEADING' | 'EMPTY_SECTION' }
+//   NO_HEADING: không dòng nào khớp danh sách tiêu đề; EMPTY_SECTION: có tiêu đề khớp nhưng ngay sau đó là tiêu đề
+//   mục khác (không có chữ nào ở giữa)
+function findObjective(rawText) {
+  if (typeof rawText !== 'string' || !rawText.trim()) return { objective: null, reason: 'NO_TEXT' };
+  const lines = rawText.split('\n');
+  let headingFound = false;
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const trimmed = lines[i].trim();
+    if (!trimmed) continue;
+
+    let collected = null;
+    // Tiêu đề kèm nội dung cùng dòng: "Mục tiêu nghề nghiệp: Trở thành ..."
+    const inline = trimmed.match(/^(.{2,40}?)\s*[:：]\s*(.+)$/);
+    if (inline && OBJECTIVE_HEADING.test(normalizeHeading(inline[1]))) {
+      collected = [inline[2]];
+    } else if (trimmed.length <= 60 && OBJECTIVE_HEADING.test(normalizeHeading(trimmed))) {
+      collected = [];
+    }
+    if (!collected) continue;
+    headingFound = true;
+
+    for (let j = i + 1; j < lines.length; j += 1) {
+      if (isHeadingLine(lines[j])) break;
+      collected.push(lines[j]);
+    }
+    const text = clampObjective(joinObjectiveLines(collected));
+    if (text) return { objective: text, reason: null };
+  }
+  return { objective: null, reason: headingFound ? 'EMPTY_SECTION' : 'NO_HEADING' };
+}
+
+function extractObjective(rawText) {
+  return findObjective(rawText).objective;
 }
 
 // ===== Hàm: extractSkillsByDictionary =====
@@ -650,10 +776,15 @@ function parseByRule(rawText) {
     dateRanges,
     totalYears,
     sections,
+    // Mục tiêu nghề nghiệp (T35k), null nếu CV không có tiêu đề mục tiêu
+    objective: extractObjective(rawText),
   };
 }
 
 module.exports = {
+  extractObjective,
+  findObjective,
+  clampObjective,
   extractContact,
   extractDateRanges,
   parseDateValue,

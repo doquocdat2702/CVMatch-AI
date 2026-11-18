@@ -61,10 +61,14 @@ const CANDIDATE_PARTS = [
   (profile) => profile.educations && profile.educations.length > 0,
 ]
 
+// Thẻ tóm tắt hiện ảnh đại diện nên tải hồ sơ kèm ảnh (?avatar=1). Hàm khai báo ngoài component để giữ nguyên
+// tham chiếu, effect trong useAccountProfile không chạy lại mỗi lần render
+const loadCandidateProfile = () => getMyProfile({ withAvatar: true })
+
 // API không trả ngày tạo tài khoản cho ứng viên nên không có dòng "Tham gia"
 export function CandidateAccountLayout() {
   const { user, profileName } = useAuth()
-  const { profile, outletContext } = useAccountProfile(getMyProfile)
+  const { profile, outletContext } = useAccountProfile(loadCandidateProfile)
 
   const summary = {
     fullName: (profile && profile.fullName) || profileName || '',
@@ -72,6 +76,8 @@ export function CandidateAccountLayout() {
     badge: null,
     meta: null,
     progress: profile ? { filled: countFilled(profile, CANDIDATE_PARTS), total: CANDIDATE_PARTS.length } : null,
+    // Ảnh đại diện (T35k): có ảnh thì thay ô chữ viết tắt. Nhà tuyển dụng / quản trị viên không có ảnh
+    avatar: (profile && profile.avatar) || null,
   }
 
   return (

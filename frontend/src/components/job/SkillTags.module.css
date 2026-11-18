@@ -1,0 +1,40 @@
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Nhãn chữ nhật bo 4px, nền Nền, viền Viền, chữ Mực đen 12px đậm 500 (không phải Badge trạng thái) */
+.tag {
+  max-width: 100%;
+  padding: 0 var(--space-2);
+  font-size: var(--text-xs);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+  background-color: var(--color-bg);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+/* "+n": chữ Chì, không nền */
+.more {
+  color: var(--color-text-muted);
+  background-color: transparent;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

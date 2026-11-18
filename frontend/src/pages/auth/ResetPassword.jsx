@@ -4,6 +4,7 @@ import { resetPassword } from '../../api/auth.api'
 import { getErrorMessage } from '../../utils/apiError'
 import { MIN_PASSWORD_LENGTH } from '../../utils/validation'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
+import AuthLayout from './AuthLayout'
 import styles from './Auth.module.css'
 
 const INVALID_LINK = 'Liên kết đặt lại mật khẩu đã hết hạn hoặc đã được dùng. Vui lòng gửi yêu cầu mới.'
@@ -60,76 +61,74 @@ function ResetPassword() {
 
   if (linkInvalid) {
     return (
-      <main className={styles.page}>
-        <div className={styles.card}>
-          <h1 className={styles.title}>Đặt lại mật khẩu</h1>
-          <p className={styles.alertError} role="alert">
-            {error || INVALID_LINK}
-          </p>
-          <div className={styles.actions}>
-            <Link className={styles.button} to="/forgot-password">
-              Gửi lại liên kết
-            </Link>
-            <Link className={`${styles.button} ${styles.buttonSecondary}`} to="/login">
-              Quay lại đăng nhập
-            </Link>
-          </div>
+      <AuthLayout>
+        <h1 className={styles.title}>Đặt lại mật khẩu</h1>
+        <p className={styles.alertError} role="alert">
+          {error || INVALID_LINK}
+        </p>
+        <div className={styles.actions}>
+          <Link className={styles.button} to="/forgot-password">
+            Gửi lại liên kết
+          </Link>
+          <Link className={`${styles.button} ${styles.buttonSecondary}`} to="/login">
+            Quay lại đăng nhập
+          </Link>
         </div>
-      </main>
+      </AuthLayout>
     )
   }
 
   return (
-    <main className={styles.page}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>Đặt lại mật khẩu</h1>
-        <p className={styles.subtitle}>Nhập mật khẩu mới cho tài khoản ứng viên của bạn.</p>
+    <AuthLayout>
+      <h1 className={styles.title}>Đặt lại mật khẩu</h1>
 
-        {error && (
-          <p className={styles.alertError} role="alert">
-            {error}
-          </p>
-        )}
+      {error && (
+        <p className={styles.alertError} role="alert">
+          {error}
+        </p>
+      )}
 
-        <form className={styles.form} onSubmit={handleSubmit} noValidate>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="reset-newPassword">
-              Mật khẩu mới
-            </label>
-            <input
-              id="reset-newPassword"
-              className={styles.input}
-              type="password"
-              name="newPassword"
-              autoComplete="new-password"
-              value={form.newPassword}
-              onChange={handleChange}
-              disabled={submitting}
-            />
-          </div>
+      <form className={styles.form} onSubmit={handleSubmit} noValidate>
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="reset-newPassword">
+            Mật khẩu mới
+          </label>
+          <input
+            id="reset-newPassword"
+            className={styles.input}
+            type="password"
+            name="newPassword"
+            autoComplete="new-password"
+            value={form.newPassword}
+            onChange={handleChange}
+            disabled={submitting}
+          />
+        </div>
 
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="reset-confirmPassword">
-              Xác nhận mật khẩu mới
-            </label>
-            <input
-              id="reset-confirmPassword"
-              className={styles.input}
-              type="password"
-              name="confirmPassword"
-              autoComplete="new-password"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              disabled={submitting}
-            />
-          </div>
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="reset-confirmPassword">
+            Xác nhận mật khẩu mới
+          </label>
+          <input
+            id="reset-confirmPassword"
+            className={styles.input}
+            type="password"
+            name="confirmPassword"
+            autoComplete="new-password"
+            value={form.confirmPassword}
+            onChange={handleChange}
+            disabled={submitting}
+          />
+        </div>
 
-          <button className={styles.button} type="submit" disabled={submitting}>
-            {submitting ? 'Đang lưu...' : 'Lưu mật khẩu mới'}
-          </button>
-        </form>
-      </div>
-    </main>
+        <button className={styles.button} type="submit" disabled={submitting}>
+          {submitting ? 'Đang lưu...' : 'Lưu mật khẩu mới'}
+        </button>
+      </form>
+
+      {/* Trang không kiểm token lúc vừa mở (không có API kiểm riêng): nói trước để người dùng biết vì sao link cũ báo lỗi */}
+      <p className={styles.note}>Liên kết chỉ dùng được một lần và hết hạn sau 15 phút.</p>
+    </AuthLayout>
   )
 }
 

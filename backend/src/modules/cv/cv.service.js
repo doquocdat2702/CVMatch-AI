@@ -5,6 +5,7 @@ const env = require('../../config/env');
 const prisma = require('../../config/prisma');
 const { extractText } = require('../ai/text-extraction');
 const { parseCV } = require('../ai/cv-parser/hybrid.parser');
+const { findObjective } = require('../ai/cv-parser/rule.parser');
 const {
   normalizeSkillName,
   resolveSkillId,
@@ -320,6 +321,22 @@ async function parseCvToProfile(userId, cvId) {
   }
 }
 
+// Câu giải thích (cho log) khi lần phân tích không ra mục tiêu nghề nghiệp. Lý do lấy từ bộ tìm tiêu đề của rule
+// (findObjective); hybrid thì Gemini cũng không trả mục tiêu. Ô đã có nội dung thì nói thêm vì dù tìm được cũng không điền
+const OBJECTIVE_REASON_TEXT = {
+  NO_TEXT: 'CV không có chữ',
+  NO_HEADING: 'không thấy tiêu đề nào khớp danh sách tiêu đề mục tiêu',
+  EMPTY_SECTION: 'có tiêu đề mục tiêu nhưng bên dưới không có nội dung (gặp ngay tiêu đề mục khác)',
+};
+
+function explainMissingObjective(rawText, mode, hasExisting) {
+  const { reason } = findObjective(rawText);
+  const parts = [OBJECTIVE_REASON_TEXT[reason] || 'không tìm thấy đoạn mục tiêu'];
+  if (mode === 'hybrid') parts.push('Gemini cũng không trả mục tiêu');
+  if (hasExisting) parts.push('ô mục tiêu trong hồ sơ đã có nội dung sẵn nên vẫn giữ nguyên');
+  return parts.join('; ');
+}
+
 async function parseAndSave(userId, cv) {
   if (!cv.rawText || !cv.rawText.trim()) {
     throw createError('CV không có nội dung chữ để phân tích.', 400);
@@ -354,7 +371,10 @@ async function parseAndSave(userId, cv) {
     normalizedSkills.push({ ...skill, canonical, matchedDictionary: matched, skillId });
   }
 
-  return prisma.$transaction(async (tx) => {
+  // Lý do không điền mục tiêu nghề nghiệp (T35l): chỉ ghi log ở backend sau khi lưu xong, không trả ra giao diện
+  let objectiveSkip = null;
+
+  const result = await prisma.$transaction(async (tx) => {
     // 1. Chỉ xóa bản ghi chưa được người dùng xác nhận.
     // Chế độ rule chỉ thay kỹ năng do rule bóc (source RULE): giữ nguyên kỹ năng từ NLP,
     // và không bóc được kinh nghiệm / học vấn nên giữ nguyên bản ghi cũ của hai loại này
@@ -436,10 +456,28 @@ async function parseAndSave(userId, cv) {
       profileData.headline = parsed.headline;
     }
 
-    const updatedProfile =
-      Object.keys(profileData).length > 0
-        ? await tx.candidateProfile.update({ where: { id: profile.id }, data: profileData })
-        : profile;
+    if (Object.keys(profileData).length > 0) {
+      await tx.candidateProfile.update({ where: { id: profile.id }, data: profileData });
+    }
+
+    // Mục tiêu nghề nghiệp (T35k): chỉ điền khi đang trống, không bao giờ ghi đè nội dung đã có (ứng viên tự nhập
+    // hay lần phân tích trước điền). Điều kiện trống nằm ngay trong lệnh ghi nên ứng viên vừa lưu mục tiêu trong lúc
+    // phân tích cũng không bị ghi đè. CV không có mục tiêu thì giữ nguyên giá trị cũ
+    if (parsed.objective) {
+      const { count } = await tx.candidateProfile.updateMany({
+        where: { id: profile.id, OR: [{ objective: null }, { objective: '' }] },
+        data: { objective: parsed.objective },
+      });
+      if (count === 0) objectiveSkip = 'ô mục tiêu trong hồ sơ đã có nội dung sẵn (không ghi đè)';
+    } else {
+      objectiveSkip = explainMissingObjective(cv.rawText, mode, Boolean(profile.objective && profile.objective.trim()));
+    }
+
+    // Không trả đường dẫn file ảnh đại diện ra ngoài
+    const updatedProfile = await tx.candidateProfile.findUnique({
+      where: { id: profile.id },
+      omit: { avatarPath: true },
+    });
 
     // 4. Parse thành công: CV ở COMPLETED, xóa lỗi cũ, ghi thời điểm phân tích.
     // Nằm trong cùng transaction nên chỉ ghi khi toàn bộ dữ liệu bóc tách đã lưu xong
@@ -469,6 +507,12 @@ async function parseAndSave(userId, cv) {
       parserErrors: parsed.errors,
     };
   });
+
+  // Không ghi nội dung CV ra log, chỉ mã CV và lý do
+  if (objectiveSkip) {
+    console.info(`[CV] CV ${cv.id}: không điền mục tiêu nghề nghiệp vì ${objectiveSkip}.`);
+  }
+  return result;
 }
 
 module.exports = {

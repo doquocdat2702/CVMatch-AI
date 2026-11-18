@@ -18,6 +18,7 @@ function emptyResult() {
   return {
     fullName: null,
     headline: null,
+    objective: null,
     skills: [],
     experiences: [],
     educations: [],
@@ -38,11 +39,14 @@ const SYSTEM_PROMPT = [
   '   copy đúng từng chữ, không diễn giải lại, không dịch, không rút gọn.',
   '5. Ngày tháng theo định dạng "YYYY-MM-DD" hoặc "YYYY-MM"; không rõ thì để null.',
   '   Công việc đang làm thì endDate = null.',
+  '6. "objective" là đoạn mục tiêu nghề nghiệp / giới thiệu bản thân, TRÍCH NGUYÊN VĂN từ CV (tối đa 1000 ký tự);',
+  '   CV không có đoạn này thì null, không tự viết.',
   '',
   'Cấu trúc JSON phải trả về đúng như sau:',
   '{',
   '  "fullName": string | null,',
   '  "headline": string | null,',
+  '  "objective": string | null,',
   '  "skills": [{ "rawName": string, "evidence": string }],',
   '  "experiences": [{ "position": string, "companyName": string, "startDate": string | null,',
   '                    "endDate": string | null, "description": string | null, "evidence": string }],',
@@ -60,6 +64,7 @@ const RESPONSE_SCHEMA = {
   properties: {
     fullName: NULLABLE_TEXT,
     headline: NULLABLE_TEXT,
+    objective: NULLABLE_TEXT,
     skills: {
       type: 'ARRAY',
       items: {
@@ -101,7 +106,7 @@ const RESPONSE_SCHEMA = {
       },
     },
   },
-  required: ['fullName', 'headline', 'skills', 'experiences', 'educations'],
+  required: ['fullName', 'headline', 'objective', 'skills', 'experiences', 'educations'],
 };
 
 // Ghép phần section đã tách được bằng rule để LLM bám sát bố cục CV
@@ -170,6 +175,7 @@ function normalizeResult(parsed) {
 
   result.fullName = toTextOrNull(parsed.fullName);
   result.headline = toTextOrNull(parsed.headline);
+  result.objective = toTextOrNull(parsed.objective);
 
   if (Array.isArray(parsed.skills)) {
     result.skills = parsed.skills

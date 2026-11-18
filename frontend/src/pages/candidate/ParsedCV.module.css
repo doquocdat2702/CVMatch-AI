@@ -14,30 +14,16 @@
   margin: 0;
 }
 
-/* ===== Dòng nhắc đầu trang ===== */
+/* ===== Dòng nhắc đầu trang (T35j: một câu duy nhất) ===== */
 
 .reminder {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-bottom: var(--space-3);
+  margin: 0 0 var(--space-6);
   padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
   color: var(--color-primary-soft-text);
   background-color: var(--color-primary-soft);
   border-radius: var(--radius-sm);
-}
-
-.reminderText {
-  margin: 0;
-  font-size: var(--text-sm);
-  line-height: var(--leading-sm);
-}
-
-.legend {
-  margin: 0 0 var(--space-6);
-  font-size: var(--text-xs);
-  line-height: var(--leading-xs);
-  color: var(--color-text-muted);
 }
 
 /* ===== Mỗi nhóm ===== */
@@ -58,6 +44,86 @@
 /* Bỏ margin mặc định của h2 (index.css) để thẳng hàng với nút "Thêm thủ công" */
 .sectionHeader > h2 {
   margin: 0;
+}
+
+.sectionActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* ===== Bảng kỹ năng gọn (T35j) ===== */
+
+.skillGroup + .skillGroup {
+  margin-top: var(--space-5);
+}
+
+/* Tiêu đề nhóm: font giao diện đậm, kèm số mục */
+.skillGroupTitle {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.skillTableWrap {
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.skillTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+}
+
+.skillTable th {
+  padding: var(--space-2) var(--space-4);
+  font-weight: var(--weight-semibold);
+  text-align: left;
+  white-space: nowrap;
+  background-color: var(--color-bg);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.skillTable th:first-child {
+  border-top-left-radius: var(--radius-md);
+}
+
+.skillTable th:last-child {
+  border-top-right-radius: var(--radius-md);
+}
+
+/* Dòng thấp: đệm dọc 8px */
+.skillTable td {
+  padding: var(--space-2) var(--space-4);
+  vertical-align: middle;
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.skillTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.skillCell {
+  width: 100%;
+  min-width: 0;
+}
+
+.skillCell .title {
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+}
+
+.skillTable .actions {
+  justify-content: flex-end;
+}
+
+.alignRight {
+  text-align: right;
 }
 
 .list {
@@ -237,6 +303,61 @@
   .badges {
     justify-content: flex-start;
   }
+
+  /* Bảng kỹ năng thành thẻ xếp dọc: mỗi dòng một khối, ô Nguồn / Trạng thái có nhãn nhỏ, thao tác ở cuối */
+  .skillTable thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  .skillTable,
+  .skillTable tbody,
+  .skillTable tr,
+  .skillTable td {
+    display: block;
+    width: auto;
+  }
+
+  .skillTable tr {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: var(--border-width) solid var(--color-border);
+  }
+
+  .skillTable tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .skillTable td {
+    padding: var(--space-1) 0;
+    border-bottom: none;
+  }
+
+  .skillTable td[data-label] {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-right: var(--space-4);
+  }
+
+  .skillTable td[data-label]::before {
+    content: attr(data-label);
+    font-size: var(--text-xs);
+    line-height: var(--leading-xs);
+    color: var(--color-text-muted);
+  }
+
+  .skillTable .alignRight {
+    text-align: left;
+  }
+
+  .skillTable .actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
 }
 
 /* ===== Khung "Hệ thống phân tích CV của bạn như thế nào" (T35g) ===== */
@@ -288,12 +409,6 @@
   line-height: var(--leading-sm);
 }
 
-.guideNote {
-  margin: 0;
-  font-size: var(--text-sm);
-  line-height: var(--leading-sm);
-  color: var(--color-text-muted);
-}
 
 @media (max-width: 900px) {
   .guideSummary {

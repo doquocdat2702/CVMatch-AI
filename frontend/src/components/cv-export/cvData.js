@@ -2,6 +2,15 @@
 // Hàm thuần: không dùng React, không dùng trình duyệt, không gọi API. Template chỉ đọc kết quả
 // buildCVData, nên sau này backend có thể dùng lại cùng hàm và cùng template để sinh CV.
 import { formatMonthYear } from '../../utils/format'
+import { getInitials } from '../../utils/initials'
+
+// Mô tả kinh nghiệm thành các gạch đầu dòng (mẫu Chuyên nghiệp, T35k): mỗi dòng một ý, bỏ ký hiệu đầu dòng có sẵn
+function toBulletLines(text) {
+  return String(text || '')
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^\s*[-•*+–]\s*/, '').trim())
+    .filter(Boolean)
+}
 
 function formatPeriod(startDate, endDate) {
   const start = formatMonthYear(startDate)
@@ -38,10 +47,11 @@ function uniqueSkillNames(skills) {
 // profile: dữ liệu GET /candidates/me kèm email của tài khoản (API hồ sơ không có email).
 // Giữ cả mục chưa xác nhận, không lọc bỏ.
 export function buildCVData(profile) {
+  // type để mẫu Chuyên nghiệp gắn icon và tự sắp thứ tự; hai mẫu cũ chỉ đọc label / value như trước
   const contacts = [
-    { label: 'Email', value: profile.email },
-    { label: 'Điện thoại', value: profile.phone },
-    { label: 'Địa chỉ', value: profile.address },
+    { type: 'email', label: 'Email', value: profile.email },
+    { type: 'phone', label: 'Điện thoại', value: profile.phone },
+    { type: 'address', label: 'Địa chỉ', value: profile.address },
   ].filter((contact) => contact.value)
 
   const experiences = [...(profile.experiences || [])].sort(byStartDateDesc).map((experience) => ({
@@ -50,6 +60,7 @@ export function buildCVData(profile) {
     companyName: experience.companyName,
     period: formatPeriod(experience.startDate, experience.endDate),
     description: experience.description || '',
+    descriptionLines: toBulletLines(experience.description),
   }))
 
   const educations = [...(profile.educations || [])].sort(byStartDateDesc).map((education) => ({
@@ -62,6 +73,11 @@ export function buildCVData(profile) {
   return {
     fullName: profile.fullName || '',
     headline: profile.headline || '',
+    // T35k: mục tiêu nghề nghiệp (giữ xuống dòng), ảnh đại diện dạng data URI để bản in luôn có ảnh,
+    // chữ viết tắt khi chưa có ảnh
+    objective: (profile.objective || '').trim(),
+    avatar: profile.avatar || null,
+    initials: getInitials(profile.fullName, profile.email),
     contacts,
     skills: uniqueSkillNames(profile.skills || []),
     experiences,

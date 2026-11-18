@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { getApplicationDetail, getMyApplications, withdrawApplication } from '../../api/application.api'
+import { getMyApplications, withdrawApplication } from '../../api/application.api'
 import ApplicationProgress from '../../components/application/ApplicationProgress'
 import Badge from '../../components/common/Badge'
 import Button from '../../components/common/Button'
@@ -10,7 +10,6 @@ import Pagination from '../../components/common/Pagination'
 import Select from '../../components/common/Select'
 import CvViewButton from '../../components/cv/CvViewButton'
 import PageHeader from '../../components/layout/PageHeader'
-import RequirementEvidenceMatrix from '../../components/matching/RequirementEvidenceMatrix'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import { getErrorMessage } from '../../utils/apiError'
 import { formatDate, formatNumber, formatRelative } from '../../utils/format'
@@ -19,86 +18,6 @@ import { paginate, readPage, withPage } from '../../utils/pagination'
 import styles from './MyApplications.module.css'
 
 const STATUSES = ['APPLIED', 'REVIEWING', 'ACCEPTED', 'REJECTED']
-
-// "x/y yêu cầu có bằng chứng (z%)"; job chưa có yêu cầu thì nói rõ thay vì "0/0 (0%)"
-function formatCoverage(supported, total, coverage) {
-  if (!total) return 'Tin tuyển dụng chưa có yêu cầu để đối chiếu'
-  return `${supported}/${total} yêu cầu có bằng chứng (${formatNumber(coverage)}%)`
-}
-
-// Modal xem lại ma trận của một đơn. Chỉ được render khi đang mở, nên mỗi lần mở là tải lại từ đầu.
-// Ma trận tính LẠI theo hồ sơ hiện tại; coverage lúc nộp là % backend đã lưu khi nộp đơn.
-function MatrixModal({ application, onClose }) {
-  const [detail, setDetail] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    let ignore = false
-    getApplicationDetail(application.id)
-      .then((result) => {
-        if (!ignore) setDetail(result.data)
-      })
-      .catch((err) => {
-        if (!ignore) setError(getErrorMessage(err, 'Không tải được kết quả đối chiếu.'))
-      })
-      .finally(() => {
-        if (!ignore) setLoading(false)
-      })
-    return () => {
-      ignore = true
-    }
-  }, [application.id])
-
-  return (
-    <Modal
-      open
-      wide
-      onClose={onClose}
-      title={`Đối chiếu: ${application.job.title}`}
-      footer={
-        <>
-          <Link className={styles.footerLink} to={`/candidate/recommended-jobs/${application.job.id}`}>
-            Mở trang chi tiết đối chiếu
-          </Link>
-          <Button variant="secondary" onClick={onClose}>
-            Đóng
-          </Button>
-        </>
-      }
-    >
-      {loading && <Loading text="Đang đối chiếu..." />}
-      {!loading && error && (
-        <p className={styles.alertError} role="alert">
-          {error}
-        </p>
-      )}
-      {!loading && detail && (
-        <div className={styles.matrixBody}>
-          <div className={styles.coverageSummary}>
-            <p className={styles.coverageNow}>
-              Hiện tại: {formatCoverage(detail.supported, detail.total, detail.coverage)}
-            </p>
-            <p className={styles.muted}>
-              Lúc ứng tuyển:{' '}
-              {detail.coverageAtApply === null || detail.coverageAtApply === undefined
-                ? 'tin tuyển dụng chưa có yêu cầu để đối chiếu'
-                : `${formatNumber(detail.coverageAtApply)}% yêu cầu có bằng chứng`}
-            </p>
-            <p className={styles.muted}>
-              Kết quả tính theo hồ sơ hiện tại của bạn nên có thể khác lúc ứng tuyển.
-            </p>
-          </div>
-          <RequirementEvidenceMatrix
-            matrix={detail.matrix}
-            note={detail.note}
-            emptyText={detail.message || 'Tin tuyển dụng chưa có yêu cầu để đối chiếu'}
-          />
-        </div>
-      )}
-    </Modal>
-  )
-}
 
 function MyApplications() {
   useDocumentTitle('Đơn ứng tuyển')
@@ -114,8 +33,7 @@ function MyApplications() {
   const [statusFilter, setStatusFilter] = useState('')
   const [notice, setNotice] = useState(null)
 
-  // Đơn đang xem ma trận / đang chờ xác nhận rút
-  const [matrixTarget, setMatrixTarget] = useState(null)
+  // Đơn đang chờ xác nhận rút
   const [withdrawTarget, setWithdrawTarget] = useState(null)
   const [withdrawing, setWithdrawing] = useState(false)
   const [withdrawError, setWithdrawError] = useState('')
@@ -231,7 +149,8 @@ function MyApplications() {
 
         <div className={styles.cardBody}>
           <ApplicationProgress status={application.status} />
-          {/* Backend chỉ lưu % lúc nộp (không lưu số yêu cầu), xem đủ "x/y" trong ma trận */}
+          {/* Backend chỉ lưu % lúc nộp (Application.coverage), không lưu số yêu cầu x/y nên giữ dạng % (T35j A5).
+              Số x/y hiện tại xem ở trang Chi tiết đối chiếu */}
           <p className={styles.coverage}>
             {application.coverage === null || application.coverage === undefined
               ? 'Lúc ứng tuyển: tin tuyển dụng chưa có yêu cầu để đối chiếu'
@@ -240,12 +159,10 @@ function MyApplications() {
         </div>
 
         <div className={styles.cardActions}>
+          {/* T35j: một nút duy nhất, mở trang Chi tiết đối chiếu (thay cho hộp bảng đối chiếu + link riêng) */}
           <div className={styles.actionGroup}>
-            <Button variant="secondary" size="sm" onClick={() => setMatrixTarget(application)}>
-              Xem bảng đối chiếu
-            </Button>
             <Link className={styles.linkButton} to={`/candidate/recommended-jobs/${application.job.id}`}>
-              Chi tiết đối chiếu
+              Xem đối chiếu<span className={styles.srOnly}>: {application.job.title}</span>
             </Link>
           </div>
           {/* Chỉ rút được khi nhà tuyển dụng chưa xem xét */}
@@ -278,7 +195,6 @@ function MyApplications() {
     content = (
       <div className={styles.empty}>
         <p className={styles.emptyTitle}>Bạn chưa ứng tuyển vị trí nào.</p>
-        <p className={styles.emptyText}>Đơn bạn gửi sẽ hiện ở đây cùng trạng thái xét duyệt.</p>
         <Link className={styles.primaryLink} to="/">
           Xem việc làm
         </Link>
@@ -320,15 +236,13 @@ function MyApplications() {
         <div className={styles.pagination}>
           <Pagination page={currentPage} totalPages={totalPages} onChange={handlePageChange} />
         </div>
-        {/* Coverage chỉ là chỉ số đối chiếu, luôn kèm câu nhắc của API */}
-        {data.note && <p className={styles.note}>{data.note}</p>}
       </>
     )
   }
 
   return (
     <>
-      <PageHeader title="Đơn ứng tuyển" description="Theo dõi trạng thái các đơn bạn đã gửi." />
+      <PageHeader title="Đơn ứng tuyển" />
 
       {notice && (
         <p className={styles.alertSuccess} role="status">
@@ -337,8 +251,6 @@ function MyApplications() {
       )}
 
       {content}
-
-      {matrixTarget && <MatrixModal application={matrixTarget} onClose={() => setMatrixTarget(null)} />}
 
       <Modal
         open={withdrawTarget !== null}

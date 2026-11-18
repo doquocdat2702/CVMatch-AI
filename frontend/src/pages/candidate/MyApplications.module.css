@@ -54,10 +54,10 @@
   min-width: 0;
 }
 
-/* Tên tin serif như thẻ tin ở trang chủ; h2 trong thẻ nhỏ hơn h2 chung */
+/* Tên tin: font giao diện đậm như thẻ tin ở trang chủ (T35j); h2 trong thẻ nhỏ hơn h2 chung */
 .jobTitle {
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-lg);
   line-height: var(--leading-lg);
   overflow-wrap: anywhere;
@@ -155,23 +155,6 @@
   background-color: var(--color-hover);
 }
 
-/* Link ở chân modal, cao bằng nút Đóng bên cạnh */
-.footerLink {
-  display: inline-flex;
-  align-items: center;
-  height: var(--control-height);
-  margin-right: auto;
-  font-size: var(--text-sm);
-  line-height: var(--leading-sm);
-  font-weight: var(--weight-medium);
-  color: var(--color-primary);
-}
-
-.footerLink:focus-visible {
-  outline: var(--focus-ring-width) solid var(--color-primary);
-  outline-offset: var(--focus-ring-offset);
-}
-
 .muted {
   color: var(--color-text-muted);
 }
@@ -183,38 +166,6 @@
 
 .pagination:empty {
   display: none;
-}
-
-/* Câu nhắc coverage của API: chữ nhỏ màu Chì dưới danh sách */
-.note {
-  margin: var(--space-3) 0 0;
-  font-size: var(--text-xs);
-  line-height: var(--leading-xs);
-  color: var(--color-text-muted);
-}
-
-/* ===== Modal ma trận ===== */
-
-.matrixBody {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.coverageSummary {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.coverageSummary > p {
-  margin: 0;
-  font-size: var(--text-sm);
-  line-height: var(--leading-sm);
-}
-
-.coverageNow {
-  font-weight: var(--weight-semibold);
 }
 
 .modalText {

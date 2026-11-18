@@ -9,7 +9,7 @@
 }
 
 .header {
-  padding-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
   border-bottom: var(--border-accent-width) solid var(--color-primary);
 }
 
@@ -31,21 +31,35 @@
 }
 
 /* Cột trái hẹp (liên hệ, kỹ năng), cột phải rộng (kinh nghiệm, học vấn).
-   Tỉ lệ 2:3 để email thông thường nằm gọn một dòng ở cột trái khi in A4 */
+   T35l: tỉ lệ 1:2 (trước là 2:3) vì kỹ năng đã thành thẻ nằm ngang, cột trái không cần rộng; cột phải rộng hơn thì
+   mô tả kinh nghiệm ít xuống dòng, hồ sơ cỡ trung bình gọn một trang A4. Email thông thường (~27 ký tự) vẫn nằm một
+   dòng ở cột trái; email dài hơn thì xuống dòng (overflow-wrap ở .contactValue) */
 .columns {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
-  gap: var(--space-5);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: var(--space-4);
   margin-top: var(--space-4);
 }
 
 .side {
-  padding-right: var(--space-5);
+  padding-right: var(--space-4);
   border-right: var(--border-width) solid var(--color-border);
 }
 
+/* Mục tiêu nghề nghiệp (T35k): một khối ngang cả trang giữa phần đầu và hai cột */
+.objectiveSection {
+  margin-top: var(--space-3);
+}
+
+.objective {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* T35l: khoảng cách giữa các mục gọn lại để hồ sơ cỡ trung bình nằm trong một trang A4 */
 .section + .section {
-  margin-top: var(--space-5);
+  margin-top: var(--space-4);
 }
 
 .sectionTitle {
@@ -76,13 +90,24 @@
   overflow-wrap: anywhere;
 }
 
+/* Kỹ năng (T35l): thẻ nằm ngang, tự xuống dòng, viền mảnh không tô nền (mẫu này không tô nền để in không tốn mực) */
 .skills {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: var(--space-1);
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.skill {
+  max-width: 100%;
+  padding: 0 var(--space-2);
+  font-size: var(--text-xs);
+  line-height: var(--leading-sm);
+  overflow-wrap: anywhere;
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
 }
 
 /* Một mục kinh nghiệm / học vấn không bị ngắt giữa hai trang khi in */
@@ -92,7 +117,7 @@
 }
 
 .entry + .entry {
-  margin-top: var(--space-3);
+  margin-top: var(--space-2);
 }
 
 .entryTitle {

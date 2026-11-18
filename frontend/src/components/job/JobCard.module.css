@@ -36,10 +36,10 @@
   border-color: var(--color-primary);
 }
 
-/* Tiêu đề tin: serif như tiêu đề hồ sơ. Cỡ 18px để 2 cột vẫn đủ chỗ cho tên vị trí dài */
+/* Tiêu đề tin: font giao diện đậm (T35j, trước là serif). Cỡ 18px để 2 cột vẫn đủ chỗ cho tên vị trí dài */
 .title {
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-lg);
   line-height: var(--leading-lg);
   font-weight: var(--weight-semibold);
@@ -76,7 +76,7 @@
   font-weight: var(--weight-medium);
 }
 
-/* Đoạn đầu JD, tối đa 2 dòng, phần thừa thành "..." */
+/* Đoạn đầu JD, 1 dòng (T35j), phần thừa thành "..." */
 .summary {
   display: -webkit-box;
   margin: 0;
@@ -85,8 +85,8 @@
   line-height: var(--leading-sm);
   color: var(--color-text-muted);
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
 }
 
 /* Chân thẻ đẩy xuống đáy để ngày đăng của các thẻ cùng hàng thẳng nhau */

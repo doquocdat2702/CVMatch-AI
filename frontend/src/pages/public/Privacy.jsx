@@ -27,7 +27,8 @@ function Privacy() {
         <h2>1. Dữ liệu chúng tôi thu thập</h2>
         <ul className={styles.list}>
           <li>
-            Thông tin tài khoản: email, mật khẩu, họ tên; số điện thoại, địa chỉ và tiêu đề hồ sơ nếu bạn tự nhập.
+            Thông tin tài khoản: email, mật khẩu, họ tên; số điện thoại, địa chỉ, tiêu đề hồ sơ, mục tiêu nghề nghiệp
+            và ảnh đại diện nếu bạn tự nhập hoặc tải lên.
           </li>
           <li>CV bạn tải lên, ở dạng file PDF hoặc DOCX.</li>
           <li>

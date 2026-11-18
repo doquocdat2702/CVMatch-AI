@@ -261,13 +261,11 @@ function ApplyAction({ jobId, jobTitle, isOpen, autoOpen = false, onAutoOpened, 
             </fieldset>
           )}
 
-          {cvs.items.length > 0 && (
-            // aria-live: đổi CV thì trình đọc màn hình đọc lại câu "CV này khác..." khi câu đó hiện ra
-            <p className={styles.attachNote} aria-live="polite">
-              CV được chọn sẽ gửi kèm đơn ứng tuyển. Kết quả đối chiếu dựa trên hồ sơ hiện tại của bạn.
-              {selectedDiffers && ' Lưu ý: hồ sơ của bạn chưa được cập nhật từ CV này.'}
-            </p>
-          )}
+          {/* T35j (D3): chỉ còn câu cảnh báo khi CV đang chọn khác CV dùng cho hồ sơ (thiếu câu này dễ hiểu sai
+              kết quả đối chiếu). aria-live: đổi CV thì trình đọc màn hình đọc câu này khi nó hiện ra */}
+          <p className={styles.attachNote} aria-live="polite">
+            {cvs.items.length > 0 && selectedDiffers && 'Hồ sơ của bạn chưa được cập nhật từ CV này.'}
+          </p>
 
           {analysedCv ? (
             // Đã có CV phân tích: "Tải CV mới" gọn một dòng, tải và phân tích xong thì tự chọn CV đó
@@ -282,7 +280,7 @@ function ApplyAction({ jobId, jobTitle, isOpen, autoOpen = false, onAutoOpened, 
               >
                 Tải CV mới
               </Button>
-              <span className={styles.uploadHint}>PDF hoặc DOCX, tối đa 5 MB. CV mới sẽ được phân tích để cập nhật hồ sơ.</span>
+              <span className={styles.uploadHint}>PDF hoặc DOCX, tối đa 5 MB.</span>
               {uploadStatus}
             </div>
           ) : (
@@ -290,9 +288,8 @@ function ApplyAction({ jobId, jobTitle, isOpen, autoOpen = false, onAutoOpened, 
             <div className={styles.uploadBox}>
               <p className={styles.uploadText}>
                 {cvs.items.length === 0
-                  ? 'Bạn chưa có CV. Tải CV lên để ứng tuyển.'
-                  : 'Bạn chưa có CV đã phân tích. Tải CV lên để ứng tuyển.'}{' '}
-                Nhận file PDF hoặc DOCX, tối đa 5 MB.
+                  ? 'Bạn chưa có CV. Tải CV dạng PDF hoặc DOCX, tối đa 5 MB.'
+                  : 'Bạn chưa có CV đã phân tích. Tải CV dạng PDF hoặc DOCX, tối đa 5 MB.'}
               </p>
               {fileInput}
               <Button

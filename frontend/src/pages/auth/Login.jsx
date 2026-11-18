@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import Logo from '../../components/layout/Logo'
 import { useAuth } from '../../hooks/useAuth'
 import { getErrorMessage } from '../../utils/apiError'
-import { APP_NAME } from '../../utils/appConfig'
 import { getRoleHome } from '../../utils/roles'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
+import AuthLayout from './AuthLayout'
 import styles from './Auth.module.css'
 
 // Chỉ nhận đường dẫn nội bộ ("/jobs/5"), không nhận "//site-khac.com" hay URL đầy đủ,
@@ -66,82 +65,68 @@ function Login() {
   }
 
   return (
-    <main className={styles.loginPage}>
-      {/* Khối điểm nhấn: chỉ trang đăng nhập và trang việc làm công khai được có */}
-      <section className={styles.brandPanel}>
-        <p className={styles.brandName}>{APP_NAME}</p>
-        <p className={styles.brandText}>Phân tích CV và đối chiếu với yêu cầu của từng vị trí tuyển dụng.</p>
-      </section>
+    <AuthLayout>
+      <h1 className={styles.title}>Đăng nhập</h1>
+      <p className={styles.subtitle}>Dành cho ứng viên, nhà tuyển dụng và quản trị viên.</p>
 
-      <div className={styles.formPanel}>
-        <div className={styles.formInner}>
-          {/* Logo trên nền Giấy (khối Xanh mực giữ tên lớn): nhận diện + đường quay về trang chủ */}
-          <div className={styles.formLogo}>
-            <Logo />
-          </div>
-          <h1 className={styles.title}>Đăng nhập</h1>
-          <p className={styles.subtitle}>Dành cho ứng viên, nhà tuyển dụng và quản trị viên.</p>
+      {notice && !error && <p className={styles.alertSuccess}>{notice}</p>}
+      {error && (
+        <p className={styles.alertError} role="alert">
+          {error}
+        </p>
+      )}
 
-          {notice && !error && <p className={styles.alertSuccess}>{notice}</p>}
-          {error && (
-            <p className={styles.alertError} role="alert">
-              {error}
-            </p>
-          )}
-
-          <form className={styles.form} onSubmit={handleSubmit} noValidate>
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="login-email">
-                Email
-              </label>
-              <input
-                id="login-email"
-                className={styles.input}
-                type="email"
-                name="email"
-                autoComplete="email"
-                value={form.email}
-                onChange={handleChange}
-                disabled={submitting}
-              />
-            </div>
-
-            <div className={styles.field}>
-              <div className={styles.labelRow}>
-                <label className={styles.label} htmlFor="login-password">
-                  Mật khẩu
-                </label>
-                <Link className={styles.smallLink} to="/forgot-password">
-                  Quên mật khẩu?
-                </Link>
-              </div>
-              <input
-                id="login-password"
-                className={styles.input}
-                type="password"
-                name="password"
-                autoComplete="current-password"
-                value={form.password}
-                onChange={handleChange}
-                disabled={submitting}
-              />
-            </div>
-
-            <button className={styles.button} type="submit" disabled={submitting}>
-              {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
-            </button>
-          </form>
-
-          <p className={styles.note}>
-            Chưa có tài khoản ứng viên?{' '}
-            {/* Chuyển tiếp trang cần quay lại để ứng viên mới đăng ký xong cũng về đúng job */}
-            <Link className={styles.link} to="/register" state={from ? { from } : undefined}>
-              Đăng ký
-            </Link>
-          </p>
+      <form className={styles.form} onSubmit={handleSubmit} noValidate>
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="login-email">
+            Email
+          </label>
+          <input
+            id="login-email"
+            className={styles.input}
+            type="email"
+            name="email"
+            autoComplete="email"
+            value={form.email}
+            onChange={handleChange}
+            disabled={submitting}
+          />
         </div>
-      </div>
-    </main>
+
+        <div className={styles.field}>
+          <div className={styles.labelRow}>
+            <label className={styles.label} htmlFor="login-password">
+              Mật khẩu
+            </label>
+            <Link className={styles.smallLink} to="/forgot-password">
+              Quên mật khẩu?
+            </Link>
+          </div>
+          <input
+            id="login-password"
+            className={styles.input}
+            type="password"
+            name="password"
+            autoComplete="current-password"
+            value={form.password}
+            onChange={handleChange}
+            disabled={submitting}
+          />
+        </div>
+
+        <button className={styles.button} type="submit" disabled={submitting}>
+          {submitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+        </button>
+      </form>
+
+      <p className={styles.note}>
+        Chưa có tài khoản ứng viên?{' '}
+        {/* Chuyển tiếp trang cần quay lại để ứng viên mới đăng ký xong cũng về đúng job */}
+        <Link className={styles.link} to="/register" state={from ? { from } : undefined}>
+          Đăng ký
+        </Link>
+      </p>
+    </AuthLayout>
   )
 }
 

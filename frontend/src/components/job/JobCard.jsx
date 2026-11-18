@@ -2,12 +2,14 @@ import { Link } from 'react-router-dom'
 import { formatPostedAt } from '../../utils/format'
 import { summarizeJobDescription } from '../../utils/jobText'
 import Badge from '../common/Badge'
+import SkillTags from './SkillTags'
 import styles from './JobCard.module.css'
 
 // Thẻ một tin tuyển dụng (T35f), dùng ở trang chủ và mục "Vị trí khác đang tuyển" của trang chi tiết tin.
 // Cả thẻ bấm được nhưng chỉ có MỘT link: link ở tiêu đề phủ kín thẻ bằng ::after, tên link chính là tên tin.
-// Thông tin chỉ lấy trường có thật của Job: tiêu đề, địa điểm, đoạn đầu JD, ngày đăng.
-//   job: { id, title, location, description, createdAt }; applied: ứng viên đã nộp đơn tin này
+// Thông tin chỉ lấy trường có thật của Job: tiêu đề, địa điểm, đoạn đầu JD (1 dòng từ T35j), ngày đăng,
+// cộng hàng nhãn kỹ năng chính (T35j: job.skills do API trả, tối đa 4 nhãn + "+n").
+//   job: { id, title, location, description, createdAt, skills }; applied: ứng viên đã nộp đơn tin này
 //   headingLevel: 2 ở trang chủ, 3 khi thẻ nằm dưới một h2 (trang chi tiết tin)
 function JobCard({ job, applied = false, headingLevel = 2 }) {
   const Heading = headingLevel === 3 ? 'h3' : 'h2'
@@ -21,6 +23,7 @@ function JobCard({ job, applied = false, headingLevel = 2 }) {
         </Link>
       </Heading>
       {job.location && <p className={styles.meta}>{job.location}</p>}
+      <SkillTags skills={job.skills} max={4} />
       {summary && <p className={styles.summary}>{summary}</p>}
       <div className={styles.footer}>
         <span className={styles.posted}>{formatPostedAt(job.createdAt)}</span>

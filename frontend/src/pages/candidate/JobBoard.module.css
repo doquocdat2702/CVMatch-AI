@@ -49,9 +49,12 @@
   overflow-wrap: anywhere;
 }
 
+/* "N vị trí đang tuyển": 21px (T35j, trước là 16px), Xanh nhạt trên Xanh mực (4.99:1, chữ lớn đậm) */
 .heroCount {
-  margin: var(--space-2) 0 0;
-  font-weight: var(--weight-medium);
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-xl);
+  line-height: var(--leading-xl);
+  font-weight: var(--weight-semibold);
   color: var(--color-primary-soft);
 }
 
@@ -119,6 +122,62 @@
 .searchButton:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-primary);
   outline-offset: var(--focus-ring-offset);
+}
+
+/* Hàng "Tìm nhanh:" (T35j): nhãn Xanh nhạt + các nút kỹ năng viền Xanh nhạt, chữ trắng (5.69:1).
+   Đang chọn: nền Giấy, chữ Xanh mực (5.69:1). Nút cao 32px, dưới 900px cao 44px */
+.quick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.quickLabel {
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary-soft);
+}
+
+.quickList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.quickButton {
+  min-height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-on-primary);
+  background-color: transparent;
+  border: var(--border-width) solid var(--color-primary-soft);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color var(--duration-base) ease;
+}
+
+.quickButton:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.quickButton:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-on-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.quickSelected,
+.quickSelected:hover {
+  color: var(--color-primary);
+  background-color: var(--color-surface);
+  border-color: var(--color-surface);
 }
 
 /* ===== Danh sách ===== */
@@ -255,6 +314,94 @@
   border-radius: var(--radius-sm);
 }
 
+/* ===== Quy trình ứng tuyển (T35j) ===== */
+
+/* Tờ Giấy viền mảnh dưới danh sách; 4 bước thành 4 cột trên máy tính, xếp dọc dưới 900px */
+.process {
+  margin-top: var(--space-7);
+  padding: var(--space-6);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.processTitle {
+  margin: 0 0 var(--space-5);
+}
+
+/* Một cách đánh số duy nhất: tắt số mặc định của <ol>, dùng counter riêng vẽ ô số ở ::before */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: process-step;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+  font-weight: var(--weight-medium);
+  overflow-wrap: anywhere;
+  counter-increment: process-step;
+}
+
+/* Số thứ tự: ô vuông bo 4px nền Xanh nhạt, chữ #0A4FA0 (6.98:1), font giao diện đậm.
+   Dòng thứ hai (alt rỗng) để trình đọc màn hình không đọc lại số, vì <ol> đã báo thứ tự; trình duyệt không hỗ trợ thì dùng dòng đầu */
+.step::before {
+  content: counter(process-step);
+  content: counter(process-step) / '';
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height);
+  height: var(--control-height);
+  font-size: var(--text-lg);
+  line-height: var(--leading-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary-soft-text);
+  background-color: var(--color-primary-soft);
+  border-radius: var(--radius-sm);
+}
+
+.processFooter {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+/* Link dạng nút chính */
+.processAction {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-on-primary);
+  text-decoration: none;
+  background-color: var(--color-primary);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--duration-base) ease;
+}
+
+.processAction:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.processAction:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
 /* Chỉ dành cho trình đọc màn hình */
 .srOnly {
   position: absolute;
@@ -294,5 +441,31 @@
 
   .searchButton {
     margin-top: var(--space-1);
+  }
+
+  .heroCount {
+    font-size: var(--text-lg);
+    line-height: var(--leading-lg);
+  }
+
+  .quickButton,
+  .processAction {
+    min-height: var(--touch-target);
+  }
+
+  .process {
+    margin-top: var(--space-6);
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .steps {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+
+  /* Điện thoại: số thứ tự bên trái, chữ bên phải, căn giữa theo ô số */
+  .step {
+    flex-direction: row;
+    align-items: center;
   }
 }

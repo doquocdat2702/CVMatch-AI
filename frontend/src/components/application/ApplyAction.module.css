@@ -145,6 +145,11 @@
   color: var(--color-text-muted);
 }
 
+/* Không có cảnh báo (T35j): giữ thẻ cho aria-live, chỉ chừa khoảng cách nhỏ */
+.attachNote:empty {
+  margin: 0 0 var(--space-3);
+}
+
 /* Tải CV mới khi đã có CV phân tích: nút + gợi ý trên một dòng, hẹp thì xuống dòng */
 .uploadRow {
   display: flex;

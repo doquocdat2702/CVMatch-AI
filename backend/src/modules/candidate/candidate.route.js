@@ -3,6 +3,7 @@ const candidateController = require('./candidate.controller');
 const itemsController = require('./candidate.items.controller');
 const authenticate = require('../../middleware/auth.middleware');
 const { authorize } = require('../../middleware/rbac.middleware');
+const { uploadAvatar } = require('../../middleware/avatar-upload.middleware');
 
 const router = express.Router();
 
@@ -12,6 +13,9 @@ const onlyCandidate = authorize('CANDIDATE');
 
 router.get('/me', onlyCandidate, candidateController.getMe);
 router.put('/me', onlyCandidate, candidateController.updateMe);
+// Ảnh đại diện (T35k, endpoint đã duyệt): kiểm role trước rồi mới nhận file
+router.post('/me/avatar', onlyCandidate, uploadAvatar, candidateController.uploadAvatar);
+router.delete('/me/avatar', onlyCandidate, candidateController.deleteAvatar);
 
 // Ứng viên tự sửa dữ liệu hệ thống phân tích ra
 router.post('/me/skills', onlyCandidate, itemsController.createSkill);

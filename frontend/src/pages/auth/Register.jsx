@@ -6,6 +6,7 @@ import { getErrorMessage } from '../../utils/apiError'
 import { getRoleHome } from '../../utils/roles'
 import { MIN_PASSWORD_LENGTH, isValidEmail } from '../../utils/validation'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
+import AuthLayout from './AuthLayout'
 import styles from './Auth.module.css'
 
 const EMPTY_FORM = { fullName: '', email: '', password: '', confirmPassword: '' }
@@ -106,64 +107,61 @@ function Register() {
   }
 
   return (
-    <main className={styles.page}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>Đăng ký tài khoản ứng viên</h1>
-        <p className={styles.subtitle}>Tạo tài khoản để tải CV và ứng tuyển vào các vị trí đang mở.</p>
+    <AuthLayout>
+      <h1 className={styles.title}>Đăng ký tài khoản ứng viên</h1>
 
-        {error && (
-          <p className={styles.alertError} role="alert">
-            {error}
-          </p>
-        )}
-
-        <form className={styles.form} onSubmit={handleSubmit} noValidate>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="register-fullName">
-              Họ và tên
-            </label>
-            <input type="text" autoComplete="name" {...inputProps('fullName')} />
-            {renderFieldError('fullName')}
-          </div>
-
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="register-email">
-              Email
-            </label>
-            <input type="email" autoComplete="email" {...inputProps('email')} />
-            {renderFieldError('email')}
-          </div>
-
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="register-password">
-              Mật khẩu
-            </label>
-            <input type="password" autoComplete="new-password" {...inputProps('password')} />
-            {renderFieldError('password')}
-          </div>
-
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="register-confirmPassword">
-              Xác nhận mật khẩu
-            </label>
-            <input type="password" autoComplete="new-password" {...inputProps('confirmPassword')} />
-            {renderFieldError('confirmPassword')}
-          </div>
-
-          <button className={styles.button} type="submit" disabled={submitting}>
-            {submitting ? 'Đang đăng ký...' : 'Đăng ký'}
-          </button>
-        </form>
-
-        <p className={styles.note}>
-          Đã có tài khoản?{' '}
-          <Link className={styles.link} to="/login" state={from ? { from } : undefined}>
-            Đăng nhập
-          </Link>
+      {error && (
+        <p className={styles.alertError} role="alert">
+          {error}
         </p>
-        <p className={styles.note}>Tài khoản nhà tuyển dụng do quản trị viên cấp, không đăng ký tại đây.</p>
-      </div>
-    </main>
+      )}
+
+      <form className={styles.form} onSubmit={handleSubmit} noValidate>
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="register-fullName">
+            Họ và tên
+          </label>
+          <input type="text" autoComplete="name" {...inputProps('fullName')} />
+          {renderFieldError('fullName')}
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="register-email">
+            Email
+          </label>
+          <input type="email" autoComplete="email" {...inputProps('email')} />
+          {renderFieldError('email')}
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="register-password">
+            Mật khẩu
+          </label>
+          <input type="password" autoComplete="new-password" {...inputProps('password')} />
+          {renderFieldError('password')}
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label} htmlFor="register-confirmPassword">
+            Xác nhận mật khẩu
+          </label>
+          <input type="password" autoComplete="new-password" {...inputProps('confirmPassword')} />
+          {renderFieldError('confirmPassword')}
+        </div>
+
+        <button className={styles.button} type="submit" disabled={submitting}>
+          {submitting ? 'Đang đăng ký...' : 'Đăng ký'}
+        </button>
+      </form>
+
+      <p className={styles.note}>
+        Đã có tài khoản?{' '}
+        <Link className={styles.link} to="/login" state={from ? { from } : undefined}>
+          Đăng nhập
+        </Link>
+      </p>
+      <p className={styles.note}>Tài khoản nhà tuyển dụng do quản trị viên cấp, không đăng ký tại đây.</p>
+    </AuthLayout>
   )
 }
 

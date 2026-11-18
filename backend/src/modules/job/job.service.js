@@ -1,4 +1,5 @@
 const prisma = require('../../config/prisma');
+const { normalizeText } = require('../ai/normalization/normalizer');
 
 function createError(message, statusCode) {
   const err = new Error(message);
@@ -88,7 +89,81 @@ async function createJob(userId, { title, description, location }) {
   });
 }
 
-// Danh sách công khai: chỉ job đang mở, phân trang + lọc keyword / location
+// ===== Kỹ năng của tin (T35j) =====
+
+// Số kỹ năng mỗi tin trả về (thẻ tin hiện 4 + "+n", trang chi tiết hiện đủ) và số kỹ năng "Tìm nhanh"
+const JOB_SKILL_LIMIT = 5;
+const TOP_SKILL_LIMIT = 6;
+// Từ khóa ngắn hơn thế chỉ khớp đúng tên / alias của Skill (như quy tắc khóa ngắn), không khớp một phần:
+// "C" không được khớp mọi kỹ năng có chữ c
+const SKILL_KEYWORD_MIN_CONTAINS = 3;
+const TYPE_ORDER = { REQUIRED: 0, PREFERRED: 1, OPTIONAL: 2 };
+
+// Tên Skill của nhiều tin trong MỘT truy vấn (không truy vấn theo từng tin): lấy từ JobRequirement có skillId,
+// Bắt buộc trước rồi Ưu tiên, Không bắt buộc, cùng loại thì theo thứ tự yêu cầu; bỏ trùng, tối đa JOB_SKILL_LIMIT.
+// Trả Map jobId -> [tên Skill]
+async function loadJobSkills(jobIds) {
+  const result = new Map(jobIds.map((id) => [id, []]));
+  if (jobIds.length === 0) return result;
+
+  const requirements = await prisma.jobRequirement.findMany({
+    where: { jobId: { in: jobIds }, skillId: { not: null } },
+    orderBy: { id: 'asc' },
+    select: { jobId: true, type: true, skill: { select: { name: true } } },
+  });
+  requirements.sort((a, b) => (TYPE_ORDER[a.type] ?? 3) - (TYPE_ORDER[b.type] ?? 3));
+
+  for (const requirement of requirements) {
+    const names = result.get(requirement.jobId);
+    if (names.length < JOB_SKILL_LIMIT && !names.includes(requirement.skill.name)) {
+      names.push(requirement.skill.name);
+    }
+  }
+  return result;
+}
+
+// Skill xuất hiện ở nhiều tin đang mở nhất (đếm mỗi tin một lần), bằng số tin thì theo tên
+async function loadTopSkills() {
+  const pairs = await prisma.jobRequirement.findMany({
+    where: { skillId: { not: null }, job: { isOpen: true } },
+    distinct: ['jobId', 'skillId'],
+    select: { skill: { select: { name: true } } },
+  });
+  const counts = new Map();
+  for (const pair of pairs) {
+    counts.set(pair.skill.name, (counts.get(pair.skill.name) || 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, TOP_SKILL_LIMIT)
+    .map(([name]) => name);
+}
+
+// Điều kiện "tin có yêu cầu gắn Skill khớp từ khóa". Alias lưu dạng không dấu, chữ thường, cách nhau bởi dấu phẩy
+// nên so thêm từ khóa đã chuẩn hóa (normalizeText). Từ khóa >= 3 ký tự: khớp một phần tên / alias;
+// ngắn hơn: chỉ khớp đúng tên hoặc đúng một alias trong danh sách
+function skillKeywordCondition(keyword) {
+  const forms = [...new Set([keyword, normalizeText(keyword)].filter(Boolean))];
+  const conditions = [];
+  for (const form of forms) {
+    if (form.length >= SKILL_KEYWORD_MIN_CONTAINS) {
+      conditions.push({ name: { contains: form } }, { aliases: { contains: form } });
+    } else {
+      conditions.push(
+        { name: form },
+        { aliases: form },
+        { aliases: { startsWith: `${form},` } },
+        { aliases: { endsWith: `,${form}` } },
+        { aliases: { contains: `,${form},` } }
+      );
+    }
+  }
+  return { requirements: { some: { skill: { OR: conditions } } } };
+}
+
+// Danh sách công khai: chỉ job đang mở, phân trang + lọc keyword / location.
+// keyword (T35j): khớp tiêu đề HOẶC tên / alias Skill trong yêu cầu của tin.
+// Mỗi tin trả thêm skills (tên Skill chính); response trả thêm topSkills cho hàng "Tìm nhanh" của trang chủ
 async function listOpenJobs({ page, limit, keyword, location } = {}) {
   let currentPage = Number(page);
   if (!Number.isInteger(currentPage) || currentPage <= 0) {
@@ -103,13 +178,14 @@ async function listOpenJobs({ page, limit, keyword, location } = {}) {
   const where = { isOpen: true };
 
   if (typeof keyword === 'string' && keyword.trim()) {
-    where.title = { contains: keyword.trim() };
+    const value = keyword.trim();
+    where.OR = [{ title: { contains: value } }, skillKeywordCondition(value)];
   }
   if (typeof location === 'string' && location.trim()) {
     where.location = { contains: location.trim() };
   }
 
-  const [total, items] = await Promise.all([
+  const [total, jobs, topSkills] = await Promise.all([
     prisma.job.count({ where }),
     prisma.job.findMany({
       where,
@@ -118,10 +194,15 @@ async function listOpenJobs({ page, limit, keyword, location } = {}) {
       take: pageSize,
       include: { company: { select: { id: true, name: true } } },
     }),
+    loadTopSkills(),
   ]);
+
+  const skillsByJob = await loadJobSkills(jobs.map((job) => job.id));
+  const items = jobs.map((job) => ({ ...job, skills: skillsByJob.get(job.id) }));
 
   return {
     items,
+    topSkills,
     pagination: {
       page: currentPage,
       limit: pageSize,
@@ -165,7 +246,9 @@ async function getJobById(jobId) {
     throw createError('Không tìm thấy tin tuyển dụng.', 404);
   }
 
-  return job;
+  // Kỹ năng chính của tin (T35j), cùng cách lấy với danh sách
+  const skillsByJob = await loadJobSkills([job.id]);
+  return { ...job, skills: skillsByJob.get(job.id) };
 }
 
 async function updateJob(user, jobId, { title, description, location }) {

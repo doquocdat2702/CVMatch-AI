@@ -1,4 +1,82 @@
+/* ===== Ảnh đại diện (T35k) ===== */
+
+/* Ảnh tròn bên trái, nút + gợi ý + lỗi bên phải; hẹp thì xuống hàng */
+.avatarRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  margin: 0 0 var(--space-5);
+}
+
+.avatarImage,
+.avatarInitials {
+  flex: none;
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  border-radius: var(--radius-full);
+}
+
+.avatarImage {
+  object-fit: cover;
+  border: var(--border-width) solid var(--color-border);
+}
+
+/* Chưa có ảnh: vòng tròn nền Xanh nhạt, chữ #0A4FA0 (6.98:1) như ô chữ viết tắt của khu Tài khoản */
+.avatarInitials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-2xl);
+  line-height: var(--leading-2xl);
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary-soft-text);
+  background-color: var(--color-primary-soft);
+}
+
+.avatarSide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.avatarActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.avatarHint {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+/* Lỗi ngay dưới nút: chữ đỏ, không khung (khối ảnh nhỏ, không chen hộp báo lỗi to) */
+.avatarError {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-danger-text);
+}
+
+.modalText {
+  margin: 0;
+}
+
 /* ===== Thông tin cá nhân ===== */
+
+/* Mục tiêu nghề nghiệp (T35k): chiếm cả hàng của lưới 2 cột, giữ xuống dòng như lúc nhập */
+.fullRow {
+  grid-column: 1 / -1;
+}
+
+.multiline {
+  max-width: var(--text-measure);
+  white-space: pre-line;
+}
 
 /* Chế độ xem: nhãn nhỏ màu Chì, giá trị bên dưới; máy tính 2 cột */
 .details {
@@ -37,6 +115,11 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+}
+
+/* Dòng nhắc thứ hai trong gợi ý của ô Mục tiêu nghề nghiệp (cỡ chữ và màu Chì kế thừa từ hint của Textarea) */
+.hintLine {
+  display: block;
 }
 
 .readonlyHint {
@@ -79,6 +162,14 @@
 
 .chipName {
   font-weight: var(--weight-medium);
+  overflow-wrap: anywhere;
+}
+
+/* Ghi chú trình độ trong ngoặc của tên trong CV ("cơ bản", "đang học"): chữ nhỏ màu Chì (T35j) */
+.chipNote {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
   overflow-wrap: anywhere;
 }
 
@@ -221,7 +312,8 @@
   }
 
   .guideLink,
-  .editLink {
+  .editLink,
+  .avatarActions > button {
     min-height: var(--touch-target);
   }
 }

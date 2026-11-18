@@ -338,7 +338,6 @@ function CVUpload() {
     listContent = (
       <div className={styles.empty}>
         <p className={styles.emptyTitle}>Bạn chưa có CV nào.</p>
-        <p className={styles.emptyText}>Tải CV lên để ứng tuyển nhanh và xem việc làm gợi ý theo hồ sơ.</p>
         <Button onClick={() => fileInputRef.current.click()} disabled={busy}>
           Tải CV lên
         </Button>
@@ -352,7 +351,6 @@ function CVUpload() {
     <>
       <PageHeader
         title="CV của tôi"
-        description="Tải CV lên và phân tích để cập nhật kỹ năng, kinh nghiệm, học vấn vào hồ sơ."
         actions={
           <Link className={styles.linkButton} to="/candidate/cvs/parsed">
             Kết quả phân tích CV

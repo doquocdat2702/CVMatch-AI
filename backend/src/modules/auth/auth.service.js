@@ -127,7 +127,9 @@ async function getMe(userId) {
   };
 
   if (user.candidateProfile) {
-    result.candidateProfile = user.candidateProfile;
+    // Không trả đường dẫn file ảnh đại diện (T35k); ảnh chỉ có ở GET /candidates/me
+    const { avatarPath: _avatarPath, ...candidateProfile } = user.candidateProfile;
+    result.candidateProfile = candidateProfile;
   }
   if (user.recruiterProfile) {
     result.recruiterProfile = user.recruiterProfile;

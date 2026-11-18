@@ -4,38 +4,17 @@ import { getMyProfile } from '../../api/candidate.api'
 import { getJobDetail } from '../../api/job.api'
 import { getMatchingDetail } from '../../api/matching.api'
 import ApplyAction from '../../components/application/ApplyAction'
-import Badge from '../../components/common/Badge'
 import Button from '../../components/common/Button'
 import Loading from '../../components/common/Loading'
+import JobDescription from '../../components/job/JobDescription'
+import CoverageBar from '../../components/matching/CoverageBar'
 import RequirementEvidenceMatrix from '../../components/matching/RequirementEvidenceMatrix'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import { getErrorMessage } from '../../utils/apiError'
-import { MATCH_STATUS_LABEL } from '../../utils/labels'
 import styles from './MatchingDetail.module.css'
 
-// Chú thích 3 trạng thái (T35g), viết theo đúng quy tắc của backend:
-// matcher.js resolveEvidence + evidence.finder.js (matchOneSkill, findExperienceEvidence, findEducationEvidence,
-// checkYearsRequirement). EXACT -> Có bằng chứng, PARTIAL -> Chưa chắc chắn, NONE -> Không tìm thấy
-const STATUS_RULES = [
-  {
-    status: 'SUPPORTED',
-    text:
-      'Hồ sơ có đúng kỹ năng, hoặc có trường, ngành, bằng cấp trùng với yêu cầu. ' +
-      'Nếu yêu cầu có số năm, kinh nghiệm liên quan phải đủ số năm đó.',
-  },
-  {
-    status: 'UNCERTAIN',
-    text:
-      'Hồ sơ có dấu hiệu liên quan nhưng chưa khớp trực tiếp, ví dụ kỹ năng ghi bằng tên khác, chỉ nhắc trong phần ' +
-      'kinh nghiệm, hoặc kinh nghiệm chưa đủ số năm.',
-  },
-  {
-    status: 'NOT_FOUND',
-    text:
-      'Hồ sơ không có kỹ năng, kinh nghiệm hay học vấn nào nhắc tới yêu cầu này. ' +
-      'Hai kỹ năng khác nhau như Java và JavaScript không được tính là khớp.',
-  },
-]
+// Link nhỏ ở dòng "Không tìm thấy": sửa / bổ sung hồ sơ ở trang Kết quả phân tích CV
+const NOT_FOUND_LINK = { to: '/candidate/cvs/parsed', label: 'Cập nhật hồ sơ' }
 
 // Lấy cùng lúc hồ sơ (để biết mã ứng viên) và chi tiết job, xong mới gọi ma trận đối chiếu.
 // Đơn đã nộp do ApplyAction tự kiểm tra.
@@ -45,6 +24,9 @@ async function loadDetail(jobId) {
   return { job: jobResult.data, matching: matchingResult.data }
 }
 
+// Chi tiết đối chiếu của ứng viên với một tin (T35j):
+// kết quả tổng ở đầu (x/y + thanh + đếm theo trạng thái), bảng chia nhóm theo loại (Badge trạng thái có chú thích),
+// mô tả công việc trình bày như trang chi tiết tin. Không hiện note của API (CLAUDE.md mục 5)
 function MatchingDetail() {
   const { jobId } = useParams()
   const [detail, setDetail] = useState(null)
@@ -105,6 +87,12 @@ function MatchingDetail() {
 
   const { job, matching } = detail
   const companyName = job.company ? job.company.name : ''
+  const countOf = (status) => matching.matrix.filter((row) => row.status === status).length
+  const counts = [
+    { status: 'SUPPORTED', text: `${countOf('SUPPORTED')} có bằng chứng` },
+    { status: 'UNCERTAIN', text: `${countOf('UNCERTAIN')} chưa chắc chắn` },
+    { status: 'NOT_FOUND', text: `${countOf('NOT_FOUND')} không tìm thấy` },
+  ]
 
   return (
     <>
@@ -122,29 +110,45 @@ function MatchingDetail() {
         <ApplyAction jobId={job.id} jobTitle={job.title} isOpen={job.isOpen} />
       </div>
 
-      <section className={styles.section}>
-        <h2>Đối chiếu yêu cầu với hồ sơ</h2>
-        <dl className={styles.statusLegend} aria-label="Cách hiểu 3 trạng thái đối chiếu">
-          {STATUS_RULES.map((rule) => (
-            <div key={rule.status} className={styles.legendRow}>
-              <dt className={styles.legendTerm}>
-                <Badge status={rule.status}>{MATCH_STATUS_LABEL[rule.status]}</Badge>
-              </dt>
-              <dd className={styles.legendText}>{rule.text}</dd>
-            </div>
-          ))}
-        </dl>
+      {/* Kết quả tổng ở đầu trang */}
+      <section className={styles.summary} aria-labelledby="matching-summary-title">
+        <h2 id="matching-summary-title" className={styles.summaryTitle}>
+          Kết quả đối chiếu
+        </h2>
+        {matching.total > 0 ? (
+          <>
+            <CoverageBar supported={matching.supported} total={matching.total} coverage={matching.coverage} />
+            <ul className={styles.counts} aria-label="Số yêu cầu theo trạng thái">
+              {counts.map((item) => (
+                <li key={item.status} className={styles.countItem}>
+                  <span className={`${styles.countMark} ${styles[`mark${item.status}`]}`} aria-hidden="true" />
+                  {item.text}
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p className={styles.muted}>{matching.message || 'Tin tuyển dụng chưa có yêu cầu để đối chiếu.'}</p>
+        )}
+      </section>
+
+      <section className={styles.section} aria-labelledby="matching-table-title">
+        <h2 id="matching-table-title" className={styles.sectionTitle}>
+          Đối chiếu từng yêu cầu
+        </h2>
         <RequirementEvidenceMatrix
           matrix={matching.matrix}
-          note={matching.note}
           emptyText={matching.message || 'Tin tuyển dụng chưa có yêu cầu để đối chiếu'}
+          notFoundLink={NOT_FOUND_LINK}
         />
       </section>
 
       {job.description && (
         <details className={styles.description}>
           <summary className={styles.descriptionToggle}>Mô tả công việc</summary>
-          <p className={styles.descriptionText}>{job.description}</p>
+          <div className={styles.descriptionBody}>
+            <JobDescription description={job.description} headingLevel={3} />
+          </div>
         </details>
       )}
     </>

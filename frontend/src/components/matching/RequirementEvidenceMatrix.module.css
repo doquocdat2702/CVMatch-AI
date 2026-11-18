@@ -1,7 +1,22 @@
 .matrix {
   display: flex;
   flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* Nhóm theo loại yêu cầu (T35j): tiêu đề nhóm font giao diện đậm, kèm số dòng */
+.group {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-2);
+}
+
+.groupTitle {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+  font-weight: var(--weight-semibold);
 }
 
 .cell {
@@ -16,20 +31,24 @@
   min-width: calc(var(--sidebar-width) * 0.85);
 }
 
-.requirementText,
-.evidenceText {
+/* Tên tiêu chí đang đối chiếu là tiêu đề dòng */
+.requirementTitle {
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+/* Câu gốc trong mô tả công việc: chữ nhỏ màu Chì dưới tên tiêu chí */
+.rawText {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
 
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-xs);
-  line-height: var(--leading-xs);
-  color: var(--color-text-muted);
+.evidenceText {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 
 .muted {
@@ -38,13 +57,21 @@
   color: var(--color-text-muted);
 }
 
-/* Dòng tổng kết dưới bảng */
-.summary {
-  margin: 0;
-  font-weight: var(--weight-semibold);
+/* Link nhỏ "Cập nhật hồ sơ" ở dòng Không tìm thấy (chỉ trang ứng viên) */
+.notFoundLink {
+  align-self: flex-start;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
 }
 
-/* Câu nhắc của API: chữ nhỏ màu Chì */
+.notFoundLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Câu nhắc của API (chỉ phía nhà tuyển dụng): chữ nhỏ màu Chì */
 .note {
   margin: 0;
   font-size: var(--text-xs);

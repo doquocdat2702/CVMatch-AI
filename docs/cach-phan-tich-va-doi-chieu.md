@@ -260,6 +260,22 @@ Khi yêu cầu có `minYears`, bằng chứng kỹ năng / học vấn **không 
 - Gợi ý (`recommend.service.js`): việc làm đang mở đã có yêu cầu, xếp coverage giảm dần (mặc định 10, tối đa 50 tin);
   hồ sơ chưa có dữ liệu phân tích thì trả danh sách rỗng kèm thông báo.
 
+### 8.4 Chú thích trên Badge trạng thái và quy tắc đầy đủ
+
+Trong bảng đối chiếu (trang Chi tiết đối chiếu của ứng viên và hộp đối chiếu của nhà tuyển dụng), mỗi Badge trạng thái
+có một câu chú thích (`components/matching/MatchStatusBadge.jsx`): rê chuột thì hiện qua thuộc tính `title`, bấm
+(cảm ứng / bàn phím) thì hiện ngay dưới Badge. Câu ngắn chỉ để đọc nhanh; quy tắc đầy đủ là các mục 8.1, 8.2 ở trên,
+tóm lại như sau.
+
+| Trạng thái | Câu trên giao diện | Quy tắc đầy đủ |
+|---|---|---|
+| Có bằng chứng (`SUPPORTED`, EXACT) | Hồ sơ có kỹ năng hoặc bằng cấp đúng với yêu cầu. | Kỹ năng cùng `skillId` hoặc trùng tên sau chuẩn hóa; hoặc trường / ngành / bằng trùng nguyên văn sau chuẩn hóa. **Yêu cầu có số năm** (`minYears`): kỹ năng / học vấn khớp chưa đủ, tổng thời gian các kinh nghiệm liên quan phải đủ số năm (mục 8.2). |
+| Chưa chắc chắn (`UNCERTAIN`, PARTIAL) | Hồ sơ có dấu hiệu liên quan nhưng chưa đủ rõ. | Kỹ năng ghi bằng tên khác của cùng mục từ điển (alias) hoặc tra ra cùng Skill; tên khớp một phần theo từ; tên yêu cầu chỉ xuất hiện trong phần kinh nghiệm (luôn PARTIAL); học vấn chỉ chứa tên yêu cầu; **yêu cầu có số năm** mà kinh nghiệm liên quan chưa đủ năm, không có ngày, hoặc chỉ có bằng chứng kỹ năng / học vấn. |
+| Không tìm thấy (`NOT_FOUND`, NONE) | Hồ sơ chưa có thông tin về yêu cầu này. | Không kỹ năng, kinh nghiệm hay học vấn nào nhắc tới yêu cầu. **Hai kỹ năng khác nhau không tính là khớp**: hai `skillId` khác nhau, hoặc bên thiếu `skillId` tra ra Skill khác, đều ra NONE, kể cả khi tên giống nhau một phần (Java và JavaScript; React và React Native; Excel và Excel VBA; SQL và MySQL). So khớp theo từ nguyên vẹn nên "Java" không khớp trong "JavaScript". |
+
+Ví dụ yêu cầu có số năm: "Tối thiểu 2 năm kinh nghiệm kế toán tổng hợp" với hồ sơ có kỹ năng Kế toán tổng hợp nhưng
+kinh nghiệm chưa đủ 2 năm ra Chưa chắc chắn, đủ 2 năm ra Có bằng chứng (mục 10, ví dụ 2).
+
 ## 9. File CV gửi kèm đơn và hồ sơ dùng để đối chiếu (T35g)
 
 - Mỗi đơn lưu **riêng** CV ứng viên chọn lúc nộp (`Application.cvId`, khóa ngoại `onDelete: Restrict`). Đơn mới bắt

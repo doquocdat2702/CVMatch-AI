@@ -105,9 +105,15 @@
 
 /* ===== Nội dung chung ===== */
 
-/* Cỡ chữ và font serif của h1 lấy từ index.css */
+/* Cỡ chữ và font serif của h1 lấy từ index.css. Trang không có câu phụ (T35j: Đăng ký, Quên / Đặt lại mật khẩu)
+   thì form cách tiêu đề --space-5; có câu phụ thì câu phụ sát tiêu đề */
 .title {
-  margin: 0 0 var(--space-2);
+  margin: 0 0 var(--space-5);
+}
+
+.title + .subtitle,
+.title + .errorCode {
+  margin-top: calc(var(--space-3) * -1);
 }
 
 .subtitle {

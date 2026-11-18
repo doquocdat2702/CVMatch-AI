@@ -1,17 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import Badge from '../common/Badge'
+import { getInitials } from '../../utils/initials'
 import styles from './AccountLayout.module.css'
-
-// Chữ viết tắt họ tên: chữ đầu của từ đầu + từ cuối ("Nguyễn Thị Ánh" -> "NÁ"), giữ dấu.
-// Chưa có họ tên (hoặc quản trị viên, không có họ tên) thì lấy chữ đầu của email
-function getInitials(fullName, email) {
-  const words = (fullName || '').normalize('NFC').split(/\s+/).filter(Boolean)
-  const first = (word) => (Array.from(word || '')[0] || '').toLocaleUpperCase('vi')
-  if (words.length === 0) return first(email)
-  if (words.length === 1) return first(words[0])
-  return first(words[0]) + first(words[words.length - 1])
-}
 
 // Khung "Tài khoản" dùng chung cho 3 role (T35g cho ứng viên, T35i mở rộng cho nhà tuyển dụng và quản trị viên).
 // Cột trái: thẻ tóm tắt + menu con; cột phải: nội dung trang (Outlet). Dữ liệu do khung theo role truyền vào
@@ -19,7 +10,8 @@ function getInitials(fullName, email) {
 //   items: [{ to, label }] menu con (NavLink, tự gắn aria-current)
 //   navLabel: tên vùng menu cho trình đọc màn hình
 //   summary: { fullName, email, badge: { status, label } | null, meta: chuỗi phụ (tên công ty) | null,
-//              progress: { filled, total } | null }  — progress null thì không có dòng "Hồ sơ đã có x/y mục"
+//              progress: { filled, total } | null, avatar: data URI | null }
+//            progress null thì không có dòng "Hồ sơ đã có x/y mục"; avatar (T35k, chỉ ứng viên) thay ô chữ viết tắt
 //   outletContext: truyền cho trang con qua useOutletContext (vd refreshProfile)
 // Dưới 900px: thẻ tóm tắt thu gọn một dòng (bỏ email, nhãn vai trò, công ty, thanh), menu thành hàng tab cuộn ngang.
 function AccountLayout({ items, navLabel, summary, outletContext }) {
@@ -45,15 +37,20 @@ function AccountLayout({ items, navLabel, summary, outletContext }) {
     return () => observer.disconnect()
   }, [location.pathname])
 
-  const { fullName, email, badge, meta, progress } = summary
+  const { fullName, email, badge, meta, progress, avatar } = summary
 
   return (
     <div className={styles.account}>
       <aside className={styles.side}>
         <section className={styles.summary} aria-label="Tóm tắt tài khoản">
-          <span className={styles.mark} aria-hidden="true">
-            {getInitials(fullName, email)}
-          </span>
+          {/* Ảnh chỉ để trang trí: họ tên đã nằm ngay bên cạnh nên alt rỗng */}
+          {avatar ? (
+            <img className={styles.avatar} src={avatar} alt="" />
+          ) : (
+            <span className={styles.mark} aria-hidden="true">
+              {getInitials(fullName, email)}
+            </span>
+          )}
           <div className={styles.identity}>
             <p className={styles.name}>{fullName || email}</p>
             {/* Chưa có họ tên thì dòng trên đã là email, không lặp lại */}

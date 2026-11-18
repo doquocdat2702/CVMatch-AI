@@ -45,8 +45,11 @@ Màu dẫn xuất (không dùng làm màu nhấn):
 |---|---|---|---|---|
 | Xanh lá | `#1F6B3A` | `#E5F3E9` | `#B9DCC4` | SUPPORTED, COMPLETED, ACCEPTED |
 | Vàng | `#7A5300` | `#FBF1D6` | `#EBD39A` | UNCERTAIN, REVIEWING, PROCESSING |
-| Đỏ | `#A3261E` | `#FBE7E5` | `#F0BDB8` | NOT_FOUND, FAILED, REJECTED |
-| Xám xanh | `#435266` | `#EDF1F6` | `#D3DBE6` | Còn lại (APPLIED, UPLOADED, REQUIRED...) |
+| Đỏ | `#A3261E` | `#FBE7E5` | `#F0BDB8` | FAILED, REJECTED, LOCKED |
+| Xám xanh | `#435266` | `#EDF1F6` | `#D3DBE6` | NOT_FOUND (T35j, 7.02:1), còn lại (APPLIED, UPLOADED, REQUIRED...) |
+
+T35j: "Không tìm thấy" (NOT_FOUND) đổi từ đỏ sang xám xanh ở mọi bảng đối chiếu, kể cả phía nhà tuyển dụng: thiếu bằng
+chứng trong hồ sơ không phải lỗi. "Có bằng chứng" xanh lá, "Chưa chắc chắn" vàng giữ nguyên.
 
 Màu đỏ của badge cũng là màu lỗi form (`--color-danger-*`).
 
@@ -96,10 +99,12 @@ trong `src/styles/fonts.css` với `font-display: swap`. Giấy phép SIL OFL 1.
 | Font | Độ đậm | Biến | Dùng cho |
 |---|---|---|---|
 | Be Vietnam Pro | 400, 500, 600 | `--font-sans` | Toàn bộ giao diện: menu, bảng, form, nút, đoạn văn |
-| Source Serif 4 | 600 | `--font-serif` | Chỉ tiêu đề trang (h1) và khối điểm nhấn |
+| Source Serif 4 | 600 | `--font-serif` | Chỉ Logo, tiêu đề trang (h1 / `PageHeader`), khối mở đầu trang chủ, nửa Xanh mực của trang đăng nhập / đăng ký / quên / đặt lại mật khẩu (T35j) |
 
 Be Vietnam Pro do người Việt thiết kế cho tiếng Việt, dấu chồng (ẩ, ỗ, ừ) rõ ở cỡ 12–14px trong bảng.
 Source Serif 4 tạo cảm giác "tiêu đề hồ sơ", không dùng cho đoạn văn hay bảng.
+T35j: tiêu đề thẻ tin (trang chủ, tab Gợi ý, Đơn ứng tuyển), tiêu đề Panel, tiêu đề nhóm và ô chữ viết tắt khu Tài
+khoản dùng Be Vietnam Pro đậm 600, không còn serif.
 
 Vì sao tự host thay vì nạp từ Google Fonts:
 - App và bản in CV chạy được khi không có mạng (máy demo, mạng nội bộ công ty chặn Google): font nằm cùng
@@ -149,6 +154,12 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
 - Bóng: chỉ modal có bóng (`--shadow-modal`). Không bọc nội dung trong card đổ bóng
   (dropdown thông báo, menu tài khoản, footer cũng chỉ có viền).
 - Biến thêm ở T35g: `--account-mark-size` 56px (ô chữ viết tắt họ tên ở khung tóm tắt khu Tài khoản).
+- Biến thêm ở T35k: `--radius-full` 50% (ảnh đại diện tròn), `--avatar-size` 96px (ảnh đại diện trang Hồ sơ),
+  `--color-on-ink` #FFFFFF (16.46:1 trên Mực đen), `--color-on-ink-muted` #C3CDD9 (10.23:1 trên Mực đen),
+  `--color-on-ink-line` #3A4A5D (đường kẻ trang trí trên Mực đen, không mang thông tin), và nhóm mẫu CV Chuyên nghiệp:
+  `--cv-side-width`, `--cv-page-space` (khoảng trống trên / dưới mỗi trang in), `--cv-gutter`, `--cv-avatar-size` 32mm.
+  T35l đổi giá trị cho hồ sơ nhiều dữ liệu không quá 2 trang: `--cv-side-width` 35% -> 32%, `--cv-page-space` 14mm ->
+  10mm, `--cv-gutter` 10mm -> 8mm, và thêm `--cv-leading` 1.25rem (20px, giãn dòng chữ 14px của mẫu này; trước 21px).
 - Biến thêm ở T35f: `--control-height-lg` 48px (ô tìm kiếm và nút Tìm ở khối mở đầu), `--touch-target` 44px
   (vùng bấm tối thiểu dưới 900px ở bố cục khách và ứng viên), `--aside-width` 320px (khung ứng tuyển dính),
   `--duration-pulse` 1200ms (nhịp mờ - rõ của khung xương khi đang tải).
@@ -257,13 +268,20 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
   HR / Admin vào "/" (MainLayout có Sidebar) thì khối nằm gọn trong vùng nội dung, bo 8px.
 - h1 gồm câu dẫn + tên công ty (`GET /company/public`, lỗi thì tên hệ thống); đang tải thì giữ chỗ để chữ không nhảy.
   "N vị trí đang tuyển": tổng số tin đang mở, không theo bộ lọc.
-- Tìm kiếm (T35g bỏ ô địa điểm): một ô tên vị trí + nút Tìm trong một dải Giấy, dải là khung của ô (ô không viền
-  riêng, viền focus vẽ vào trong). Dùng tham số `keyword` của `GET /jobs` (lọc theo tiêu đề), nằm trên URL
+- "N vị trí đang tuyển" 21px đậm 600 (T35j, dưới 900px 18px), Xanh nhạt trên Xanh mực (4.99:1).
+- Tìm kiếm (T35g bỏ ô địa điểm): một ô + nút Tìm trong một dải Giấy, dải là khung của ô (ô không viền riêng, viền
+  focus vẽ vào trong). Placeholder (T35j) "Vị trí hoặc kỹ năng, ví dụ: React, Kiểm thử". Dùng tham số `keyword` của
+  `GET /jobs` (T35j: khớp tiêu đề HOẶC tên / alias Skill trong yêu cầu của tin), nằm trên URL
   (`?keyword=`); `?location=` của link cũ bị bỏ qua và xóa khi tìm. Địa điểm vẫn hiện trên thẻ tin và trang chi tiết.
   Tìm thì về tab Tất cả, trang 1; sang tab Gợi ý thì bỏ bộ lọc. Dưới 900px ô và nút xếp dọc.
+- Hàng "Tìm nhanh:" (T35j) dưới ô tìm: `topSkills` của `GET /jobs` (6 Skill có ở nhiều tin đang mở nhất). Mỗi kỹ năng
+  là nút viền Xanh nhạt, chữ trắng (5.69:1), cao 32px (44px dưới 900px); bấm là tìm theo kỹ năng đó, đang chọn
+  (`aria-pressed`, nền Giấy chữ Xanh mực) thì bấm lại để bỏ.
 - Đang lọc: dòng "3 vị trí khớp với “kế toán”" + nút ghost "Xóa bộ lọc". Không có kết quả: khối rỗng
-  "Không có vị trí nào khớp với “...”." + "Thử tên vị trí ngắn hơn hoặc một từ khóa khác." + nút "Xóa bộ lọc".
-- Thẻ tin (`JobCard`): tiêu đề serif 18px, địa điểm 14px đậm 500, đoạn đầu JD 2 dòng (`line-clamp`, Chì),
+  "Không có vị trí nào khớp với “...”." + "Thử tên vị trí hoặc kỹ năng khác." + nút "Xóa bộ lọc".
+- Thẻ tin (`JobCard`): tiêu đề font giao diện 18px đậm 600 (T35j, trước là serif), địa điểm 14px đậm 500, hàng nhãn
+  kỹ năng (`SkillTags`, T35j: tối đa 4 nhãn + "+n", nhãn 12px đậm 500 Mực đen trên Nền, viền Viền, bo 4px),
+  đoạn đầu JD 1 dòng (T35j, `line-clamp`, Chì),
   "Đăng hôm nay / hôm qua / X ngày trước / ngày dd/mm/yyyy" 12px Chì, Badge "Đã ứng tuyển" ở chân thẻ.
   Một link duy nhất ở tiêu đề phủ kín thẻ bằng `::after`; viền focus vẽ trên lớp phủ (bao cả thẻ).
   Rê chuột: viền Xanh mực, không bóng, chuyển 150ms (`--duration-base`). Công ty không lặp lại trên thẻ (một công ty).
@@ -271,6 +289,11 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
   `prefers-reduced-motion` thì đứng yên. Trình đọc màn hình đọc câu ẩn "Đang tải việc làm...".
 - Mỗi trang 10 thẻ (`CARD_PAGE_SIZE`, 5 hàng của lưới 2 cột); bảng của HR giữ 9 dòng (`PAGE_SIZE`).
   Đổi trang thì cuộn tới đầu danh sách, không cuộn lên tận khối mở đầu.
+- Khối "Quy trình ứng tuyển" (T35j, chỉ khách và ứng viên) dưới danh sách: tờ Giấy, h2, 4 bước đánh số, mỗi bước
+  một câu 16px đậm 500. Số thứ tự chỉ do `<ol>` sinh ra (CSS counter vẽ ô vuông 40px nền Xanh nhạt chữ `#0A4FA0` ở
+  `::before`), không in số bằng tay. 4 cột trên máy tính (ô số trên, câu dưới); dưới 900px xếp dọc, ô số bên trái.
+  Chân khối chỉ có nút "Đăng ký tài khoản" (khách) hoặc "Tải CV lên" (ứng viên chưa có CV), không có thì bỏ chân khối.
+  Không có câu nhắc về quyết định tuyển dụng, không hứa thời gian phản hồi.
 
 ### Chi tiết tin `/jobs/:id` (T35f)
 
@@ -278,25 +301,32 @@ Theo thang cổ điển 12 – 14 – 16 – 18 – 21 – 24 – 36.
 Việc làm / Kế toán tổng hợp                                   (breadcrumb, tên tin dài thì cắt "...")
 ┌ tờ Giấy ─────────────────────────────────────┐  ┌ khung dính (sticky) ──────┐
 │ Kế toán tổng hợp (serif 36)                  │  │ [     Ứng tuyển ngay     ] │  hoặc Đã ứng tuyển / Tin đã đóng
-│ Công ty · Hà Nội · Đăng 11 ngày trước        │  └───────────────────────────┘
+│ Công ty                                      │  └───────────────────────────┘
 ├──────────────────────────────────────────────┤  ┌───────────────────────────┐
 │ Mô tả công việc (h2)                         │  │ Đối chiếu với hồ sơ của bạn│  chỉ ứng viên có CV phân tích
-│ • ...            (dòng tối đa ~70 ký tự)     │  │ 4/7 yêu cầu có bằng chứng  │
-│ Yêu cầu ứng viên / Ưu tiên / Quyền lợi       │  │ [=====-----] note của API  │
+│ • ...       (vùng chữ rộng --form-max, T35j) │  │ 4/7 yêu cầu có bằng chứng  │
+│ Yêu cầu ứng viên / Ưu tiên / Quyền lợi       │  │ [=====-----]               │
 └──────────────────────────────────────────────┘  │ Xem chi tiết đối chiếu     │
 Vị trí khác đang tuyển: 3 thẻ                       └───────────────────────────┘
+                                                   ┌ Thông tin chung (T35j) ───┐
+                                                   │ Địa điểm / Ngày đăng /     │
+                                                   │ Kỹ năng chính [React] ...  │
+                                                   └───────────────────────────┘
 ```
 
 - Máy tính: lưới `minmax(0, 1fr) var(--aside-width)`; đầu tin + JD ghép thành một tờ Giấy (đường kẻ ngăn giữa),
-  khung bên phải `position: sticky; top: var(--space-6)`. HR / Admin không có khung bên phải, tin rộng hết vùng nội dung.
-- JD (`utils/jobText.js`): dòng ngắn (≤ 60 ký tự) bắt đầu bằng "Mô tả", "Yêu cầu", "Ưu tiên", "Quyền lợi"...
+  khung bên phải `position: sticky; top: var(--space-6)`. Từ T35j cột phải có thêm khung "Thông tin chung" (Địa điểm,
+  Ngày đăng "dd/mm/yyyy (3 ngày trước)", Kỹ năng chính dạng `SkillTags` từ `job.skills`) dưới khung ứng tuyển và khung
+  đối chiếu; HR / Admin không có khung ứng tuyển nhưng vẫn có Thông tin chung. Đầu tin chỉ còn tên công ty.
+  Vùng chữ JD rộng `--form-max` (`JobDescription wide`) để thẻ không còn nửa trống bên phải.
+- JD (`components/job/JobDescription`, T35j tách để trang chi tiết đối chiếu dùng chung; `utils/jobText.js`): dòng ngắn (≤ 60 ký tự) bắt đầu bằng "Mô tả", "Yêu cầu", "Ưu tiên", "Quyền lợi"...
   hoặc kết thúc bằng ":" là tiêu đề phần (h2); dòng kết thúc bằng dấu câu là câu văn. Tiêu đề viết hoa toàn bộ
   đổi về viết thường. Dòng "- ", "• ", "+ " thành danh sách; JD không có tiêu đề nào thì nằm dưới "Mô tả công việc".
 - Coverage (chỉ ứng viên đã có CV phân tích xong, API đối chiếu chỉ đọc DB, không gọi Gemini): `CoverageBar`
-  "x/y yêu cầu có bằng chứng (z%)" + thanh trung tính + note; tin chưa có yêu cầu thì "Tin chưa có yêu cầu để đối chiếu."
+  "x/y yêu cầu có bằng chứng (z%)" + thanh trung tính (T35j: không note); tin chưa có yêu cầu thì "Tin chưa có yêu cầu để đối chiếu."
 - "Vị trí khác đang tuyển": 4 tin mới nhất của `GET /jobs`, bỏ tin đang xem, lấy 3. Bấm thẻ là mount lại trang
   (route có key theo mã tin) và cuộn về đầu.
-- Dưới 900px 1 cột theo thứ tự: đầu tin, khung đối chiếu, JD, khung ứng tuyển. Khung ứng tuyển là thanh dính đáy
+- Dưới 900px 1 cột theo thứ tự: đầu tin, Thông tin chung (T35j), khung đối chiếu, JD, khung ứng tuyển. Khung ứng tuyển là thanh dính đáy
   (`position: sticky; bottom: 0`, nền Giấy, viền trên Viền đậm, tràn hết bề ngang, nút rộng hết thanh): dính ở đáy
   khi đang đọc, cuộn hết tin thì về đúng chỗ dưới JD nên không che phần cuối trang. Dòng thông tin mỗi mục một dòng.
 - Khách: "Ứng tuyển ngay" + câu "Đăng nhập để gửi CV và theo dõi đơn ứng tuyển." (ẩn trên thanh dính đáy).
@@ -351,6 +381,8 @@ CV được chọn sẽ gửi kèm đơn ứng tuyển. Kết quả đối chi�
   và từ cuối họ tên), họ tên, email, "Hồ sơ đã có x/7 mục" + thanh trung tính (nền Viền, phần đã có màu Chì, như
   coverage); 7 mục = họ tên, số điện thoại, địa chỉ, tiêu đề hồ sơ, có kỹ năng, có kinh nghiệm, có học vấn.
   API không trả ngày tạo tài khoản cho ứng viên nên không có dòng "Tham gia".
+  T35k: ứng viên có ảnh đại diện thì khung tóm tắt hiện ảnh tròn (cùng 56px, `object-fit: cover`, alt rỗng vì họ tên
+  nằm ngay bên cạnh) thay ô chữ viết tắt; nhà tuyển dụng / quản trị viên giữ ô chữ.
   Dưới là menu `NavLink` (aria-current) kiểu Sidebar: mục đang mở nền Xanh nhạt, chữ `#0A4FA0` đậm 600, vạch trái 3px.
 - Dưới 900px: khung tóm tắt thu gọn một dòng (ô chữ 40px, họ tên cắt "...", "Hồ sơ đã có x/7 mục" bên phải; ẩn email
   và thanh), menu thành hàng tab cuộn ngang ngay dưới (chữ không xuống dòng, cao 44px, gạch chân 2px Xanh mực ở mục
@@ -414,6 +446,83 @@ Sidebar chính   ┌ tóm tắt (Giấy) ──────┐  Hồ sơ (serif 
 - Dưới 900px: như ứng viên (tóm tắt một dòng: ô chữ, họ tên, "Hồ sơ đã có x/y mục"; ẩn email, Badge, công ty, thanh;
   menu con thành hàng tab cuộn ngang). Sidebar chính đã thành hàng menu trên nên không bị chồng hai cột.
 
+### Ảnh đại diện và Mục tiêu nghề nghiệp ở trang Hồ sơ (T35k)
+
+- Đầu khối "Thông tin cá nhân" (cả chế độ xem lẫn sửa): ảnh tròn `--avatar-size` 96px viền 1px Viền; chưa có ảnh thì
+  vòng tròn nền Xanh nhạt, chữ `#0A4FA0` (chữ đầu từ đầu + từ cuối họ tên, `utils/initials.js`). Bên phải: nút phụ
+  "Tải ảnh lên" + "Xóa ảnh" (chỉ khi có ảnh), dưới nút là lỗi (chữ đỏ 14px, `role="alert"`, không khung, không alert),
+  rồi gợi ý "JPEG hoặc PNG, tối đa 1 MB." 12px Chì. Hẹp thì xuống hàng. Dưới 900px nút cao 44px.
+- Ô chọn file thật bị ẩn, nút "Tải ảnh lên" mở nó; chọn xong tải lên ngay. `accept` chỉ lọc sẵn, định dạng thật do
+  backend kiểm theo byte đầu file. "Xóa ảnh" mở Modal "Xóa ảnh đại diện?" (nút Hủy + nút danger "Xóa ảnh").
+- "Mục tiêu nghề nghiệp": chế độ xem chiếm cả hàng của lưới 2 cột, giữ xuống dòng (`white-space: pre-line`), rộng tối
+  đa `--text-measure`, trống thì "Chưa cập nhật". Chế độ sửa: `Textarea` 5 dòng, `maxLength` 1000, gợi ý là bộ đếm
+  "Còn N ký tự." (nối với ô qua `aria-describedby`); ô đang có nội dung thì gợi ý có thêm dòng thứ hai (12px Chì,
+  cùng khối gợi ý): "Xóa trống ô này rồi phân tích lại CV nếu muốn lấy mục tiêu từ CV mới.", ô trống thì không hiện.
+
+### Xuất CV: 3 mẫu (T29b, T35k, T35l)
+
+- Hộp "Xuất CV" (T35l, Modal `wide`): trên cùng nhóm radio "Mẫu CV" 3 thẻ ngang (tên đậm + mô tả 12px Chì, không còn
+  hình thu nhỏ), thứ tự Cổ điển, Hiện đại, Chuyên nghiệp. Dưới đó hai cột bằng nhau: trái "Nội dung bản in" (chỉnh
+  sửa), phải xem trước (sticky, khung cuộn cao tối đa 60vh, nền Nền viền Viền; CV dựng ở trang A4 thật, cập nhật ngay
+  khi gõ). Trên khung, căn phải, hai nút liền nhau "Vừa khung" (mặc định: thu nhỏ vừa bề ngang, không phóng quá 100%)
+  / "Cỡ thật" (chữ 14px như bản in, khung cuộn cả ngang lẫn dọc), nút đang chọn nền Xanh nhạt viền Xanh mực,
+  `aria-pressed`. Lý do: vừa khung thì chữ chỉ còn ~7px ở 1280px và ~5px ở 375px, không đọc được. Dưới khung xem
+  trước: dòng hướng dẫn in 12px Chì.
+- Phần chỉnh sửa (chỉ cho lần xuất này: state của hộp, KHÔNG gọi API lưu, KHÔNG localStorage; đóng hộp là mất):
+  đầu phần là tiêu đề 16px đậm + nút phụ nhỏ "Khôi phục dữ liệu gốc" (khóa khi chưa có thay đổi, bấm mở hộp xác nhận
+  "Khôi phục dữ liệu gốc?"). Các nhóm ngăn bằng đường kẻ mảnh, tiêu đề nhóm 14px đậm: "Thông tin cá nhân" (Họ và tên,
+  Tiêu đề hồ sơ, Email, Số điện thoại, Địa chỉ; Mục tiêu nghề nghiệp `Textarea` 4 dòng, tối đa 1000 ký tự, bộ đếm
+  "Còn N ký tự."; họ tên trống thì báo lỗi dưới ô và khóa nút In), "Kỹ năng (x/y được in)" (thẻ có ô tích, đang in thì
+  nền Xanh nhạt viền Xanh mực; nút phụ "Thêm kỹ năng" mở ô "Tên kỹ năng mới" + "Thêm" / "Xong", Enter cũng thêm, trùng
+  tên (không phân biệt hoa thường) báo "Kỹ năng này đã có trong danh sách."; kỹ năng vừa thêm có nút chữ đỏ "Xóa"),
+  một dòng 12px Chì "Kinh nghiệm và học vấn chỉ chọn in hay không; muốn sửa nội dung, vào trang Kết quả phân tích CV.",
+  rồi "Kinh nghiệm làm việc" và "Học vấn" (mỗi mục một ô tích: tên đậm 500 + dòng phụ 12px Chì "công ty · thời gian";
+  không sửa nội dung). Mặc định mọi ô lấy đúng hồ sơ, mọi mục được tích. Đổi mẫu giữ nguyên chỉnh sửa, 3 mẫu dùng
+  chung một bộ dữ liệu (hồ sơ gốc + chỉnh sửa, đưa qua `buildCVData` như cũ).
+- Chân hộp: bên trái một dòng 12px Chì "Thay đổi chỉ dùng cho lần xuất này. Vào Hồ sơ hoặc Kết quả phân tích CV để
+  sửa lâu dài." (hai link Xanh mực; thay dòng "Nội dung CV lấy từ..." của T35k), bên phải "Đóng" + "In / Lưu PDF".
+- Đóng hộp (nút Đóng, Esc, bấm ra ngoài, hoặc bấm link ở chân hộp) khi đang có thay đổi: hộp xác nhận "Bỏ các thay
+  đổi cho bản in?" (nút "Tiếp tục chỉnh sửa" + nút danger "Bỏ thay đổi"; link thì bỏ xong mới chuyển trang). Không có
+  thay đổi (kể cả sửa rồi gõ lại như cũ) thì đóng luôn. Esc khi hộp xác nhận đang mở chỉ đóng hộp xác nhận.
+- Dưới 900px: xếp dọc (mẫu, chỉnh sửa, xem trước); thẻ mẫu một cột cao tối thiểu 44px; xem trước thu gọn, nút viền
+  Xanh mực cao 44px "Mở xem trước" / "Thu gọn xem trước" (`aria-expanded`, `aria-controls`). Khung xem trước nhận
+  focus bằng Tab (`role="region"`) để cuộn bằng phím; nội dung bên trong `aria-hidden` (đã đọc qua các ô bên trái).
+- Cả 3 mẫu (T35l): kỹ năng không còn mỗi kỹ năng một dòng (Cổ điển một dòng ngăn dấu phẩy; Hiện đại thẻ viền Viền
+  đậm không nền, 12px; Chuyên nghiệp thẻ nền Xanh nhạt chữ `--color-primary-soft-text` 12px đậm 500). Khoảng cách gọn
+  lại: giữa các mục 16px (trước 24px), tiêu đề mục cách nội dung 8px, giữa hai mục kinh nghiệm / học vấn 8px. Tiêu đề
+  mục `break-after: avoid`, mỗi mục kinh nghiệm / học vấn `break-inside: avoid`. Hồ sơ cỡ trung bình (12-18 kỹ năng,
+  2-3 kinh nghiệm, 1-2 học vấn) gọn một trang A4; nhiều hơn thì sang trang 2 có nội dung thật. Đã kiểm bằng PDF thật
+  (T35l phần B): hồ sơ nhiều dữ liệu 30 kỹ năng, 5 kinh nghiệm x 5 gạch đầu dòng, 3 học vấn, mục tiêu 1000 ký tự ra
+  đúng 2 trang ở cả 3 mẫu.
+- Cổ điển, Hiện đại: mục "Mục tiêu nghề nghiệp" ngay dưới phần họ tên / tiêu đề hồ sơ (Cổ điển: mục đầu tiên sau
+  phần đầu; Hiện đại: khối ngang cả trang trên hai cột), giữ xuống dòng, trống thì ẩn cả mục. Hiện đại từ T35l: hai
+  cột tỉ lệ 1:2 (trước 2:3), cách nhau 16px; học vấn "bằng cấp, ngành, thời gian" chung một dòng.
+- Chuyên nghiệp (`CVTemplateProfessional`): A4 dọc, hai cột, giãn dòng `--cv-leading` 20px. Cột trái `--cv-side-width`
+  32% nền Mực đen, chữ
+  `--color-on-ink`, CHỈ có (T35l): ảnh tròn `--cv-avatar-size` 32mm viền trắng 2px (chưa có ảnh: vòng tròn Xanh mực
+  chữ trắng 36px), họ tên 24px đậm 600 căn giữa, tiêu đề hồ sơ chữ `--color-on-ink-muted`, mục "Liên hệ" (Số điện
+  thoại, Email, Địa chỉ, mỗi dòng một icon SVG của `FooterIcons` nét `--color-on-ink-muted`; trường trống thì ẩn
+  dòng). Tiêu đề mục cột trái 16px đậm 600, gạch dưới 1px `--color-on-ink-line`. Cột phải nền Giấy theo thứ tự "Mục
+  tiêu nghề nghiệp" (đoạn văn 14px, giãn dòng 21px, giữ xuống dòng) -> "Kỹ năng" (thẻ nằm ngang tự xuống dòng, KHÔNG
+  thanh mức độ / phần trăm / sao) -> "Kinh nghiệm làm việc" -> "Học vấn"; tiêu đề 18px Xanh mực gạch dưới 3px; mỗi
+  mục: tên (đậm) bên trái, khoảng thời gian 12px Chì căn phải, dòng phụ Chì, mô tả kinh nghiệm thành gạch đầu dòng
+  (mỗi dòng của mô tả một ý). Mục rỗng ẩn cả tiêu đề.
+- In mẫu Chuyên nghiệp:
+  - Trang in tên riêng `@page cv-pro { size: A4; margin: 0 }` (`.cv { page: cv-pro }`) để nền tối chạm mép giấy; hai
+    mẫu cũ giữ `@page` lề 15mm. Rule `cv-pro` đặt trong CVExportModal.module.css NGAY SAU `@page` chung: Chromium bỏ
+    qua `@page` có tên nếu rule đó đứng trước `@page` chung trong thứ tự tài liệu (đã kiểm bằng PDF thật).
+  - Nền cột trái là lớp riêng `sideBg`: trên màn hình `position: absolute` phủ hết chiều cao CV; khi in
+    `position: fixed` nên Chrome vẽ lại trên mọi trang (CV sang trang 2 vẫn có cột tối từ mép trên tới mép dưới).
+  - `print-color-adjust: exact` (kèm `-webkit-`) trên CV và lớp nền: hộp thoại in không tick "Hình nền" vẫn in nền tối.
+  - Khoảng trống trên / dưới mỗi trang (`--cv-page-space` 10mm từ T35l) là `thead` / `tfoot` của bảng khung
+    (`role="presentation"`), Chrome lặp lại ở mỗi trang. Độ rộng cột khai báo ở `colgroup` (bảng `table-layout:
+    fixed` lấy độ rộng từ hàng đầu, mà hàng đầu là ô gộp 2 cột).
+  - `break-inside: avoid` cho từng mục học vấn / kinh nghiệm; tiêu đề mục `break-after: avoid`.
+  - Ảnh nhúng dạng data URI (`GET /candidates/me` trả sẵn), font tự host nên tiếng Việt đủ dấu.
+  - Khung xem trước của mẫu này không thêm lề 15mm (`bleed`).
+  - Không sinh trang cuối chỉ có nền: `min-height` một trang A4 chỉ áp trên màn hình, khi in `min-height: 0`; đã kiểm
+    bằng PDF khi bật dần 0 -> 8 mục kinh nghiệm ở cả 3 mẫu (mọi trang đều có chữ).
+
 ### Trang của ứng viên: quy tắc chung (T35f)
 
 - Đầu trang `PageHeader`: h1 serif + một câu mô tả màu Chì, nút phụ (nếu có) bên phải.
@@ -427,12 +536,25 @@ Sidebar chính   ┌ tóm tắt (Giấy) ──────┐  Hồ sơ (serif 
   thiểu 40px / 44px dưới 900px), mở sẵn ở lần đầu vào trang (đánh dấu đã xem bằng localStorage, lỗi thì coi như lần
   đầu), các lần sau thu gọn. 4 bước đánh số (là trình tự thật): Lấy chữ từ file / Nhận diện kỹ năng (từ điển, thêm AI
   ở chế độ Hybrid) / Chuẩn hóa / Bạn kiểm tra và xác nhận; một dòng chế độ (vừa phân tích xong thì theo `mode` trang CV
-  của tôi chuyển sang qua state của router, mở lại trang về sau thì suy ra từ nguồn dữ liệu đang có và nói rõ là suy ra);
-  câu "Kết quả chỉ hỗ trợ đối chiếu, không dùng để đánh giá năng lực." màu Chì.
+  của tôi chuyển sang qua state của router, mở lại trang về sau thì suy ra từ nguồn dữ liệu đang có và nói rõ là suy ra).
+  T35j bỏ câu "Kết quả chỉ hỗ trợ đối chiếu..." và khối nhắc 2 câu + chú thích nguồn; chỉ còn một dòng nhắc nền Xanh
+  nhạt "Dữ liệu được đọc tự động từ CV. Kiểm tra từng mục rồi bấm "Xác nhận" hoặc "Sửa"."
+- Kỹ năng (T35j): bảng gọn Kỹ năng | Nguồn | Trạng thái | Thao tác, dòng thấp (đệm dọc 8px), nhóm "Chưa xác nhận (n)"
+  trước "Đã xác nhận (n)" (tiêu đề nhóm 14px đậm 600 Chì). Bằng chứng trong CV thu gọn mặc định (`details`), ẩn hẳn khi
+  trùng nguyên văn tên mục. Nút "Xác nhận tất cả" cạnh "Thêm thủ công" (chỉ khi còn kỹ năng chưa xác nhận): hộp xác nhận,
+  gọi lần lượt API cập nhật đã có, báo "Đã xác nhận n kỹ năng." hoặc "Đã xác nhận x/n kỹ năng. ... chưa xác nhận được".
+  Dưới 900px bảng thành thẻ xếp dọc: tên + bằng chứng, dòng "Nguồn [Badge]  Trạng thái [Badge]" có nhãn nhỏ, thao tác cuối.
 - Mỗi mục có Badge nguồn bằng chữ tiếng Việt (`PROFILE_SOURCE_LABEL`: Từ điển / AI / Tự nhập, xám xanh) và Badge
   trạng thái "Đã xác nhận" (xanh lá) / "Chưa xác nhận" (vàng).
-- Chi tiết đối chiếu: trên ma trận có chú thích 3 trạng thái (`dl`, Badge + một đoạn quy tắc 14px Chì, tờ Giấy),
-  viết theo đúng `matcher.js: resolveEvidence` và `evidence.finder.js` (xem `docs/cach-phan-tich-va-doi-chieu.md`).
+- Chi tiết đối chiếu (T35j): đầu trang là khối "Kết quả đối chiếu" (tờ Giấy rộng `--form-max`): `CoverageBar` + đếm
+  theo trạng thái "n có bằng chứng · n chưa chắc chắn · n không tìm thấy" (ô vuông 8px cùng tông chữ của Badge).
+  Không có khối chú thích riêng: Badge trạng thái trong bảng là `MatchStatusBadge` (một câu chú thích mỗi trạng thái;
+  quy tắc đầy đủ ở `docs/cach-phan-tich-va-doi-chieu.md` mục 8.4). Rê chuột: thuộc tính `title`. Bấm (cảm ứng / bàn
+  phím, Badge nằm trong nút trong suốt, con trỏ `help`, viền focus 2px): câu hiện ngay dưới Badge trong ô, 12px chữ
+  trắng nền Mực đen, bo 4px, rộng tối đa ~200px; bấm ra ngoài hoặc Esc thì ẩn. Hiện trong ô chứ không nổi vì khung bảng
+  có `overflow-x: auto`. Nút trỏ `aria-describedby` tới câu (luôn có trong DOM, ẩn kiểu srOnly khi đóng). Dưới 900px
+  nút cao tối thiểu 44px. Hộp đối chiếu phía HR (`CandidateMatrixModal`) dùng cùng bảng nên có cùng chú thích. Dòng "Không tìm thấy" có link nhỏ "Cập nhật hồ sơ" tới `/candidate/cvs/parsed`. Mô tả công
+  việc thu gọn, mở ra trình bày bằng `JobDescription` (tách phần, gạch đầu dòng). Không có note của API.
 - Tiêu đề tab trình duyệt (`useDocumentTitle`): "<tên trang> | <VITE_APP_NAME>" ở trang chủ, chi tiết tin (tên tin),
   chi tiết đối chiếu, các trang ứng viên, trang công khai và trang đăng nhập / đăng ký. Rời trang thì về tên hệ thống,
   nên trang HR / Admin (chưa đặt tiêu đề riêng) chỉ hiện tên hệ thống; từ T35i các trang trong khu Tài khoản của
@@ -510,6 +632,8 @@ Sidebar chính   ┌ tóm tắt (Giấy) ──────┐  Hồ sơ (serif 
 
 Trên điện thoại, khối Xanh mực thành dải phía trên form; Logo ở đầu cột form chỉ còn ô chữ dưới 768px. Tên hệ thống lấy từ `VITE_APP_NAME`
 (mặc định "Tuyển dụng DMatch").
+T35j: Đăng ký, Quên mật khẩu, Đặt lại mật khẩu dùng chung bố cục này qua `pages/auth/AuthLayout.jsx` (trước là thẻ ở
+giữa trang). Trang không có câu phụ thì form cách tiêu đề 24px. Trang 403 / 404 vẫn là thẻ ở giữa.
 
 ## 7. Bảng (`Table`)
 
@@ -597,8 +721,17 @@ Trên điện thoại, khối Xanh mực thành dải phía trên form; Logo ở
   Home / End để chuyển. Tab đang chọn lưu trên URL. Số trong ngoặc chỉ hiện khi đã có dữ liệu thật
   (không "(0)" giả, không vòng xoay trong tab). Màn hình hẹp thì cả cụm tab xuống dòng, chữ trong tab không bẻ.
 - Card gợi ý việc làm (tab Gợi ý): cả card bấm được (link "Xem chi tiết đối chiếu" phủ kín card bằng `::after`,
-  tên tin nằm ẩn trong link cho trình đọc màn hình). Từ T35f cùng kiểu với thẻ tin của tab Tất cả: tiêu đề serif,
-  rê chuột viền Xanh mực, Badge "Đã ứng tuyển" ở chân thẻ, coverage qua `CoverageBar` (components/matching).
+  tên tin nằm ẩn trong link cho trình đọc màn hình). Từ T35f cùng kiểu với thẻ tin của tab Tất cả (T35j: tiêu đề font
+  giao diện đậm), rê chuột viền Xanh mực, Badge "Đã ứng tuyển" ở chân thẻ, coverage qua `CoverageBar` (không note).
+  T35j: một câu phụ "Tin đang tuyển, xếp theo tỉ lệ yêu cầu có bằng chứng trong hồ sơ của bạn." trên danh sách; tin có
+  0 yêu cầu có bằng chứng tách xuống nhóm cuối `details` "Chưa có bằng chứng trong hồ sơ (n)" (thu gọn, chỉ ở trang cuối
+  của danh sách chính); số trên tab chỉ đếm tin có ít nhất 1 yêu cầu có bằng chứng.
+- `RequirementEvidenceMatrix` (T35j, dùng chung ứng viên / HR): chia nhóm theo loại Bắt buộc / Ưu tiên / Không bắt
+  buộc (h3 16px đậm 600 + số dòng), mỗi nhóm một `Table`; bỏ Badge loại ở từng dòng và dòng tổng dưới bảng. Tiêu đề dòng
+  là tên tiêu chí (`normalizedName`, đậm 600), câu gốc trong mô tả công việc là chữ 12px Chì bên dưới (ẩn nếu trùng).
+  Prop `notFoundLink` (chỉ trang ứng viên); prop `note` chỉ phía HR truyền vào.
+- `SkillTags` (T35j, components/job): hàng nhãn kỹ năng của tin, prop `max` gộp phần còn lại thành "+n".
+- `JobDescription` (T35j, components/job): nội dung JD tách phần; prop `headingLevel`, `wide`.
 - `Logo` (T35e, `components/layout/`): ô vuông `--logo-mark-size` 28px nền Xanh mực, chữ cái đầu của `VITE_APP_NAME`
   màu trắng (5.69:1), font tiêu đề, bo `--radius-sm`; bên cạnh là tên hệ thống font tiêu đề 18px đậm 600, Mực đen.
   Cả khối là link: khách / ứng viên về `/`, HR về `/recruiter/dashboard`, Admin về `/admin/dashboard`;
@@ -615,6 +748,9 @@ Trên điện thoại, khối Xanh mực thành dải phía trên form; Logo ở
 
 - Coverage hiển thị dạng "7/10 yêu cầu có bằng chứng". Không dùng vòng tròn điểm hay thang màu
   kiểu chấm điểm: coverage chỉ là chỉ số đối chiếu, không phải điểm năng lực.
+- (T35j) Note của API và câu nhắc "không phải điểm năng lực" chỉ hiện phía nhà tuyển dụng (dưới bảng trong
+  CandidateMatrixModal, trang Ứng viên gợi ý), /privacy và /terms; KHÔNG hiện ở các màn hình ứng viên, kể cả khối
+  Quy trình ứng tuyển trên trang chủ. Một màn hình ứng viên tối đa một câu phụ.
 - AI chỉ hỗ trợ: kết quả phân tích luôn đi kèm bằng chứng, không trình bày như quyết định.
 - Không dùng: gradient, emoji, icon (trừ chuông thông báo và 3 icon footer), mũi tên "→" trong nút,
   nhãn viết hoa phía trên tiêu đề, card đổ bóng cho từng phần.

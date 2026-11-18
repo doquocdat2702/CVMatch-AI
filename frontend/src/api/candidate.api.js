@@ -4,9 +4,11 @@ import axiosClient from './axiosClient'
 
 // ===== Hồ sơ ứng viên đang đăng nhập =====
 
-// data: hồ sơ kèm skills, experiences, educations
-export async function getMyProfile() {
-  const response = await axiosClient.get('/candidates/me')
+// data: hồ sơ kèm skills, experiences, educations.
+// withAvatar: gửi ?avatar=1 để có thêm avatar (data URI hoặc null). Chỉ thẻ tóm tắt khu Tài khoản, trang Hồ sơ và
+// hộp Xuất CV cần ảnh; nơi khác gọi không kèm để response nhẹ (không có trường avatar)
+export async function getMyProfile({ withAvatar = false } = {}) {
+  const response = await axiosClient.get('/candidates/me', withAvatar ? { params: { avatar: 1 } } : undefined)
   return response.data
 }
 
@@ -64,5 +66,22 @@ export async function updateEducation(id, payload) {
 
 export async function deleteEducation(id) {
   const response = await axiosClient.delete(`/candidates/me/educations/${id}`)
+  return response.data
+}
+
+// ===== Ảnh đại diện (T35k): JPEG / PNG, tối đa 1 MB; data trả về là hồ sơ kèm avatar (data URI hoặc null) =====
+
+export async function uploadAvatar(file) {
+  const formData = new FormData()
+  formData.append('avatar', file)
+  // Như upload CV (cv.api.js): đặt multipart để axios không đổi FormData thành JSON, trình duyệt tự thêm boundary
+  const response = await axiosClient.post('/candidates/me/avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return response.data
+}
+
+export async function deleteAvatar() {
+  const response = await axiosClient.delete('/candidates/me/avatar')
   return response.data
 }

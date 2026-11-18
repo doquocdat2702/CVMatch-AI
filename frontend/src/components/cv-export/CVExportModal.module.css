@@ -26,7 +26,7 @@
   border: var(--border-width) solid var(--color-danger-border);
 }
 
-/* ===== Chọn mẫu ===== */
+/* ===== Chọn mẫu (T35l: chỉ tên + mô tả; hình mẫu xem ở khung xem trước bên phải) ===== */
 
 .choices {
   min-width: 0;
@@ -45,16 +45,16 @@
 
 .options {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
 }
 
-/* Cả thẻ là nhãn của nút radio: bấm vào hình xem trước cũng chọn được mẫu */
+/* Cả thẻ là nhãn của nút radio */
 .option {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-2);
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -102,19 +102,281 @@
   color: var(--color-text-muted);
 }
 
-/* Khung xem trước giữ đúng tỉ lệ trang A4 (210 x 297) */
-.thumbFrame {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 210 / 297;
-  overflow: hidden;
-  background-color: var(--color-surface);
+/* ===== Hai phần: chỉnh sửa (trái) | xem trước (phải) ===== */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.editorHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.editorTitle {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+  font-weight: var(--weight-semibold);
+}
+
+/* Mỗi nhóm ô cách nhau bằng đường kẻ mảnh */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-3) 0 0;
+  border: none;
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.groupTitle {
+  padding: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.groupCount {
+  font-weight: var(--weight-regular);
+  color: var(--color-text-muted);
+}
+
+.groupNote,
+.emptyText {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+.checkbox {
+  flex: none;
+  width: var(--space-4);
+  height: var(--space-4);
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.checkbox:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Kỹ năng: thẻ nằm ngang có ô tích, tự xuống dòng; thẻ đang được in nền Xanh nhạt viền Xanh mực */
+.checkChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checkChip {
+  display: inline-flex;
+  align-items: stretch;
+  max-width: 100%;
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-sm);
 }
 
+.checkChip:has(:checked) {
+  background-color: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.checkChipLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  min-height: var(--control-height-sm);
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+/* Nút "Xóa" chỉ có ở kỹ năng vừa thêm cho bản in */
+.removeSkill {
+  padding: 0 var(--space-2);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-danger-text);
+  background: none;
+  border: none;
+  border-left: var(--border-width) solid var(--color-border);
+  cursor: pointer;
+}
+
+.removeSkill:hover {
+  text-decoration: underline;
+}
+
+.removeSkill:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: calc(var(--focus-ring-width) * -1);
+}
+
+.addSkill {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.addSkillInput {
+  flex: 1 1 calc(var(--sidebar-width) * 0.8);
+  min-width: 0;
+}
+
+/* Hai nút thẳng hàng với ô nhập (bỏ qua nhãn phía trên ô) */
+.addSkillActions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: calc(var(--leading-sm) + var(--space-2) + (var(--control-height) - var(--control-height-sm)) / 2);
+}
+
+/* Kinh nghiệm / học vấn: mỗi mục một dòng có ô tích */
+.checkList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checkItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.checkItem .checkbox {
+  margin-top: calc((var(--leading-sm) - var(--space-4)) / 2);
+}
+
+.checkText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.checkTitle {
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  overflow-wrap: anywhere;
+}
+
+.checkSub {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* ===== Xem trước ===== */
+
+/* Đứng yên khi cuộn phần chỉnh sửa (thân hộp là vùng cuộn) */
+.previewPane {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+/* Nút mở / thu gọn chỉ có dưới 900px */
+.previewToggle {
+  display: none;
+}
+
+/* Chọn cỡ xem trước: hai nút liền nhau, nút đang chọn nền Xanh nhạt viền Xanh mực */
+.zoomBar {
+  display: flex;
+  align-self: flex-end;
+}
+
+.zoomButton {
+  min-height: var(--control-height-sm);
+  padding: 0 var(--space-3);
+  font: inherit;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border: var(--border-width) solid var(--color-border-strong);
+  cursor: pointer;
+}
+
+.zoomButton:first-child {
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.zoomButton:last-child {
+  margin-left: calc(var(--border-width) * -1);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.zoomActive {
+  position: relative;
+  color: var(--color-primary-soft-text);
+  background-color: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.zoomButton:focus-visible {
+  position: relative;
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Khung cuộn (dọc; cỡ thật thì cả ngang), thấp hơn màn hình để luôn thấy trọn khung cùng đầu / chân hộp */
+.previewFrame {
+  max-height: 60vh;
+  overflow: auto;
+  background-color: var(--color-bg);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.previewFrame:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Giữ chỗ đúng chiều cao CV sau khi thu nhỏ (transform không làm đổi chiều cao bố cục) */
+.previewSizer {
+  position: relative;
+  overflow: hidden;
+}
+
 /* Trang A4 kích thước thật, có lề in, thu nhỏ từ góc trên trái bằng transform (JS tính tỉ lệ) */
-.thumbPage {
+.previewPage {
   position: absolute;
   top: 0;
   left: 0;
@@ -126,11 +388,100 @@
   pointer-events: none;
 }
 
+/* Mẫu tự lo lề trang (Chuyên nghiệp): khung xem trước không thêm lề */
+.previewPageBleed {
+  padding: 0;
+}
+
 .note {
   margin: 0;
   font-size: var(--text-xs);
   line-height: var(--leading-xs);
   color: var(--color-text-muted);
+}
+
+/* Dòng chân hộp (T35l, gộp dòng nguồn dữ liệu của T35k): bên trái hai nút, hẹp thì xuống hàng riêng */
+.footNote {
+  flex: 1 1 calc(var(--sidebar-width) * 1.2);
+  align-self: center;
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+.noteLink {
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+}
+
+.noteLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.confirmText {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+}
+
+/* Dưới 900px: xếp dọc (mẫu, chỉnh sửa, xem trước); xem trước thu gọn, bấm nút mới mở */
+@media (max-width: 900px) {
+  .options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .option {
+    justify-content: center;
+    min-height: var(--touch-target);
+  }
+
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .previewPane {
+    position: static;
+  }
+
+  .previewToggle {
+    display: block;
+    width: 100%;
+    min-height: var(--touch-target);
+    padding: 0 var(--space-4);
+    font: inherit;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--color-primary);
+    background-color: var(--color-surface);
+    border: var(--border-width) solid var(--color-primary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+
+  .previewToggle:focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-primary);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  .previewCollapsed {
+    display: none;
+  }
+
+  .checkChipLabel,
+  .removeSkill,
+  .zoomButton {
+    min-height: var(--touch-target);
+  }
+
+  .zoomBar {
+    align-self: stretch;
+  }
+
+  .zoomButton {
+    flex: 1;
+  }
 }
 
 /* ===== Bản in ===== */
@@ -145,6 +496,14 @@
 @page {
   size: A4;
   margin: 15mm;
+}
+
+/* Mẫu Chuyên nghiệp (T35k, `page: cv-pro` trong CVTemplateProfessional.module.css): lề 0 để cột trái nền tối chạm
+   mép giấy; khoảng trống trên / dưới mỗi trang do thead / tfoot của mẫu tạo ra. PHẢI đứng sau @page chung ở trên:
+   Chromium bỏ qua @page có tên nếu rule này nằm trước @page chung trong thứ tự tài liệu */
+@page cv-pro {
+  size: A4;
+  margin: 0;
 }
 
 /* Chỉ khi modal Xuất CV đang mở (body có class cv-printing): ẩn mọi thứ trong body

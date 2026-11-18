@@ -23,11 +23,3 @@
   height: 100%;
   background-color: var(--color-text-muted);
 }
-
-/* Note của API: chữ nhỏ màu Chì, ngay dưới thanh */
-.note {
-  margin: 0;
-  font-size: var(--text-xs);
-  line-height: var(--leading-xs);
-  color: var(--color-text-muted);
-}

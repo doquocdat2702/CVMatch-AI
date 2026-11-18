@@ -39,10 +39,10 @@
   border-color: var(--color-primary);
 }
 
-/* Tiêu đề tin serif như thẻ tab Tất cả */
+/* Tiêu đề tin: font giao diện đậm như thẻ tab Tất cả (T35j) */
 .jobTitle {
   margin: 0;
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-lg);
   line-height: var(--leading-lg);
   font-weight: var(--weight-semibold);
@@ -111,6 +111,37 @@
 
 .pagination {
   margin-top: var(--space-5);
+}
+
+/* Tin không yêu cầu nào có bằng chứng thì không có thanh: một câu nhỏ màu Chì */
+.noRequirement {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
+
+/* Nhóm cuối "Chưa có bằng chứng trong hồ sơ" (T35j): thu gọn sẵn, dòng bấm mở chữ đậm */
+.restGroup {
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.restToggle {
+  width: fit-content;
+  min-height: var(--control-height);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+.restToggle:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.restList {
+  margin-top: var(--space-4);
 }
 
 .pagination:empty {
@@ -194,6 +225,7 @@
 
 /* Vùng bấm tối thiểu trên điện thoại (link không thuộc quy tắc chung cho nút của SiteLayout) */
 @media (max-width: 900px) {
+  .restToggle,
   .button,
   .primaryLink {
     min-height: var(--touch-target);

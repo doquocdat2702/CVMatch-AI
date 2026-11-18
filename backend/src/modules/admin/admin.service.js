@@ -3,6 +3,7 @@ const prisma = require('../../config/prisma');
 const { hashPassword } = require('../../utils/hash');
 const { monthKey, lastNMonths, countByPeriod, countByEnum } = require('../../utils/stats');
 const { removeFile } = require('../cv/cv.service');
+const { removeAvatarFile } = require('../candidate/candidate.service');
 
 // Cùng quy tắc với auth.service (đăng ký)
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -147,7 +148,9 @@ async function getUserDetail(userId) {
       createdAt: true,
       updatedAt: true,
       role: { select: { name: true } },
+      // Ảnh đại diện không trả cho quản trị viên (T35k): bỏ đường dẫn file
       candidateProfile: {
+        omit: { avatarPath: true },
         include: {
           _count: {
             select: { cvs: true, skills: true, experiences: true, educations: true, applications: true },
@@ -373,6 +376,8 @@ async function deleteUser(adminId, userId) {
     for (const cv of candidateProfile.cvs) {
       await removeFile(cv.filePath);
     }
+    // Ảnh đại diện (T35k)
+    await removeAvatarFile(candidateProfile.avatarPath);
   }
 
   return { id };

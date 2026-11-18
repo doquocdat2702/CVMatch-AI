@@ -63,7 +63,8 @@ function inferMode(data) {
 }
 
 // "Hệ thống phân tích CV của bạn như thế nào": 4 bước theo đúng luồng của backend
-// (text-extraction -> rule.parser + nlp.parser -> normalizer -> người dùng xác nhận), chế độ đã dùng, câu nhắc.
+// (text-extraction -> rule.parser + nlp.parser -> normalizer -> người dùng xác nhận), chế độ đã dùng.
+// T35j: bỏ câu nhắc "không dùng để đánh giá năng lực" (CLAUDE.md mục 5)
 //   mode: chế độ của lần phân tích vừa rồi (trang CV của tôi chuyển sang), null thì suy ra từ dữ liệu
 function AnalysisGuide({ mode, data }) {
   // Mở sẵn ở lần đầu; đọc localStorage đúng một lần khi vào trang
@@ -106,7 +107,6 @@ function AnalysisGuide({ mode, data }) {
           </li>
         </ol>
         <p className={styles.guideMode}>{modeLine}</p>
-        <p className={styles.guideNote}>Kết quả chỉ hỗ trợ đối chiếu, không dùng để đánh giá năng lực.</p>
       </div>
     </details>
   )
@@ -241,11 +241,18 @@ function formatPeriod(startDate, endDate) {
   return ''
 }
 
-// Câu trích từ CV, hiện sẵn và thu gọn được (thẻ details của HTML, không cần JS)
-function Evidence({ text }) {
-  if (!text) return null
+// So nguyên văn bỏ khác biệt hoa thường / khoảng trắng
+function sameText(a, b) {
+  const clean = (value) => String(value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('vi')
+  return clean(a) === clean(b)
+}
+
+// Câu trích từ CV, thu gọn sẵn (T35j), chỉ hiện khi bấm (thẻ details của HTML, không cần JS).
+// Trùng nguyên văn tên mục (vd kỹ năng "Excel" có bằng chứng "Excel") thì ẩn hẳn: không thêm thông tin gì
+function Evidence({ text, name }) {
+  if (!text || sameText(text, name)) return null
   return (
-    <details className={styles.evidence} open>
+    <details className={styles.evidence}>
       <summary className={styles.evidenceToggle}>Bằng chứng trong CV</summary>
       <blockquote className={styles.evidenceText}>{text}</blockquote>
     </details>
@@ -261,7 +268,7 @@ function ItemContent({ group, item }) {
       <>
         <p className={styles.title}>{item.rawName}</p>
         {normalized && <p className={styles.meta}>Chuẩn hóa thành: {normalized}</p>}
-        <Evidence text={item.evidence} />
+        <Evidence text={item.evidence} name={item.rawName} />
       </>
     )
   }
@@ -274,7 +281,7 @@ function ItemContent({ group, item }) {
         <p className={styles.meta}>{item.companyName || 'Chưa có tên công ty'}</p>
         {period && <p className={styles.meta}>{period}</p>}
         {item.description && <p className={styles.description}>{item.description}</p>}
-        <Evidence text={item.evidence} />
+        <Evidence text={item.evidence} name={item.position} />
       </>
     )
   }
@@ -315,6 +322,10 @@ function ParsedCV() {
 
   // Dòng đang gửi "Xác nhận": "skill-12", "experience-3"...
   const [confirmingKey, setConfirmingKey] = useState(null)
+
+  // "Xác nhận tất cả" kỹ năng (T35j): hộp xác nhận mở / đang chạy
+  const [confirmAllOpen, setConfirmAllOpen] = useState(false)
+  const [confirmingAll, setConfirmingAll] = useState(false)
 
   // Modal xác nhận xóa: { group, item }
   const [deleteTarget, setDeleteTarget] = useState(null)
@@ -429,6 +440,35 @@ function ParsedCV() {
     }
   }
 
+  // Xác nhận mọi kỹ năng chưa xác nhận: không có API hàng loạt nên gọi lần lượt hàm update đã có (như nút
+  // "Xác nhận" từng dòng), tuần tự để không dồn request; lỗi ở một mục không dừng các mục sau. Báo số đã xác nhận
+  async function handleConfirmAll() {
+    const config = GROUPS.skill
+    const targets = data.skills.filter((item) => !item.isConfirmed)
+    setConfirmingAll(true)
+    let done = 0
+    for (const item of targets) {
+      try {
+        await config.update(item.id, currentPayload(config, item))
+        done += 1
+      } catch {
+        // Bỏ qua mục lỗi, báo tổng ở cuối
+      }
+    }
+    setConfirmingAll(false)
+    setConfirmAllOpen(false)
+    const failed = targets.length - done
+    setNotice({
+      group: 'skill',
+      type: failed > 0 ? 'error' : 'success',
+      text:
+        failed > 0
+          ? `Đã xác nhận ${done}/${targets.length} kỹ năng. ${failed} kỹ năng chưa xác nhận được, bấm "Sửa" để kiểm tra.`
+          : `Đã xác nhận ${done} kỹ năng.`,
+    })
+    await refresh('skill')
+  }
+
   // ===== Xóa =====
 
   function openDelete(group, item) {
@@ -507,6 +547,82 @@ function ParsedCV() {
     return rows
   }
 
+  // Kỹ năng chưa xác nhận: nhóm đứng đầu bảng và danh sách của "Xác nhận tất cả"
+  const unconfirmedSkills = data.skills.filter((item) => !item.isConfirmed)
+
+  // Nút Xác nhận / Sửa / Xóa của một mục (dùng chung cho bảng kỹ năng và danh sách kinh nghiệm, học vấn)
+  function renderActions(group, item) {
+    const busy = confirmingKey !== null || confirmingAll
+    return (
+      <div className={styles.actions}>
+        {!item.isConfirmed && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleConfirm(group, item)}
+            loading={confirmingKey === `${group}-${item.id}`}
+            disabled={busy}
+          >
+            {confirmingKey === `${group}-${item.id}` ? 'Đang xác nhận...' : 'Xác nhận'}
+          </Button>
+        )}
+        <Button variant="ghost" size="sm" onClick={() => openEditor(group, item)} disabled={busy}>
+          Sửa
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => openDelete(group, item)} disabled={busy}>
+          Xóa
+        </Button>
+      </div>
+    )
+  }
+
+  // Bảng kỹ năng gọn (T35j): Kỹ năng | Nguồn | Trạng thái | Thao tác, mỗi kỹ năng một dòng thấp.
+  // Nhóm "Chưa xác nhận (n)" đứng trước "Đã xác nhận (n)". Dưới 900px mỗi dòng thành một thẻ xếp dọc (CSS)
+  function renderSkillTable(items, title) {
+    if (items.length === 0) return null
+    return (
+      <div className={styles.skillGroup}>
+        <h3 className={styles.skillGroupTitle}>
+          {title} ({items.length})
+        </h3>
+        <div className={styles.skillTableWrap}>
+          <table className={styles.skillTable}>
+            <thead>
+              <tr>
+                <th scope="col">Kỹ năng</th>
+                <th scope="col">Nguồn</th>
+                <th scope="col">Trạng thái</th>
+                <th scope="col" className={styles.alignRight}>
+                  Thao tác
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item) => (
+                <tr key={item.id}>
+                  <td className={styles.skillCell}>
+                    <ItemContent group="skill" item={item} />
+                  </td>
+                  <td data-label="Nguồn">
+                    <Badge status={item.source}>{PROFILE_SOURCE_LABEL[item.source] || item.source}</Badge>
+                  </td>
+                  <td data-label="Trạng thái">
+                    {item.isConfirmed ? (
+                      <Badge status={CONFIRMED_STATUS}>Đã xác nhận</Badge>
+                    ) : (
+                      <Badge status={UNCONFIRMED_STATUS}>Chưa xác nhận</Badge>
+                    )}
+                  </td>
+                  <td className={styles.alignRight}>{renderActions('skill', item)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
+
   function renderSection(group) {
     const config = GROUPS[group]
     const items = data[config.dataKey]
@@ -516,9 +632,21 @@ function ParsedCV() {
       <section key={group} className={styles.section} aria-labelledby={`parsed-${group}`}>
         <div className={styles.sectionHeader}>
           <h2 id={`parsed-${group}`}>{config.title}</h2>
-          <Button variant="secondary" size="sm" onClick={() => openEditor(group, null)}>
-            Thêm thủ công
-          </Button>
+          <div className={styles.sectionActions}>
+            {group === 'skill' && unconfirmedSkills.length > 0 && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setConfirmAllOpen(true)}
+                disabled={confirmingKey !== null || confirmingAll}
+              >
+                Xác nhận tất cả
+              </Button>
+            )}
+            <Button variant="secondary" size="sm" onClick={() => openEditor(group, null)}>
+              Thêm thủ công
+            </Button>
+          </div>
         </div>
 
         {sectionNotice && (
@@ -530,9 +658,17 @@ function ParsedCV() {
           </p>
         )}
 
-        {items.length === 0 ? (
-          <p className={styles.empty}>{config.emptyText}</p>
-        ) : (
+        {items.length === 0 && <p className={styles.empty}>{config.emptyText}</p>}
+        {items.length > 0 && group === 'skill' && (
+          <>
+            {renderSkillTable(unconfirmedSkills, 'Chưa xác nhận')}
+            {renderSkillTable(
+              items.filter((item) => item.isConfirmed),
+              'Đã xác nhận'
+            )}
+          </>
+        )}
+        {items.length > 0 && group !== 'skill' && (
           <ul className={styles.list}>
             {items.map((item) => (
               <li key={item.id} className={styles.item}>
@@ -549,35 +685,7 @@ function ParsedCV() {
                       <Badge status={UNCONFIRMED_STATUS}>Chưa xác nhận</Badge>
                     )}
                   </div>
-                  <div className={styles.actions}>
-                    {!item.isConfirmed && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleConfirm(group, item)}
-                        loading={confirmingKey === `${group}-${item.id}`}
-                        disabled={confirmingKey !== null}
-                      >
-                        {confirmingKey === `${group}-${item.id}` ? 'Đang xác nhận...' : 'Xác nhận'}
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEditor(group, item)}
-                      disabled={confirmingKey !== null}
-                    >
-                      Sửa
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openDelete(group, item)}
-                      disabled={confirmingKey !== null}
-                    >
-                      Xóa
-                    </Button>
-                  </div>
+                  {renderActions(group, item)}
                 </div>
               </li>
             ))}
@@ -618,17 +726,9 @@ function ParsedCV() {
         </Button>
       </div>
       <AnalysisGuide mode={modeFromAnalysis} data={data} />
-      <div className={styles.reminder} role="note">
-        <p className={styles.reminderText}>
-          Dữ liệu dưới đây được đọc tự động từ CV nên có thể chưa chính xác. Bạn nên kiểm tra và chỉnh sửa.
-        </p>
-        <p className={styles.reminderText}>
-          Với mục "Chưa xác nhận", bấm "Xác nhận" nếu đúng hoặc "Sửa" nếu cần chỉnh. Khi phân tích lại CV, mục đã xác
-          nhận được giữ nguyên.
-        </p>
-      </div>
-      <p className={styles.legend}>
-        Nguồn: Từ điển là kỹ năng đọc bằng từ điển, AI là mục do AI đọc từ CV, Tự nhập là mục bạn tự thêm.
+      {/* Câu phụ duy nhất của trang (T35j, D3): dữ liệu đọc tự động nên cần kiểm tra trước khi xác nhận */}
+      <p className={styles.reminder} role="note">
+        Dữ liệu được đọc tự động từ CV. Kiểm tra từng mục rồi bấm "Xác nhận" hoặc "Sửa".
       </p>
 
       {GROUP_ORDER.map(renderSection)}
@@ -659,6 +759,28 @@ function ParsedCV() {
             {renderEditorFields(editorConfig)}
           </form>
         )}
+      </Modal>
+
+      <Modal
+        open={confirmAllOpen}
+        onClose={() => {
+          if (!confirmingAll) setConfirmAllOpen(false)
+        }}
+        title="Xác nhận tất cả kỹ năng"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setConfirmAllOpen(false)} disabled={confirmingAll}>
+              Hủy
+            </Button>
+            <Button onClick={handleConfirmAll} loading={confirmingAll}>
+              {confirmingAll ? 'Đang xác nhận...' : 'Xác nhận'}
+            </Button>
+          </>
+        }
+      >
+        <p className={styles.modalText}>
+          Xác nhận {unconfirmedSkills.length} kỹ năng chưa xác nhận? Mục đã xác nhận được giữ nguyên khi phân tích lại CV.
+        </p>
       </Modal>
 
       <Modal

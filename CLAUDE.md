@@ -36,7 +36,10 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 - 14 entity: User, Role, Company, RecruiterProfile, CandidateProfile, CV, CandidateSkill,
   CandidateExperience, CandidateEducation, Skill, Job, JobRequirement, Application, Notification.
 - **Ngoại lệ trường DB đã duyệt (T35g): `Application.cvId Int?`** (quan hệ tới CV, `onDelete: Restrict`, index cvId),
-  migration `20261106201202_add_application_cv`. Ngoài trường này không thêm trường nào.
+  migration `20261106201202_add_application_cv`.
+- **Ngoại lệ trường DB đã duyệt (T35k): `CandidateProfile.avatarPath String?` và `CandidateProfile.objective String?
+  @db.Text`**, migration `20261117090000_add_candidate_avatar_objective`. Ngoài các trường này không thêm trường nào.
+  KHÔNG có Sở thích, Ngày sinh, Giới tính; KHÔNG lưu / hiển thị mức độ thành thạo kỹ năng.
 - 4 enum: CvStatus (UPLOADED, PROCESSING, COMPLETED, FAILED) | RequirementType (REQUIRED, PREFERRED, OPTIONAL) |
   MatchStatus (SUPPORTED, UNCERTAIN, NOT_FOUND) | ApplicationStatus (APPLIED, REVIEWING, ACCEPTED, REJECTED).
 - Luồng cốt lõi:
@@ -66,6 +69,12 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   Thứ tự roles -> company (dùng chung ensureSingleCompany) -> admin -> skills. Admin theo ADMIN_EMAIL đã có thì
   **bỏ qua, không đổi mật khẩu / role / isActive** ("Admin đã tồn tại, bỏ qua"); chỉ tạo khi chưa có.
   Skill vẫn upsert (đặt lại aliases của skill có trong seed). Không bước nào xóa dữ liệu.
+- **Tin công khai (T35j, mở rộng response / tham số của API có sẵn, không thêm endpoint)**: `GET /jobs` và
+  `GET /jobs/:id` trả thêm `skills: [tên Skill]` mỗi tin (từ JobRequirement có skillId, Bắt buộc -> Ưu tiên -> Không
+  bắt buộc, không trùng, tối đa 5); `GET /jobs` trả thêm `topSkills` (6 Skill có ở nhiều tin đang mở nhất, mỗi tin
+  đếm một lần, bằng nhau thì theo tên). `keyword` khớp tiêu đề HOẶC tên / alias Skill trong yêu cầu của tin (so cả
+  dạng không dấu `normalizeText`); từ khóa >= 3 ký tự khớp một phần, ngắn hơn chỉ khớp đúng tên / một alias ("Go"
+  ra Skill Go, "c" không khớp mọi kỹ năng có chữ c). Không N+1: skills của cả trang lấy trong một truy vấn.
 - Khách xem công ty duy nhất qua GET /api/company/public (T35d, đã duyệt trong task): không cần đăng nhập,
   chỉ trả name, description, address, website (không trả id). Dùng cho trang Giới thiệu và Liên hệ.
   (GET /companies/:id công khai có từ trước nhưng cần biết mã công ty, khách không có cách lấy khi chưa có tin nào mở.)
@@ -109,6 +118,20 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   trường `currentCv`.
 - Xóa CV đang là `cvId` của một đơn -> 400 "CV này đã được gửi kèm đơn ứng tuyển nên không thể xóa." (kiểm trước,
   khóa ngoại Restrict chặn dự phòng). `GET /cvs` trả thêm `applicationCount` mỗi CV. Rút đơn xong thì CV đó xóa được.
+- **Ảnh đại diện ứng viên (T35k, 2 endpoint đã duyệt)**: `POST /api/candidates/me/avatar` (multipart, field `avatar`) và
+  `DELETE /api/candidates/me/avatar`, chỉ CANDIDATE, chỉ hồ sơ của chính mình (kiểm role trước khi nhận file). Chỉ nhận
+  JPEG / PNG theo MAGIC BYTES (FFD8FF, 89504E470D0A1A0A), không tin đuôi file hay Content-Type; SVG, GIF, WEBP và mọi loại
+  khác -> 400 "Chỉ nhận ảnh JPEG hoặc PNG."; tối đa **1 MB** -> 400 "Ảnh vượt quá 1 MB. Vui lòng chọn ảnh nhỏ hơn.". Multer
+  giữ file trong bộ nhớ, kiểm xong mới ghi `UPLOAD_DIR/avatars/<uuid>.jpg|png` (thư mục upload vẫn không phục vụ tĩnh).
+  Tải ảnh mới thì xóa file cũ; DELETE xóa file + `avatarPath = null`; admin xóa tài khoản ứng viên thì xóa cả file ảnh.
+  Không thêm endpoint đọc ảnh: ảnh trả dạng data URI base64 hoặc null trong trường `avatar` (thẻ img không gửi token
+  được, bản in CV cần ảnh nằm sẵn). **`GET /candidates/me` chỉ có trường `avatar` khi gọi kèm `?avatar=1`** (đúng chuỗi
+  "1"); không có tham số thì response không có trường này. Frontend `getMyProfile({ withAvatar: true })` chỉ ở 3 chỗ:
+  thẻ tóm tắt khu Tài khoản ứng viên (`AccountAreas`), trang Hồ sơ, hộp Xuất CV; nơi khác (AccountMenu, chi tiết tin,
+  chi tiết đối chiếu, Kết quả phân tích CV) gọi không kèm. PUT /candidates/me KHÔNG trả `avatar` (giao diện không dùng);
+  chỉ 2 endpoint ảnh luôn trả `avatar` để trang Hồ sơ cập nhật ảnh ngay.
+  `avatarPath` không bao giờ trả ra ngoài; ảnh KHÔNG trả cho HR / Admin (`GET /candidates/:id`, `GET /admin/users/:id`
+  bỏ `avatarPath`). Base64 nặng ~1,33 lần ảnh (ảnh 1 MB -> ~1,33 MB, chỉ ở các lần gọi kèm ảnh).
 - **Đối chiếu vẫn dùng hồ sơ hiện tại** (lần phân tích CV gần nhất + chỉnh sửa của ứng viên), không đọc file CV của đơn.
   Mô tả chi tiết cách phân tích và đối chiếu: `docs/cach-phan-tich-va-doi-chieu.md`.
 - helmet, CORS theo CORS_ORIGIN, JWT_SECRET >= 32 ký tự.
@@ -125,6 +148,20 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 - Parse lỗi -> CV.status = FAILED, errorMessage "Phân tích thất bại: <lý do>", giữ rawText.
   Parse thành công -> COMPLETED + cập nhật parsedAt (trong cùng transaction với dữ liệu).
 - Parse ở chế độ rule chỉ thay kỹ năng chưa xác nhận có source RULE, giữ kỹ năng từ NLP.
+- **Mục tiêu nghề nghiệp (T35k)**: ứng viên tự nhập (tối đa 1000 ký tự, backend cắt khoảng trắng thừa, quá -> 400).
+  Phân tích CV tự điền: rule tìm đoạn dưới tiêu đề (T35l mở rộng; không phân biệt hoa thường, có / không dấu, có / không
+  dấu hai chấm, bỏ số thứ tự và ký hiệu đầu dòng ■ ◆ ● ► ➤ ✓ #): "Mục tiêu nghề nghiệp", "Mục tiêu công việc",
+  "Mục tiêu", "Định hướng nghề nghiệp", "Giới thiệu bản thân", "Giới thiệu", "Về tôi", "Tóm tắt", "Career Objective",
+  "Objective", "Career Goal(s)", "Summary", "Professional Summary", "About Me", "Profile Summary". KHÔNG nhận "Profile"
+  đứng một mình (thường là thông tin liên hệ; vẫn là tiêu đề dừng). `rule.parser.js: findObjective` (trả kèm lý do) /
+  `extractObjective`, tới tiêu đề mục kế tiếp, tối đa 1000 ký tự; hybrid: Gemini trả `objective`, không có thì dùng
+  kết quả rule. Không điền được thì `cv.service.js` ghi một dòng log `[CV] CV <id>: không điền mục tiêu nghề nghiệp vì
+  ...` (không thấy tiêu đề khớp / có tiêu đề nhưng không có nội dung / hybrid thì Gemini cũng không trả / ô đã có nội
+  dung sẵn); chỉ mã CV và lý do, không ghi nội dung CV, không hiện ra giao diện. **QUY TẮC KHÔNG GHI ĐÈ: chỉ điền khi objective đang
+  trống** (điều kiện nằm ngay trong lệnh ghi `updateMany where objective null`), như họ tên / số điện thoại / tiêu đề.
+  Không có trường DB nào phân biệt "ứng viên nhập" với "phân tích điền" nên đã điền một lần thì CV sau cũng không thay;
+  muốn lấy mục tiêu từ CV mới thì ứng viên xóa trống ô rồi phân tích lại. Trang Hồ sơ (chế độ sửa) nhắc đúng câu này
+  dưới bộ đếm, chỉ khi ô đang có nội dung: "Xóa trống ô này rồi phân tích lại CV nếu muốn lấy mục tiêu từ CV mới."
 - Khóa ngắn < 3 ký tự (QA, AI, JS...) chỉ khớp khi viết HOA và đứng riêng.
 - Seed: MySQL, PostgreSQL, SQL Server là Skill riêng, tách khỏi SQL (quy tắc T14). Illustrator không có alias "ai".
 - **Seed theo phòng ban (Task F2)**: 133 Skill, nhóm bằng comment trong `prisma/seed.js`: Phát triển phần mềm, Ứng dụng
@@ -174,7 +211,23 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   Icon chức năng chỉ có chuông thông báo (T35b) và 3 icon footer vị trí / điện thoại / phong bì (T35e, ngoại lệ đã duyệt),
   đều là SVG viết tay. Tên công ty và thanh dưới của footer viết hoa (ngoại lệ đã duyệt).
 - Coverage luôn hiển thị dạng **"x/y yêu cầu có bằng chứng (z%)"** + thanh màu trung tính, không thang đỏ-xanh,
-  không nhãn "phù hợp/không phù hợp". Note của API luôn hiện ngay dưới.
+  không nhãn "phù hợp/không phù hợp".
+- **Note của API và câu nhắc 'không phải điểm năng lực' / 'quyết định tuyển dụng thuộc về nhà tuyển dụng' chỉ hiện
+  phía HR, /privacy và /terms; KHÔNG hiện ở các màn hình ứng viên** (T35j, D4), kể cả khối Quy trình ứng tuyển trên
+  trang chủ. Phía HR: một dòng nhỏ dưới bảng trong CandidateMatrixModal và trang Ứng viên gợi ý.
+  Màn hình ứng viên tối đa MỘT câu phụ, chỉ giữ khi thiếu nó người dùng sẽ làm sai.
+- Khối "Quy trình ứng tuyển" (trang chủ): 4 bước, mỗi bước một câu; số thứ tự chỉ do `<ol>` sinh ra (CSS counter),
+  không in số bằng tay.
+- Bảng đối chiếu KHÔNG có khối "Cách đọc bảng này". Badge trạng thái (`components/matching/MatchStatusBadge`, trong
+  RequirementEvidenceMatrix nên cả Chi tiết đối chiếu và CandidateMatrixModal của HR) có chú thích một câu: "Có bằng
+  chứng — Hồ sơ có kỹ năng hoặc bằng cấp đúng với yêu cầu." / "Chưa chắc chắn — Hồ sơ có dấu hiệu liên quan nhưng chưa
+  đủ rõ." / "Không tìm thấy — Hồ sơ chưa có thông tin về yêu cầu này." Rê chuột: thuộc tính `title` (không thư viện
+  tooltip); bấm (cảm ứng / bàn phím): câu hiện dưới Badge, bấm ra ngoài hoặc Esc thì ẩn; `aria-describedby` cho trình
+  đọc màn hình. Quy tắc đầy đủ (số năm, hai kỹ năng khác nhau không tính là khớp): `docs/cach-phan-tich-va-doi-chieu.md`
+  mục 8.4.
+- Kiểu chữ (T35j): Source Serif 4 chỉ ở Logo, tiêu đề trang (h1 / PageHeader), khối mở đầu trang chủ và nửa Xanh mực
+  của trang auth; tiêu đề thẻ tin, Panel, nhóm dùng Be Vietnam Pro đậm. Badge "Không tìm thấy" màu xám xanh (mọi bảng
+  đối chiếu, kể cả HR).
 - Tên hệ thống lấy từ `VITE_APP_NAME`, khai báo trong **`frontend/.env`** (Vite chỉ đọc .env của thư mục frontend;
   đặt ở backend/.env không có tác dụng). Thiếu biến thì dùng tên mặc định "Tuyển dụng DMatch". Đổi tên thì sửa tay
   chữ cái trong `frontend/public/favicon.svg` (hiện là "D" cho "DMatch").
@@ -219,7 +272,8 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 - Khu Tài khoản (T35i): `AccountLayout` chỉ trình bày (prop `items`, `navLabel`, `summary`, `outletContext`); dữ liệu
   thẻ tóm tắt do `components/layout/AccountAreas.jsx` tải: `CandidateAccountLayout`, `RecruiterAccountLayout`,
   `AdminAccountLayout`. Trang con gọi `useOutletContext().refreshProfile` sau khi lưu hồ sơ.
-- `ChangePasswordForm` (từ T35e chỉ dùng ở trang Đổi mật khẩu riêng), `RequirementEvidenceMatrix` (props thuần, HR dùng lại),
+- `ChangePasswordForm` (từ T35e chỉ dùng ở trang Đổi mật khẩu riêng), `RequirementEvidenceMatrix` (props thuần, HR dùng lại;
+  T35j chia nhóm theo loại, tiêu đề dòng là tên tiêu chí, prop `notFoundLink`, `note` chỉ HR truyền),
   `ApplyAction`, `components/cv-export/` (buildCVData + 2 mẫu CV Cổ điển / Hiện đại),
   `components/dashboard/` (T35c: StatCard, BarChart vẽ bằng div + CSS).
 - utils: format.js (formatDateTime, formatDate, formatMonthYear, formatNumber, formatRelativeTime; T35f thêm
@@ -233,6 +287,18 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   updateMyCompany xóa bản lưu).
 - hooks: useAuth (thêm profileName, setProfileName ở T35e), usePublicCompany (T35e: footer, /privacy, /terms),
   useDocumentTitle (T35f).
+- Component T35k: `components/cv-export/CVTemplateProfessional` (mẫu CV thứ ba "Chuyên nghiệp": hai cột, cột trái nền
+  Mực đen có ảnh; in bằng `@page cv-pro` lề 0 khai báo sau `@page` chung trong CVExportModal.module.css, nền cột trái
+  `position: fixed` khi in, thead / tfoot lặp khoảng trống mỗi trang; chi tiết design.md "Xuất CV: 3 mẫu"),
+  `utils/initials.js` (chữ viết tắt họ tên, tách từ AccountLayout), `middleware/avatar-upload.middleware.js` (backend).
+  AccountLayout nhận thêm `summary.avatar` (chỉ ứng viên). Hai mẫu CV cũ thêm mục "Mục tiêu nghề nghiệp".
+- T35l (không thêm component mới): `CVExportModal` thành Modal `wide` hai phần, chỉnh sửa bản in (state trong hộp:
+  `makeDraft` / `applyDraft`, không API lưu, không localStorage) + xem trước sống (`CVPreview`); mẫu Chuyên nghiệp cột
+  trái chỉ còn ảnh / họ tên / tiêu đề / Liên hệ, cột phải Mục tiêu -> Kỹ năng (thẻ) -> Kinh nghiệm -> Học vấn; Hiện đại
+  kỹ năng dạng thẻ, cột 1:2. Chi tiết design.md "Xuất CV: 3 mẫu".
+- Component T35j: `components/job/SkillTags` (nhãn kỹ năng, `max` + "+n"), `components/job/JobDescription` (JD tách
+  phần, dùng ở chi tiết tin và chi tiết đối chiếu), `pages/auth/AuthLayout` (bố cục hai nửa cho Đăng nhập / Đăng ký /
+  Quên / Đặt lại mật khẩu), `utils/skillLabel.js` (tách ghi chú trong ngoặc, gộp chip kỹ năng ở trang Hồ sơ).
 - Component T35f: `components/job/` (JobCard, JobCardList, JobCardSkeleton), `components/matching/CoverageBar`,
   `components/layout/` PageHeader + Panel (chỉ trang ứng viên), `components/cv/CvViewButton`,
   `components/application/ApplicationProgress`.
@@ -248,7 +314,7 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 | 1–8 Backend | T01–T25, T22b | Xong |
 | 8b Gia cố & thống kê | G1–G6, G7 (công ty cố định theo COMPANY_NAME, seed an toàn) | Xong |
 | Kiểm thử backend | smoke / timeout / nlp-fail / real-mail | Xong |
-| 9 Frontend | T26, T27, T28, T29, T29b, T30, T31, T32, T33, T34, T35, T35b, T35c, T35d, T35e, T35f, T35g, T35h, T35i | Xong |
+| 9 Frontend | T26, T27, T28, T29, T29b, T30, T31, T32, T33, T34, T35, T35b, T35c, T35d, T35e, T35f, T35g, T35h, T35i, T35j, T35k, T35l | Xong |
 | 9b Dữ liệu & chuẩn hóa | Task F: F1, F2, F4, F5 (giữ cụm "A/B" là tên Skill), tin mẫu theo phòng ban (F3 làm trước đó) | Xong (chưa chạy trên DB thật) |
 | 10 Đánh giá | **T36**–T38 | **Tiếp theo: T36** |
 
@@ -347,7 +413,7 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   (115 yêu cầu, đều gắn Skill). Tin cùng tiêu đề đã có
   thì bị bỏ qua (JD cũ giữ nguyên), muốn thay JD thì chạy `--remove` trước. Unit test chuẩn hóa (file local):
   `node --env-file=.env.test scripts/test-normalize.js`. DB thật CHƯA chạy seed mới.
-- **T35i (đã xong, chưa commit)**: menu admin bỏ "Tạo nhà tuyển dụng" (nút "Tạo tài khoản nhà tuyển dụng" có sẵn trên
+- **T35i (đã xong, chủ dự án tự commit)**: menu admin bỏ "Tạo nhà tuyển dụng" (nút "Tạo tài khoản nhà tuyển dụng" có sẵn trên
   trang danh sách, h1 và mục Sidebar đổi thành "Tài khoản người dùng", trang tạo có link "Quay lại danh sách tài khoản").
   Khu Tài khoản cho HR / Admin cùng bố cục với ứng viên, đặt trong MainLayout (mục 5); thẻ tóm tắt HR: chữ viết tắt,
   họ tên, email, Badge "Nhà tuyển dụng", tên công ty, "Hồ sơ đã có x/3 mục" (họ tên, số điện thoại, chức vụ); admin:
@@ -357,6 +423,30 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   có `?jobId` (mặc định; `jobId` không phải tin của mình cũng về đây), dùng `GET /applications/mine` phân trang phía
   server 9 dòng, thêm cột "Tin tuyển dụng" (link trang sửa tin, "Đã đóng"); chọn một tin như cũ. Smoke có 6 ca mới cho
   `/applications/mine` (67 endpoint).
+- **T35j (đã xong, chưa commit)**: nâng giao diện ứng viên cho trang tuyển dụng công nghệ. Bảng đối chiếu chia nhóm
+  theo loại, tiêu đề dòng là tên tiêu chí; chi tiết đối chiếu có kết quả tổng ở đầu (x/y + thanh + đếm 3 trạng thái),
+  Badge trạng thái có chú thích một câu (`MatchStatusBadge`, thay khối "Cách đọc bảng này"), link "Cập nhật hồ sơ" ở dòng Không tìm thấy, JD dùng `JobDescription`. Chip kỹ năng Hồ sơ
+  theo tên Skill / tên bỏ ngoặc + ghi chú nhỏ, gộp trùng (chỉ hiển thị). Tab Gợi ý: tin 0 bằng chứng xuống nhóm cuối
+  thu gọn, số trên tab chỉ đếm tin có bằng chứng. Đơn ứng tuyển: một nút "Xem đối chiếu" (bỏ hộp bảng đối chiếu);
+  "Lúc ứng tuyển" giữ dạng % vì Application chỉ lưu coverage, không lưu x/y. API tin có skills / topSkills / tìm theo
+  kỹ năng (mục 4.1). Thẻ tin có nhãn kỹ năng, tóm tắt 1 dòng; trang chủ có "Tìm nhanh" + khối "Quy trình ứng tuyển";
+  chi tiết tin có khung "Thông tin chung". Trang auth chung bố cục hai nửa (`AuthLayout`). Kết quả phân tích CV: bảng
+  kỹ năng gọn, "Chưa xác nhận" trước, "Xác nhận tất cả" (gọi tuần tự API cập nhật có sẵn), bằng chứng thu gọn. Bảng câu
+  đã bỏ / rút lưu ngoài repo (báo cáo T35j).
+- **T35k (đã xong, chưa commit)**: ảnh đại diện ứng viên (mục 4.3), mục tiêu nghề nghiệp (mục 4.4), mẫu CV thứ ba
+  "Chuyên nghiệp", hai mẫu cũ thêm mục mục tiêu, hộp Xuất CV có dòng nguồn dữ liệu kèm link Hồ sơ / Kết quả phân tích CV,
+  /privacy thêm ảnh đại diện và mục tiêu vào danh sách dữ liệu thu thập. Migration chỉ đã chạy trên DB test.
+  **DB thật CHƯA có migration `20261117090000_add_candidate_avatar_objective`**: trước khi chạy `npm run dev` trên
+  cvmatch, sao lưu DB rồi chạy `npx prisma migrate deploy` (thư mục backend, dùng `.env`); Prisma client đã sinh lại
+  theo schema mới nên chưa migrate thì mọi truy vấn CandidateProfile trên cvmatch lỗi thiếu cột.
+- **T35l (đã xong, chưa commit)**: CV xuất ra gọn một trang (hồ sơ cỡ trung bình ở cả 3 mẫu, kiểm bằng PDF thật), mẫu
+  Chuyên nghiệp sắp lại hai cột, kỹ năng dạng thẻ / một dòng, chống tiêu đề mồ côi và trang trống; hộp Xuất CV có
+  phần chỉnh sửa cho lần xuất này (KHÔNG lưu: không kéo thả, không sửa nội dung từng mục kinh nghiệm / học vấn); mở
+  rộng tiêu đề mục tiêu + log lý do (mục 4.4). Không thêm thư viện, trường DB, endpoint.
+  Phần B (kiểm bằng PDF thật, DB test, rule): tối giản / trung bình 1 trang, nhiều dữ liệu (30 kỹ năng, 5 kinh nghiệm
+  x 5 ý, 3 học vấn, mục tiêu 1000 ký tự) 2 trang ở cả 3 mẫu. Để đạt 2 trang, mẫu Chuyên nghiệp đổi biến:
+  `--cv-side-width` 32%, `--cv-page-space` 10mm, `--cv-gutter` 8mm, thêm `--cv-leading` 20px. Khung xem trước có
+  nút "Vừa khung" / "Cỡ thật" (vừa khung chữ chỉ ~5-7px, không đọc được). Kịch bản kiểm thử nằm ngoài repo.
 - **T36–T38**: so sánh rule vs hybrid trên cùng bộ dữ liệu. Trước bảo vệ cần bộ **dữ liệu demo thật**
   (job đa ngành, JD đầy đủ, CV mẫu phân tích hybrid để ma trận có đủ xanh/vàng/đỏ).
 

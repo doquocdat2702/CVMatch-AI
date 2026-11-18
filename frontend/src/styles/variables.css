@@ -24,6 +24,10 @@
   --color-disabled-bg: #eef2f7;
   --color-disabled-text: #7d8a9a;
   --color-overlay: rgba(20, 32, 46, 0.45);
+  /* Chữ / đường kẻ đặt trên nền Mực đen (cột trái mẫu CV Chuyên nghiệp, T35k) */
+  --color-on-ink: #ffffff; /* 16.46:1 trên Mực đen */
+  --color-on-ink-muted: #c3cdd9; /* 10.23:1 trên Mực đen */
+  --color-on-ink-line: #3a4a5d; /* đường kẻ trang trí, không mang thông tin */
 
   /* ===== Màu trạng thái (Badge, lỗi form) ===== */
   --color-success-text: #1f6b3a;
@@ -88,6 +92,7 @@
   /* ===== Bo góc, viền, bóng ===== */
   --radius-sm: 4px;
   --radius-md: 8px;
+  --radius-full: 50%; /* ảnh đại diện tròn (T35k) */
   --border-width: 1px;
   --border-accent-width: 3px; /* vạch trái của menu đang chọn */
   --shadow-modal: 0 12px 32px rgba(20, 32, 46, 0.18);
@@ -114,6 +119,7 @@
   --logo-mark-size: 28px; /* ô chữ cái của Logo (T35e) */
   --aside-width: 320px; /* khung ứng tuyển dính bên phải trang chi tiết tin (T35f) */
   --account-mark-size: 56px; /* ô chữ viết tắt họ tên ở khung tóm tắt khu Tài khoản (T35g) */
+  --avatar-size: 96px; /* ảnh đại diện tròn ở trang Hồ sơ ứng viên (T35k) */
 
   /* ===== Chuyển động ===== */
   --duration-fast: 120ms;
@@ -130,4 +136,14 @@
   --print-page-width: 210mm;
   --print-page-height: 297mm;
   --print-page-margin: 15mm;
+  /* Mẫu CV Chuyên nghiệp (T35k): trang in lề 0 để cột trái tối phủ kín mép, khoảng trống trên / dưới mỗi trang
+     do thead / tfoot của bảng khung lặp lại (@page cv-pro ghi số trực tiếp) */
+  /* T35l: cột trái chỉ còn ảnh / họ tên / Liên hệ nên hẹp lại (35% -> 32%), lề trong cột 10mm -> 8mm, khoảng trống
+     trên / dưới 14mm -> 10mm, giãn dòng chữ 14px 21px -> 20px: hồ sơ nhiều dữ liệu (30 kỹ năng, 5 kinh nghiệm x 5 ý,
+     3 học vấn, mục tiêu 1000 ký tự) không quá 2 trang */
+  --cv-side-width: 32%;
+  --cv-page-space: 10mm;
+  --cv-gutter: 8mm;
+  --cv-leading: 1.25rem; /* 20px */
+  --cv-avatar-size: 32mm;
 }

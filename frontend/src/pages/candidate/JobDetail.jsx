@@ -9,13 +9,14 @@ import Badge from '../../components/common/Badge'
 import Button from '../../components/common/Button'
 import Loading from '../../components/common/Loading'
 import JobCard from '../../components/job/JobCard'
+import JobDescription from '../../components/job/JobDescription'
 import JobCardList from '../../components/job/JobCardList'
+import SkillTags from '../../components/job/SkillTags'
 import CoverageBar from '../../components/matching/CoverageBar'
 import { useAuth } from '../../hooks/useAuth'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import { getErrorMessage } from '../../utils/apiError'
-import { formatPostedAt } from '../../utils/format'
-import { parseJobDescription } from '../../utils/jobText'
+import { formatDate, formatRelative } from '../../utils/format'
 import { ROLES } from '../../utils/roles'
 import styles from './JobDetail.module.css'
 
@@ -24,50 +25,25 @@ const RELATED_COUNT = 3
 
 // Coverage của tin với hồ sơ ứng viên cho khung bên phải. Chỉ đối chiếu khi đã có CV phân tích xong
 // (chưa có thì hồ sơ trống, coverage 0 không có nghĩa). API đối chiếu chỉ đọc DB, không gọi Gemini.
-// Trả null khi không có gì để hiện
+// Trả null khi không có gì để hiện. Màn hình ứng viên không hiện note của API (T35j)
 async function loadCoverage(jobId) {
   const cvResult = await getCVs()
   if (!cvResult.data.some((cv) => cv.status === 'COMPLETED')) return null
   const profileResult = await getMyProfile()
   const matchingResult = await getMatchingDetail(jobId, profileResult.data.id)
-  const { supported, total, coverage, note } = matchingResult.data
-  return { supported, total, coverage, note }
-}
-
-// Nội dung JD tách theo tiêu đề phần (Mô tả / Yêu cầu / Ưu tiên / Quyền lợi...) nếu HR có ghi tiêu đề,
-// giữ gạch đầu dòng và xuống dòng. JD không có tiêu đề nào thì cả nội dung nằm dưới "Mô tả công việc"
-function JobDescription({ description }) {
-  const sections = parseJobDescription(description)
-  const single = sections.length === 1 && !sections[0].heading
-
-  return sections.map((section, index) => (
-    <section key={index} className={styles.section}>
-      {(section.heading || single) && <h2 className={styles.sectionTitle}>{section.heading || 'Mô tả công việc'}</h2>}
-      {section.blocks.map((block, blockIndex) =>
-        block.type === 'list' ? (
-          <ul key={blockIndex} className={styles.list}>
-            {block.items.map((item, itemIndex) => (
-              <li key={itemIndex}>{item}</li>
-            ))}
-          </ul>
-        ) : (
-          <p key={blockIndex} className={styles.paragraph}>
-            {block.text}
-          </p>
-        )
-      )}
-    </section>
-  ))
+  const { supported, total, coverage } = matchingResult.data
+  return { supported, total, coverage }
 }
 
 // Chi tiết công việc, route công khai /jobs/:id (bố cục T35f).
-// Máy tính 2 cột: trái là tin (tiêu đề, thông tin, JD), phải là khung ứng tuyển dính (position: sticky).
-// Dưới 900px 1 cột: khung đối chiếu nằm ngay dưới tiêu đề, nút ứng tuyển dính ở đáy màn hình và về đúng chỗ
-// cuối tin khi cuộn hết (không che nội dung cuối trang). Nút theo người xem:
+// Máy tính 2 cột: trái là tin (tiêu đề, tên công ty, JD), phải là cột dính (position: sticky) gồm khung ứng tuyển,
+// khung đối chiếu (ứng viên) và khung "Thông tin chung" (T35j: địa điểm, ngày đăng, kỹ năng chính).
+// Dưới 900px 1 cột: Thông tin chung ngay dưới tiêu đề, rồi khung đối chiếu, JD; nút ứng tuyển dính ở đáy màn hình
+// và về đúng chỗ cuối tin khi cuộn hết (không che nội dung cuối trang). Nút theo người xem:
 //   - Chưa đăng nhập: "Ứng tuyển ngay" chuyển sang /login, đăng nhập xong quay lại /jobs/:id?apply=1
 //     và tự mở hộp ứng tuyển (T35f)
 //   - Ứng viên: khối Ứng tuyển dùng chung (ApplyAction) + coverage nếu đã có CV phân tích
-//   - Nhà tuyển dụng, quản trị viên: không có khung bên phải, tin rộng hết vùng nội dung
+//   - Nhà tuyển dụng, quản trị viên: không có khung ứng tuyển, cột phải chỉ có Thông tin chung
 function JobDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -224,12 +200,7 @@ function JobDetail() {
       <h2 className={styles.boxTitle}>Đối chiếu với hồ sơ của bạn</h2>
       {coverage.total > 0 ? (
         <>
-          <CoverageBar
-            supported={coverage.supported}
-            total={coverage.total}
-            coverage={coverage.coverage}
-            note={coverage.note}
-          />
+          <CoverageBar supported={coverage.supported} total={coverage.total} coverage={coverage.coverage} />
           <Link className={styles.boxLink} to={`/candidate/recommended-jobs/${job.id}`}>
             Xem chi tiết đối chiếu
           </Link>
@@ -240,27 +211,45 @@ function JobDetail() {
     </div>
   )
 
-  const metaItems = [job.company && job.company.name, job.location, formatPostedAt(job.createdAt)].filter(Boolean)
+  // Thông tin chung (T35j): chỉ trường có thật của Job + kỹ năng chính do API trả (job.skills)
+  const infoBlock = (
+    <section className={`${styles.box} ${styles.infoBox}`} aria-labelledby="job-info-title">
+      <h2 id="job-info-title" className={styles.boxTitle}>
+        Thông tin chung
+      </h2>
+      <dl className={styles.infoList}>
+        <div className={styles.infoRow}>
+          <dt className={styles.infoTerm}>Địa điểm</dt>
+          <dd className={styles.infoValue}>{job.location || 'Chưa cập nhật'}</dd>
+        </div>
+        <div className={styles.infoRow}>
+          <dt className={styles.infoTerm}>Ngày đăng</dt>
+          <dd className={styles.infoValue}>
+            {formatDate(job.createdAt)}
+            {/* "hôm nay", "3 ngày trước"...; quá 30 ngày formatRelative trả ngày cụ thể thì không lặp lại */}
+            {!formatRelative(job.createdAt).includes('/') && ` (${formatRelative(job.createdAt)})`}
+          </dd>
+        </div>
+        {job.skills && job.skills.length > 0 && (
+          <div className={styles.infoRow}>
+            <dt className={styles.infoTerm}>Kỹ năng chính</dt>
+            <dd className={styles.infoValue}>
+              <SkillTags skills={job.skills} />
+            </dd>
+          </div>
+        )}
+      </dl>
+    </section>
+  )
 
   return (
     <>
       {breadcrumb}
 
-      <div className={applyBlock ? styles.layout : `${styles.layout} ${styles.layoutSingle}`}>
+      <div className={styles.layout}>
         <header className={styles.head}>
           <h1 className={styles.title}>{job.title}</h1>
-          <p className={styles.meta}>
-            {metaItems.map((item, index) => (
-              <span key={item} className={styles.metaItem}>
-                {index > 0 && (
-                  <span className={styles.metaDot} aria-hidden="true">
-                    ·
-                  </span>
-                )}
-                {item}
-              </span>
-            ))}
-          </p>
+          {job.company && job.company.name && <p className={styles.meta}>{job.company.name}</p>}
           {!job.isOpen && (
             <span className={styles.closed}>
               <Badge status="CLOSED">Đã đóng</Badge>
@@ -268,16 +257,15 @@ function JobDetail() {
           )}
         </header>
 
-        {applyBlock && (
-          // Máy tính: một cột dính bên phải. Điện thoại: display: contents, 2 khung con xếp vào dòng chảy của trang
-          <div className={styles.side}>
-            <div className={`${styles.box} ${styles.applyBox}`}>{applyBlock}</div>
-            {matchBlock}
-          </div>
-        )}
+        {/* Máy tính: một cột dính bên phải. Điện thoại: display: contents, các khung con xếp vào dòng chảy của trang */}
+        <div className={styles.side}>
+          {applyBlock && <div className={`${styles.box} ${styles.applyBox}`}>{applyBlock}</div>}
+          {matchBlock}
+          {infoBlock}
+        </div>
 
         <article className={styles.body} aria-label="Nội dung tin tuyển dụng">
-          <JobDescription description={job.description} />
+          <JobDescription description={job.description} wide />
         </article>
       </div>
 

@@ -2,7 +2,13 @@
 // Một parser lỗi thì vẫn dùng được kết quả của parser còn lại.
 // Chế độ rule: chỉ chạy rule (kể cả bóc kỹ năng bằng từ điển), KHÔNG gọi NLP.
 // Chế độ hybrid: chạy cả hai, kỹ năng của NLP và của từ điển gộp lại, mỗi kỹ năng một lần.
-const { parseByRule, extractDateRanges, extractSkillsByDictionary, parseDateValue } = require('./rule.parser');
+const {
+  parseByRule,
+  extractDateRanges,
+  extractSkillsByDictionary,
+  parseDateValue,
+  clampObjective,
+} = require('./rule.parser');
 const { parseByNlp } = require('./nlp.parser');
 const {
   normalizeSkillName,
@@ -38,11 +44,12 @@ function emptyRuleResult() {
       objective: null,
       other: null,
     },
+    objective: null,
   };
 }
 
 function emptyNlpResult() {
-  return { fullName: null, headline: null, skills: [], experiences: [], educations: [] };
+  return { fullName: null, headline: null, objective: null, skills: [], experiences: [], educations: [] };
 }
 
 // Khử trùng lặp skill, giữ bản ghi đầu tiên. Mặc định so theo tên đã lowercase + trim;
@@ -252,6 +259,9 @@ async function parseCV(rawText, { mode = 'hybrid', skillIndex } = {}) {
     // Thông tin cá nhân: lấy từ NLP
     fullName: nlpResult.fullName,
     headline: nlpResult.headline,
+    // Mục tiêu nghề nghiệp (T35k): Gemini trước, không có thì kết quả rule; cắt tối đa 1000 ký tự.
+    // Chỉ được ghi vào hồ sơ khi trường đang trống (cv.service.js: parseAndSave)
+    objective: clampObjective(nlpResult.objective) || ruleResult.objective || null,
     // Kỹ năng: NLP + từ điển (hybrid) hoặc chỉ từ điển (rule)
     skills,
     // Kinh nghiệm, học vấn: chỉ NLP bóc được, chế độ rule luôn rỗng

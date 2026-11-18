@@ -1,7 +1,7 @@
 import { buildCVData } from './cvData'
 import styles from './CVTemplateModern.module.css'
 
-// Mẫu Hiện đại: hai cột, trái là liên hệ + kỹ năng, phải là kinh nghiệm + học vấn.
+// Mẫu Hiện đại: hai cột, trái là liên hệ + kỹ năng (thẻ nằm ngang, T35l), phải là kinh nghiệm + học vấn.
 // Cùng dữ liệu với mẫu Cổ điển (buildCVData), chỉ khác bố cục và CSS.
 function CVTemplateModern({ profile }) {
   const cv = buildCVData(profile)
@@ -12,6 +12,14 @@ function CVTemplateModern({ profile }) {
         <h1 className={styles.name}>{cv.fullName}</h1>
         {cv.headline && <p className={styles.headline}>{cv.headline}</p>}
       </header>
+
+      {/* T35k: mục tiêu nghề nghiệp ngay dưới họ tên / tiêu đề hồ sơ, trên hai cột; trống thì ẩn cả mục */}
+      {cv.objective && (
+        <section className={styles.objectiveSection}>
+          <h2 className={styles.sectionTitle}>Mục tiêu nghề nghiệp</h2>
+          <p className={styles.objective}>{cv.objective}</p>
+        </section>
+      )}
 
       <div className={styles.columns}>
         <div className={styles.side}>
@@ -34,7 +42,9 @@ function CVTemplateModern({ profile }) {
               <h2 className={styles.sectionTitle}>Kỹ năng</h2>
               <ul className={styles.skills}>
                 {cv.skills.map((skill) => (
-                  <li key={skill}>{skill}</li>
+                  <li key={skill} className={styles.skill}>
+                    {skill}
+                  </li>
                 ))}
               </ul>
             </section>
@@ -67,8 +77,14 @@ function CVTemplateModern({ profile }) {
               {cv.educations.map((education) => (
                 <div key={education.id} className={styles.entry}>
                   <p className={styles.entryTitle}>{education.school}</p>
-                  {education.detail && <p className={styles.entrySub}>{education.detail}</p>}
-                  {education.period && <p className={styles.entrySub}>{education.period}</p>}
+                  {/* T35l: bằng cấp / ngành và thời gian chung một dòng, như dòng "công ty, thời gian" của kinh nghiệm */}
+                  {(education.detail || education.period) && (
+                    <p className={styles.entrySub}>
+                      {education.detail}
+                      {education.detail && education.period && ', '}
+                      {education.period}
+                    </p>
+                  )}
                 </div>
               ))}
             </section>

@@ -1,0 +1,278 @@
+/* Mẫu Chuyên nghiệp (T35k, sắp lại ở T35l): cột trái nền Mực đen chữ sáng (ảnh, họ tên, tiêu đề, Liên hệ), cột phải
+   nền Giấy (Mục tiêu, Kỹ năng, Kinh nghiệm, Học vấn). Chi tiết bố cục in ở CVTemplateProfessional.jsx. Màu, cỡ chữ,
+   khoảng cách lấy từ variables.css (biến --cv-* và --color-on-ink*). Khoảng cách giữa các mục gọn lại để hồ sơ cỡ
+   trung bình (12-18 kỹ năng, 2-3 kinh nghiệm, 1-2 học vấn) nằm trong một trang A4. */
+
+/* Trang in riêng của mẫu này ("cv-pro", lề 0 để cột trái chạm mép giấy) khai báo ở CVExportModal.module.css, ngay SAU
+   @page chung: Chromium chỉ áp @page có tên khi rule đứng sau @page chung trong thứ tự tài liệu, mà file này được nạp
+   trước CSS của hộp Xuất CV (đã kiểm bằng PDF thật ở T35k) */
+
+.cv {
+  position: relative;
+  /* Trên màn hình (khung xem trước) CV cao ít nhất một trang A4 để cột trái phủ đủ trang */
+  min-height: var(--print-page-height);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  /* T35l: 20px (trước 21px) cho gọn trang, vẫn đủ thoáng với chữ 14px */
+  line-height: var(--cv-leading);
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  page: cv-pro;
+  /* Thiếu hai dòng này Chrome bỏ nền tối khi in (thuộc tính kế thừa nên áp cho cả cột trái và vòng tròn chữ) */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Nền cột trái: lớp riêng phía sau nội dung */
+.sideBg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--cv-side-width);
+  background-color: var(--color-text);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Bảng khung: 2 ô cùng hàng, độ rộng cố định theo tỉ lệ cột trái */
+.sheet {
+  position: relative;
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.sideCol {
+  width: var(--cv-side-width);
+}
+
+/* Khoảng trống trên / dưới mỗi trang (thead / tfoot lặp lại khi in) */
+.pageSpace {
+  height: var(--cv-page-space);
+  padding: 0;
+}
+
+.side,
+.main {
+  padding: 0 var(--cv-gutter);
+  vertical-align: top;
+}
+
+.side {
+  width: var(--cv-side-width);
+  color: var(--color-on-ink);
+}
+
+/* ===== Cột trái ===== */
+
+.avatar,
+.initials {
+  display: block;
+  width: var(--cv-avatar-size);
+  height: var(--cv-avatar-size);
+  margin: 0 auto var(--space-4);
+  border-radius: var(--radius-full);
+}
+
+.avatar {
+  object-fit: cover;
+  border: calc(var(--border-width) * 2) solid var(--color-on-ink);
+}
+
+/* Chưa có ảnh: vòng tròn Xanh mực, chữ trắng (5.69:1) */
+.initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-3xl);
+  line-height: var(--leading-3xl);
+  font-weight: var(--weight-semibold);
+  color: var(--color-on-ink);
+  background-color: var(--color-primary);
+}
+
+/* h1, h2 trong CV đặt lại cỡ và lề, không dùng style chung của trang (index.css) */
+.name {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-2xl);
+  line-height: var(--leading-2xl);
+  font-weight: var(--weight-semibold);
+  text-align: center;
+  color: var(--color-on-ink);
+  overflow-wrap: anywhere;
+}
+
+.headline {
+  margin: var(--space-1) 0 0;
+  text-align: center;
+  color: var(--color-on-ink-muted);
+  overflow-wrap: anywhere;
+}
+
+.sideSection {
+  margin-top: var(--space-5);
+}
+
+.sideTitle {
+  margin: 0 0 var(--space-2);
+  padding-bottom: var(--space-1);
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+  font-weight: var(--weight-semibold);
+  color: var(--color-on-ink);
+  border-bottom: var(--border-width) solid var(--color-on-ink-line);
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.contacts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.contact {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+/* Icon của FooterIcons vẽ nét màu Chì; trên nền tối đổi sang chữ sáng phụ */
+.contact svg {
+  margin-top: calc((var(--cv-leading) - var(--space-4)) / 2);
+  stroke: var(--color-on-ink-muted);
+}
+
+.contactValue {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ===== Cột phải ===== */
+
+.mainSection + .mainSection {
+  margin-top: var(--space-4);
+}
+
+.mainTitle {
+  margin: 0 0 var(--space-2);
+  padding-bottom: var(--space-1);
+  font-family: var(--font-sans);
+  font-size: var(--text-lg);
+  line-height: var(--leading-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-primary);
+  border-bottom: var(--border-accent-width) solid var(--color-primary);
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+/* Mục tiêu nghề nghiệp: đoạn văn giãn dòng như chữ thường, giữ xuống dòng như ứng viên nhập, không cắt chữ */
+.objective {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* Kỹ năng: thẻ nằm ngang, tự xuống dòng. Nền Xanh nhạt chữ Xanh mực đậm (cùng cặp màu nhãn kỹ năng, đạt AA);
+   .cv đã có print-color-adjust: exact nên nền thẻ vẫn in khi hộp thoại in không tick "Hình nền" */
+.skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.skill {
+  max-width: 100%;
+  padding: 0 var(--space-2);
+  font-size: var(--text-xs);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary-soft-text);
+  overflow-wrap: anywhere;
+  background-color: var(--color-primary-soft);
+  border-radius: var(--radius-sm);
+}
+
+/* Một mục kinh nghiệm / học vấn không bị cắt làm đôi giữa hai trang */
+.entry {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.entry + .entry {
+  margin-top: var(--space-2);
+}
+
+/* Tên mục bên trái, khoảng thời gian căn phải */
+.entryHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.entryTitle {
+  margin: 0;
+  min-width: 0;
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.period {
+  flex: none;
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.entrySub {
+  margin: 0;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.bullets {
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.bullets li {
+  overflow-wrap: anywhere;
+}
+
+/* Nhãn "Email:", "Điện thoại:"... cho trình đọc màn hình; trên giấy đã có icon */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media print {
+  /* Khi in, nền cột trái lặp lại ở mọi trang (position: fixed bám theo trang in) */
+  .sideBg {
+    position: fixed;
+  }
+
+  /* Không ép cao một trang khi in: tránh sinh trang trắng thừa */
+  .cv {
+    min-height: 0;
+  }
+}

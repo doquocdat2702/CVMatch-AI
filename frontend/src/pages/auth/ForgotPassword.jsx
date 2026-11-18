@@ -4,6 +4,7 @@ import { forgotPassword } from '../../api/auth.api'
 import { getErrorMessage } from '../../utils/apiError'
 import { isValidEmail } from '../../utils/validation'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
+import AuthLayout from './AuthLayout'
 import styles from './Auth.module.css'
 
 // Luôn hiện cùng một câu dù email có tài khoản hay không,
@@ -44,56 +45,52 @@ function ForgotPassword() {
   }
 
   return (
-    <main className={styles.page}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>Quên mật khẩu</h1>
+    <AuthLayout>
+      <h1 className={styles.title}>Quên mật khẩu</h1>
 
-        {sent ? (
-          <p className={styles.alertSuccess} role="status">
-            {SENT_MESSAGE}
-          </p>
-        ) : (
-          <>
-            <p className={styles.subtitle}>Nhập email tài khoản ứng viên để nhận liên kết đặt lại mật khẩu.</p>
-
-            {error && (
-              <p className={styles.alertError} role="alert">
-                {error}
-              </p>
-            )}
-
-            <form className={styles.form} onSubmit={handleSubmit} noValidate>
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="forgot-email">
-                  Email
-                </label>
-                <input
-                  id="forgot-email"
-                  className={styles.input}
-                  type="email"
-                  name="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  disabled={submitting}
-                />
-              </div>
-
-              <button className={styles.button} type="submit" disabled={submitting}>
-                {submitting ? 'Đang gửi...' : 'Gửi hướng dẫn'}
-              </button>
-            </form>
-          </>
-        )}
-
-        <p className={styles.note}>Nhà tuyển dụng quên mật khẩu, vui lòng liên hệ quản trị viên.</p>
-        <p className={styles.note}>
-          <Link className={styles.link} to="/login">
-            Quay lại đăng nhập
-          </Link>
+      {sent ? (
+        <p className={styles.alertSuccess} role="status">
+          {SENT_MESSAGE}
         </p>
-      </div>
-    </main>
+      ) : (
+        <>
+          {error && (
+            <p className={styles.alertError} role="alert">
+              {error}
+            </p>
+          )}
+
+          <form className={styles.form} onSubmit={handleSubmit} noValidate>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="forgot-email">
+                Email
+              </label>
+              <input
+                id="forgot-email"
+                className={styles.input}
+                type="email"
+                name="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                disabled={submitting}
+              />
+            </div>
+
+            <button className={styles.button} type="submit" disabled={submitting}>
+              {submitting ? 'Đang gửi...' : 'Gửi hướng dẫn'}
+            </button>
+          </form>
+        </>
+      )}
+
+      <p className={styles.note}>Nhà tuyển dụng quên mật khẩu, vui lòng liên hệ quản trị viên.</p>
+      <p className={styles.note}>
+        <Link className={styles.link} to="/login">
+          Quay lại đăng nhập
+        </Link>
+      </p>
+    </AuthLayout>
   )
 }
 

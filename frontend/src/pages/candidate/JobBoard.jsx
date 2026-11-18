@@ -30,13 +30,16 @@ const RECOMMENDED_LIMIT = 50
 const SEARCH_MAX_LENGTH = 255
 
 // Khối mở đầu trang chủ (T35f), chung cho khách và ứng viên: nền Xanh mực đặc, tên công ty serif lớn,
-// số vị trí đang tuyển và ô tìm theo tên vị trí (tham số keyword của GET /jobs, lọc theo tiêu đề tin).
+// số vị trí đang tuyển và ô tìm (tham số keyword của GET /jobs). T35j: keyword khớp tiêu đề tin HOẶC tên / alias kỹ năng
+// trong yêu cầu của tin; dưới ô tìm có hàng "Tìm nhanh:" gồm các kỹ năng xuất hiện ở nhiều tin nhất (topSkills).
 // T35g bỏ ô địa điểm: địa điểm vẫn hiện trên thẻ tin và trang chi tiết.
 // Form không điều khiển (defaultValue) và đổi key theo URL: bấm Back / Xóa bộ lọc thì ô nhập lấy lại giá trị trên URL.
 //   companyName: undefined khi đang tải (giữ chỗ để chữ không nhảy); openTotal: null khi chưa có số
+//   topSkills: [tên Skill] cho hàng Tìm nhanh (rỗng thì ẩn hàng)
 //   contained: HR / Admin xem trang này trong MainLayout (có Sidebar) nên khối không tràn hết bề ngang
-function SearchHero({ companyName, openTotal, keyword, onSearch, contained }) {
+function SearchHero({ companyName, openTotal, keyword, topSkills, onSearch, contained }) {
   const keywordId = useId()
+  const quickLabelId = useId()
 
   function handleSubmit(event) {
     event.preventDefault()
@@ -60,7 +63,7 @@ function SearchHero({ companyName, openTotal, keyword, onSearch, contained }) {
         <form key={keyword} className={styles.search} role="search" onSubmit={handleSubmit}>
           <div className={styles.field}>
             <label className={styles.srOnly} htmlFor={keywordId}>
-              Tên vị trí
+              Vị trí hoặc kỹ năng
             </label>
             <input
               id={keywordId}
@@ -68,7 +71,7 @@ function SearchHero({ companyName, openTotal, keyword, onSearch, contained }) {
               type="search"
               name="keyword"
               defaultValue={keyword}
-              placeholder="Tên vị trí, ví dụ: Kế toán"
+              placeholder="Vị trí hoặc kỹ năng, ví dụ: React, Kiểm thử"
               maxLength={SEARCH_MAX_LENGTH}
               autoComplete="off"
             />
@@ -77,7 +80,68 @@ function SearchHero({ companyName, openTotal, keyword, onSearch, contained }) {
             Tìm
           </button>
         </form>
+
+        {/* Tìm nhanh theo kỹ năng: bấm là tìm theo kỹ năng đó, đang chọn thì bấm lại để bỏ (aria-pressed) */}
+        {topSkills.length > 0 && (
+          <div className={styles.quick}>
+            <span id={quickLabelId} className={styles.quickLabel}>
+              Tìm nhanh:
+            </span>
+            <ul className={styles.quickList} aria-labelledby={quickLabelId}>
+              {topSkills.map((skill) => {
+                const selected = keyword.toLocaleLowerCase('vi') === skill.toLocaleLowerCase('vi')
+                return (
+                  <li key={skill}>
+                    <button
+                      type="button"
+                      className={selected ? `${styles.quickButton} ${styles.quickSelected}` : styles.quickButton}
+                      aria-pressed={selected}
+                      onClick={() => onSearch(selected ? '' : skill)}
+                    >
+                      {skill}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )}
       </div>
+    </section>
+  )
+}
+
+// Khối "Quy trình ứng tuyển" dưới danh sách tin (T35j), chỉ khách và ứng viên. 4 bước là trình tự thật nên đánh số.
+// Số thứ tự chỉ do <ol> sinh ra (CSS counter vẽ ô số ở ::before), không in số bằng tay, nên không bao giờ ra "1. 1".
+// Mỗi bước một câu. Không hứa thời gian phản hồi, không có câu nhắc về quyết định tuyển dụng (câu đó ở /terms, /privacy, HR).
+//   action: { to, label } nút dưới khối (khách: Đăng ký tài khoản; ứng viên chưa có CV: Tải CV lên), null thì không có
+const PROCESS_STEPS = [
+  'Tạo tài khoản và tải CV lên.',
+  'Xem yêu cầu nào của vị trí đã có bằng chứng trong hồ sơ.',
+  'Chọn CV gửi kèm và nộp đơn ứng tuyển.',
+  'Theo dõi trạng thái đơn ở mục Đơn ứng tuyển.',
+]
+
+function ProcessBlock({ action }) {
+  return (
+    <section className={styles.process} aria-labelledby="process-title">
+      <h2 id="process-title" className={styles.processTitle}>
+        Quy trình ứng tuyển
+      </h2>
+      <ol className={styles.steps}>
+        {PROCESS_STEPS.map((step) => (
+          <li key={step} className={styles.step}>
+            {step}
+          </li>
+        ))}
+      </ol>
+      {action && (
+        <div className={styles.processFooter}>
+          <Link className={styles.processAction} to={action.to}>
+            {action.label}
+          </Link>
+        </div>
+      )}
     </section>
   )
 }
@@ -116,6 +180,8 @@ function JobBoard() {
 
   // Tổng số tin đang mở (không lọc) cho dòng "N vị trí đang tuyển" của khối mở đầu
   const [openTotal, setOpenTotal] = useState(null)
+  // Kỹ năng cho hàng "Tìm nhanh" (topSkills của GET /jobs, T35j), lấy cùng lần gọi đếm tin đang mở
+  const [topSkills, setTopSkills] = useState([])
   // undefined = đang tải tên công ty; lỗi thì dùng tên hệ thống
   const [companyName, setCompanyName] = useState(undefined)
 
@@ -147,7 +213,9 @@ function JobBoard() {
       })
     getJobs({ page: 1, limit: 1 })
       .then((result) => {
-        if (!ignore) setOpenTotal(result.data.pagination.total)
+        if (ignore) return
+        setOpenTotal(result.data.pagination.total)
+        setTopSkills(result.data.topSkills || [])
       })
       .catch(() => {
         // Không có số thì khối mở đầu chỉ bỏ dòng này
@@ -304,7 +372,7 @@ function JobBoard() {
     content = (
       <div className={styles.empty}>
         <p className={styles.emptyTitle}>Không có vị trí nào khớp với “{keyword}”.</p>
-        <p className={styles.emptyText}>Thử tên vị trí ngắn hơn hoặc một từ khóa khác.</p>
+        <p className={styles.emptyText}>Thử tên vị trí hoặc kỹ năng khác.</p>
         <Button variant="secondary" onClick={clearFilter}>
           Xóa bộ lọc
         </Button>
@@ -383,6 +451,7 @@ function JobBoard() {
       companyName={companyName}
       openTotal={openTotal}
       keyword={keyword}
+      topSkills={topSkills}
       onSearch={handleSearch}
       contained={!inSiteLayout}
     />
@@ -397,13 +466,16 @@ function JobBoard() {
           <h2 className={styles.resultsTitle}>Vị trí đang tuyển</h2>
           {allPanel}
         </div>
+        {inSiteLayout && <ProcessBlock action={{ to: '/register', label: 'Đăng ký tài khoản' }} />}
       </>
     )
   }
 
   // Số trong ngoặc chỉ hiện khi đã có dữ liệu thật, chưa có thì tab chỉ có chữ
   const allCount = data && !error ? data.pagination.total : null
-  const recommendedCount = recommended && !recommendedError ? recommended.items.length : null
+  // Tab Gợi ý chỉ đếm tin có ít nhất 1 yêu cầu có bằng chứng (T35j); tin còn lại nằm ở nhóm cuối của tab
+  const recommendedCount =
+    recommended && !recommendedError ? recommended.items.filter((item) => item.supported > 0).length : null
 
   const tabs = [
     { view: VIEW_ALL, label: 'Tất cả', count: allCount },
@@ -465,6 +537,7 @@ function JobBoard() {
           />
         </div>
       </div>
+      <ProcessBlock action={cvState === 'none' ? { to: '/candidate/cvs', label: 'Tải CV lên' } : null} />
     </>
   )
 }

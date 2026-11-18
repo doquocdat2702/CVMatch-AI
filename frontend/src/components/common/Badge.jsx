@@ -8,9 +8,10 @@ const STATUS_TONE = {
   UNCERTAIN: 'warning',
   REVIEWING: 'warning',
   PROCESSING: 'warning',
-  NOT_FOUND: 'danger',
   FAILED: 'danger',
   REJECTED: 'danger',
+  // Không tìm thấy bằng chứng (T35j): xám xanh, không đỏ. Thiếu bằng chứng trong hồ sơ không phải là lỗi
+  NOT_FOUND: 'neutral',
   // Trạng thái tin tuyển dụng (T33): OPEN xanh lá; CLOSED không có trong bảng nên xám
   OPEN: 'success',
   // Trạng thái tài khoản (T35): đang hoạt động xanh lá, đã khóa đỏ

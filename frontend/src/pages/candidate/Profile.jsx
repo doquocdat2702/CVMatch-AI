@@ -1,16 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
-import { getMyProfile, updateMyProfile } from '../../api/candidate.api'
+import { deleteAvatar, getMyProfile, updateMyProfile, uploadAvatar } from '../../api/candidate.api'
 import Button from '../../components/common/Button'
 import Input from '../../components/common/Input'
 import Loading from '../../components/common/Loading'
+import Modal from '../../components/common/Modal'
+import Textarea from '../../components/common/Textarea'
 import PageHeader from '../../components/layout/PageHeader'
 import Panel from '../../components/layout/Panel'
 import { useAuth } from '../../hooks/useAuth'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import { getErrorMessage } from '../../utils/apiError'
 import { formatMonthYear } from '../../utils/format'
+import { getInitials } from '../../utils/initials'
 import { PROFILE_SOURCE_LABEL } from '../../utils/labels'
+import { groupProfileSkills } from '../../utils/skillLabel'
 import styles from './Profile.module.css'
 
 // 4 trường ứng viên tự sửa; maxLength khớp độ dài cột trong database
@@ -26,18 +30,20 @@ const FIELDS = [
   },
 ]
 
-const EMPTY_FORM = { fullName: '', phone: '', address: '', headline: '' }
+// Mục tiêu nghề nghiệp (T35k): ô nhiều dòng, khớp giới hạn của backend
+const OBJECTIVE_MAX_LENGTH = 1000
+
+const EMPTY_FORM = { fullName: '', phone: '', address: '', headline: '', objective: '' }
 const EMPTY_DETAILS = { skills: [], experiences: [], educations: [] }
 
-const PAGE_DESCRIPTION = 'Nhà tuyển dụng xem các thông tin này khi bạn ứng tuyển.'
-
-// Chỉ lấy 4 trường cần dùng, null đổi thành chuỗi rỗng để đưa vào ô nhập
+// Chỉ lấy các trường ứng viên tự sửa, null đổi thành chuỗi rỗng để đưa vào ô nhập
 function pickFields(profile) {
   return {
     fullName: profile.fullName || '',
     phone: profile.phone || '',
     address: profile.address || '',
     headline: profile.headline || '',
+    objective: profile.objective || '',
   }
 }
 
@@ -96,12 +102,20 @@ function Profile() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
+  // Ảnh đại diện (T35k): data URI từ GET /candidates/me, null thì hiện vòng tròn chữ cái đầu
+  const [avatar, setAvatar] = useState(null)
+  const [avatarBusy, setAvatarBusy] = useState('') // 'upload' | 'delete' | ''
+  const [avatarError, setAvatarError] = useState('')
+  const [confirmDeleteAvatar, setConfirmDeleteAvatar] = useState(false)
+  const fileInputRef = useRef(null)
+
   useEffect(() => {
     let ignore = false
-    getMyProfile()
+    getMyProfile({ withAvatar: true })
       .then((result) => {
         if (ignore) return
         setProfile(pickFields(result.data))
+        setAvatar(result.data.avatar || null)
         setDetails({
           skills: result.data.skills || [],
           experiences: [...(result.data.experiences || [])].sort(byStartDesc),
@@ -157,12 +171,13 @@ function Profile() {
 
     setSaving(true)
     try {
-      // Gửi cả 4 trường: trường để trống thì backend xóa giá trị cũ
+      // Gửi đủ các trường: trường để trống thì backend xóa giá trị cũ. Mục tiêu giữ xuống dòng, backend cắt khoảng trắng thừa
       const result = await updateMyProfile({
         fullName,
         phone: form.phone.trim(),
         address: form.address.trim(),
         headline: form.headline.trim(),
+        objective: form.objective,
       })
       setProfile(pickFields(result.data))
       setProfileName((result.data.fullName || '').trim())
@@ -176,6 +191,41 @@ function Profile() {
     }
   }
 
+  // Chọn file xong thì tải lên ngay; backend kiểm định dạng (byte đầu file) và dung lượng, lỗi hiện dưới nút
+  async function handleAvatarChange(event) {
+    const file = event.target.files && event.target.files[0]
+    // Xóa lựa chọn để chọn lại đúng file đó (sau khi báo lỗi) vẫn kích hoạt onChange
+    event.target.value = ''
+    if (!file) return
+    setAvatarError('')
+    setAvatarBusy('upload')
+    try {
+      const result = await uploadAvatar(file)
+      setAvatar(result.data.avatar || null)
+      if (account) account.refreshProfile()
+    } catch (err) {
+      setAvatarError(getErrorMessage(err, 'Chưa tải được ảnh. Vui lòng thử lại.'))
+    } finally {
+      setAvatarBusy('')
+    }
+  }
+
+  async function handleAvatarDelete() {
+    setAvatarError('')
+    setAvatarBusy('delete')
+    try {
+      const result = await deleteAvatar()
+      setAvatar(result.data.avatar || null)
+      setConfirmDeleteAvatar(false)
+      if (account) account.refreshProfile()
+    } catch (err) {
+      setConfirmDeleteAvatar(false)
+      setAvatarError(getErrorMessage(err, 'Chưa xóa được ảnh. Vui lòng thử lại.'))
+    } finally {
+      setAvatarBusy('')
+    }
+  }
+
   if (loading) {
     return <Loading text="Đang tải hồ sơ..." />
   }
@@ -183,7 +233,7 @@ function Profile() {
   if (loadError) {
     return (
       <>
-        <PageHeader title="Hồ sơ" description={PAGE_DESCRIPTION} />
+        <PageHeader title="Hồ sơ" />
         <p className={styles.alertError} role="alert">
           {loadError}
         </p>
@@ -198,7 +248,7 @@ function Profile() {
 
   return (
     <>
-      <PageHeader title="Hồ sơ" description={PAGE_DESCRIPTION} />
+      <PageHeader title="Hồ sơ" />
 
       {saved && (
         <p className={styles.alertSuccess} role="status">
@@ -207,6 +257,49 @@ function Profile() {
       )}
 
       <Panel title="Thông tin cá nhân">
+        {/* Ảnh đại diện (T35k): luôn hiện ở đầu khối, cả khi đang sửa thông tin */}
+        <div className={styles.avatarRow}>
+          {avatar ? (
+            <img className={styles.avatarImage} src={avatar} alt="Ảnh đại diện" />
+          ) : (
+            <span className={styles.avatarInitials} aria-hidden="true">
+              {getInitials(profile.fullName, email)}
+            </span>
+          )}
+          <div className={styles.avatarSide}>
+            <div className={styles.avatarActions}>
+              <Button
+                variant="secondary"
+                onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                loading={avatarBusy === 'upload'}
+                disabled={Boolean(avatarBusy)}
+              >
+                {avatarBusy === 'upload' ? 'Đang tải ảnh...' : 'Tải ảnh lên'}
+              </Button>
+              {avatar && (
+                <Button variant="secondary" onClick={() => setConfirmDeleteAvatar(true)} disabled={Boolean(avatarBusy)}>
+                  Xóa ảnh
+                </Button>
+              )}
+            </div>
+            {avatarError && (
+              <p className={styles.avatarError} role="alert">
+                {avatarError}
+              </p>
+            )}
+            <p className={styles.avatarHint}>JPEG hoặc PNG, tối đa 1 MB.</p>
+          </div>
+          {/* Ô chọn file thật được ẩn, nút "Tải ảnh lên" mở nó. accept chỉ để lọc sẵn trong hộp chọn file;
+              backend mới là nơi kiểm định dạng thật */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png"
+            hidden
+            onChange={handleAvatarChange}
+          />
+        </div>
+
         {editing ? (
           <form className={styles.form} onSubmit={handleSubmit} noValidate>
             {saveError && (
@@ -239,6 +332,29 @@ function Profile() {
               />
             ))}
 
+            <Textarea
+              label="Mục tiêu nghề nghiệp"
+              name="objective"
+              rows={5}
+              maxLength={OBJECTIVE_MAX_LENGTH}
+              value={form.objective}
+              onChange={handleChange}
+              error={fieldErrors.objective}
+              // Phân tích CV chỉ điền mục tiêu khi ô đang trống (không ghi đè), nên ô có nội dung thì nhắc cách lấy
+              // mục tiêu từ CV mới. Nằm trong hint nên trình đọc màn hình đọc cùng bộ đếm (aria-describedby)
+              hint={
+                <>
+                  {`Còn ${OBJECTIVE_MAX_LENGTH - form.objective.length} ký tự.`}
+                  {form.objective.trim() !== '' && (
+                    <span className={styles.hintLine}>
+                      Xóa trống ô này rồi phân tích lại CV nếu muốn lấy mục tiêu từ CV mới.
+                    </span>
+                  )}
+                </>
+              }
+              disabled={saving}
+            />
+
             <div className={styles.actions}>
               <Button type="submit" loading={saving}>
                 {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
@@ -263,11 +379,36 @@ function Profile() {
                   </dd>
                 </div>
               ))}
+              {/* Đoạn văn dài: chiếm cả hàng, giữ xuống dòng như lúc nhập */}
+              <div className={styles.fullRow}>
+                <dt className={styles.term}>Mục tiêu nghề nghiệp</dt>
+                <dd className={`${styles.value} ${styles.multiline}`}>
+                  {profile.objective || <span className={styles.empty}>Chưa cập nhật</span>}
+                </dd>
+              </div>
             </dl>
             <Button onClick={startEdit}>Sửa thông tin</Button>
           </>
         )}
       </Panel>
+
+      <Modal
+        open={confirmDeleteAvatar}
+        onClose={() => setConfirmDeleteAvatar(false)}
+        title="Xóa ảnh đại diện?"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setConfirmDeleteAvatar(false)} disabled={avatarBusy === 'delete'}>
+              Hủy
+            </Button>
+            <Button variant="danger" onClick={handleAvatarDelete} loading={avatarBusy === 'delete'}>
+              {avatarBusy === 'delete' ? 'Đang xóa...' : 'Xóa ảnh'}
+            </Button>
+          </>
+        }
+      >
+        <p className={styles.modalText}>Hồ sơ và CV xuất ra sẽ hiện chữ cái đầu của họ tên thay cho ảnh.</p>
+      </Modal>
 
       <Panel title="Kỹ năng">
         {details.skills.length === 0 ? (
@@ -275,9 +416,11 @@ function Profile() {
         ) : (
           <>
             <ul className={styles.chips}>
-              {details.skills.map((skill) => (
-                <li key={skill.id} className={styles.chip}>
-                  <span className={styles.chipName}>{skill.rawName}</span>
+              {/* T35j: nhãn là tên Skill (hoặc tên đã bỏ ngoặc), phần trong ngoặc là ghi chú nhỏ; gộp mục trùng */}
+              {groupProfileSkills(details.skills).map((skill) => (
+                <li key={skill.key} className={styles.chip}>
+                  <span className={styles.chipName}>{skill.label}</span>
+                  {skill.note && <span className={styles.chipNote}>{skill.note}</span>}
                   {PROFILE_SOURCE_LABEL[skill.source] && (
                     <span className={styles.chipSource}>{PROFILE_SOURCE_LABEL[skill.source]}</span>
                   )}

@@ -23,6 +23,14 @@ function CVTemplateClassic({ profile }) {
       </header>
 
       {/* Mục rỗng thì ẩn luôn cả tiêu đề mục */}
+      {/* T35k: mục tiêu nghề nghiệp là mục đầu tiên, ngay dưới phần họ tên / tiêu đề hồ sơ */}
+      {cv.objective && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Mục tiêu nghề nghiệp</h2>
+          <p className={styles.objective}>{cv.objective}</p>
+        </section>
+      )}
+
       {cv.skills.length > 0 && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Kỹ năng</h2>

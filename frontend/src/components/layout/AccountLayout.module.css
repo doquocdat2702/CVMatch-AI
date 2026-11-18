@@ -29,20 +29,29 @@
   border-radius: var(--radius-md);
 }
 
-/* Ô chữ viết tắt: vuông bo nhỏ như Logo (không bo tròn), nền Xanh nhạt, chữ #0A4FA0 (6.98:1), font tiêu đề */
+/* Ô chữ viết tắt: vuông bo nhỏ như Logo (không bo tròn), nền Xanh nhạt, chữ #0A4FA0 (6.98:1), font giao diện (T35j) */
 .mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: var(--account-mark-size);
   height: var(--account-mark-size);
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: var(--text-xl);
   line-height: var(--leading-xl);
   font-weight: var(--weight-semibold);
   color: var(--color-primary-soft-text);
   background-color: var(--color-primary-soft);
   border-radius: var(--radius-sm);
+}
+
+/* Ảnh đại diện ứng viên (T35k): cùng kích thước ô chữ, cắt tròn, giữ tỉ lệ ảnh */
+.avatar {
+  flex: none;
+  width: var(--account-mark-size);
+  height: var(--account-mark-size);
+  object-fit: cover;
+  border-radius: var(--radius-full);
 }
 
 .identity {
@@ -170,6 +179,11 @@
     gap: var(--space-3);
     padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-md) var(--radius-md) 0 0;
+  }
+
+  .avatar {
+    width: var(--control-height);
+    height: var(--control-height);
   }
 
   .mark {
