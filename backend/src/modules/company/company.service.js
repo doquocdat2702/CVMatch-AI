@@ -1,3 +1,4 @@
+const { MAX_DB_ID } = require('../../utils/ids');
 const prisma = require('../../config/prisma');
 
 function createError(message, statusCode) {
@@ -37,7 +38,12 @@ async function updateMyCompany(userId, { description, address, website }) {
     data.address = typeof address === 'string' && address.trim() ? address.trim() : null;
   }
   if (website !== undefined) {
-    data.website = typeof website === 'string' && website.trim() ? website.trim() : null;
+    const value = typeof website === 'string' ? website.trim() : '';
+    // Chỉ nhận địa chỉ web http(s) (QA-11): "javascript:..." hay chuỗi rác không hiện ra footer / trang Giới thiệu
+    if (value && !/^https?:\/\/[^\s/]+\S*$/i.test(value)) {
+      throw createError('Website phải bắt đầu bằng http:// hoặc https://, ví dụ https://congty.vn.', 400);
+    }
+    data.website = value || null;
   }
 
   if (Object.keys(data).length === 0) {
@@ -50,7 +56,7 @@ async function updateMyCompany(userId, { description, address, website }) {
 // Xem công khai, không cần đăng nhập
 async function getCompanyById(companyId) {
   const id = Number(companyId);
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!Number.isInteger(id) || id <= 0 || id > MAX_DB_ID) {
     throw createError('Mã công ty không hợp lệ.', 400);
   }
 

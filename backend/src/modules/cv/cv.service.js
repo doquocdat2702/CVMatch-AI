@@ -1,3 +1,4 @@
+const { MAX_DB_ID } = require('../../utils/ids');
 const fs = require('fs');
 const path = require('path');
 
@@ -38,6 +39,22 @@ async function removeFile(filePath) {
   }
 }
 
+// CV gửi ra client (QA-31): KHÔNG trả filePath (đường dẫn trên máy chủ) và rawText (toàn văn CV, không màn hình
+// nào dùng); chỉ trả số ký tự đọc được (textLength) để biết bước trích xuất có ra chữ hay không
+function toCvView(cv) {
+  const { filePath: _filePath, rawText, ...view } = cv;
+  return { ...view, textLength: typeof rawText === 'string' ? rawText.length : 0 };
+}
+
+// Tên file gốc dài hơn cột fileName (VarChar 255): cắt phần tên, giữ đuôi .pdf / .docx (QA-02)
+const FILE_NAME_MAX_LENGTH = 255;
+function limitFileName(name) {
+  const value = String(name || '');
+  if (value.length <= FILE_NAME_MAX_LENGTH) return value;
+  const ext = path.extname(value);
+  return value.slice(0, FILE_NAME_MAX_LENGTH - ext.length) + ext;
+}
+
 async function getCandidateProfile(userId) {
   const profile = await prisma.candidateProfile.findUnique({ where: { userId } });
   if (!profile) {
@@ -56,15 +73,16 @@ async function createCv(userId, file, candidateProfileId) {
   const relativePath = path.relative(process.cwd(), file.path).split(path.sep).join('/');
 
   try {
-    return await prisma.cV.create({
+    const cv = await prisma.cV.create({
       data: {
         candidateProfileId: profileId,
-        fileName: file.originalname,
+        fileName: limitFileName(file.originalname),
         filePath: relativePath,
         fileType,
         status: 'UPLOADED',
       },
     });
+    return toCvView(cv);
   } catch (err) {
     // Ghi DB thất bại thì không để lại file rác
     await removeFile(file.path);
@@ -75,7 +93,7 @@ async function createCv(userId, file, candidateProfileId) {
 async function listMyCvs(userId) {
   const profile = await getCandidateProfile(userId);
 
-  // Không trả rawText ở danh sách
+  // Không trả rawText, filePath ở danh sách (QA-31)
   const cvs = await prisma.cV.findMany({
     where: { candidateProfileId: profile.id },
     orderBy: { uploadedAt: 'desc' },
@@ -83,7 +101,6 @@ async function listMyCvs(userId) {
       id: true,
       candidateProfileId: true,
       fileName: true,
-      filePath: true,
       fileType: true,
       status: true,
       errorMessage: true,
@@ -100,7 +117,7 @@ async function listMyCvs(userId) {
 // Lấy CV và kiểm tra quyền sở hữu
 async function findOwnedCv(userId, cvId) {
   const id = Number(cvId);
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!Number.isInteger(id) || id <= 0 || id > MAX_DB_ID) {
     throw createError('Mã CV không hợp lệ.', 400);
   }
 
@@ -118,7 +135,7 @@ async function findOwnedCv(userId, cvId) {
 }
 
 async function getCvDetail(userId, cvId) {
-  return findOwnedCv(userId, cvId);
+  return toCvView(await findOwnedCv(userId, cvId));
 }
 
 // Đường dẫn tuyệt đối của file CV nếu file còn trên đĩa và nằm trong thư mục upload, không thì null.
@@ -154,7 +171,7 @@ async function findCurrentCv(candidateProfileId) {
 async function getCvFile(user, cvId) {
   const notFound = createError('Không tìm thấy CV.', 404);
   const id = Number(cvId);
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!Number.isInteger(id) || id <= 0 || id > MAX_DB_ID) {
     throw notFound;
   }
 
@@ -228,7 +245,9 @@ async function deleteCv(userId, cvId) {
   return { id: cv.id };
 }
 
-// Trích xuất text từ file CV và cập nhật trạng thái xử lý
+// Trích xuất text từ file CV và cập nhật trạng thái xử lý.
+// KHÔNG đụng parsedAt (QA-24, CLAUDE.md 4.4): parsedAt chỉ đặt khi PHÂN TÍCH thành công, trong cùng transaction với
+// dữ liệu hồ sơ (parseAndSave). Đọc file xong hay lỗi đều giữ nguyên parsedAt cũ
 async function extractCvText(userId, cvId) {
   const cv = await findOwnedCv(userId, cvId);
 
@@ -251,23 +270,23 @@ async function extractCvText(userId, cvId) {
       'Đọc file quá lâu. Vui lòng thử lại hoặc chọn file khác.'
     );
 
-    return await prisma.cV.update({
+    const updated = await prisma.cV.update({
       where: { id: cv.id },
       data: {
         rawText,
         status: 'COMPLETED',
         errorMessage: null,
-        parsedAt: new Date(),
       },
     });
+    return toCvView(updated);
   } catch (err) {
-    // Thất bại thì đánh dấu FAILED, giữ nguyên file vật lý
+    // Thất bại thì đánh dấu FAILED, giữ nguyên file vật lý. errorMessage hiện cho ứng viên nên lỗi bất ngờ
+    // (không có statusCode) không ghi message kỹ thuật, chỉ ghi câu chung; log đủ ở errorMiddleware (QA-13)
     await prisma.cV.update({
       where: { id: cv.id },
       data: {
         status: 'FAILED',
-        errorMessage: err.message,
-        parsedAt: null,
+        errorMessage: Number.isInteger(err.statusCode) ? err.message : 'Đã có lỗi xảy ra khi đọc file. Vui lòng thử lại.',
       },
     });
     throw err;
@@ -289,7 +308,7 @@ function parseFailureMessage(err) {
   return `Phân tích thất bại: ${reason}`;
 }
 
-// Parse lỗi thì CV chuyển FAILED kèm lý do; rawText và dữ liệu hồ sơ giữ nguyên
+// Parse lỗi thì CV chuyển FAILED kèm lý do; rawText, parsedAt và dữ liệu hồ sơ giữ nguyên
 async function markParseFailed(cvId, err) {
   try {
     await prisma.cV.update({

@@ -1,3 +1,4 @@
+const { MAX_DB_ID, MAX_PAGE_SIZE } = require('../../utils/ids');
 const { ApplicationStatus, CvStatus } = require('@prisma/client');
 const prisma = require('../../config/prisma');
 const { hashPassword } = require('../../utils/hash');
@@ -17,7 +18,7 @@ function createError(message, statusCode) {
 
 function parseId(value, label) {
   const id = Number(value);
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!Number.isInteger(id) || id <= 0 || id > MAX_DB_ID) {
     throw createError(`${label} không hợp lệ.`, 400);
   }
   return id;
@@ -32,7 +33,6 @@ async function findRoleByName(roleName) {
   const name = typeof roleName === 'string' ? roleName.trim().toUpperCase() : '';
   const role = name ? await prisma.role.findUnique({ where: { name } }) : null;
   if (!role) {
-    const roles = await prisma.role.findMany({ select: { name: true }, orderBy: { id: 'asc' } });
     throw createError(`Vai trò không đúng. Vui lòng chọn lại vai trò.`, 400);
   }
   return role;
@@ -82,6 +82,8 @@ async function listUsers({ role, email, page, limit } = {}) {
   if (!Number.isInteger(pageSize) || pageSize <= 0) {
     pageSize = 10;
   }
+  // Trần số dòng mỗi trang như recommend.service (QA-06): limit=100000 không kéo cả bảng
+  pageSize = Math.min(pageSize, MAX_PAGE_SIZE);
 
   const where = {};
   if (role !== undefined && role !== '') {

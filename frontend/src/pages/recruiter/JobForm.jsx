@@ -9,8 +9,10 @@ import Loading from '../../components/common/Loading'
 import Modal from '../../components/common/Modal'
 import Table from '../../components/common/Table'
 import Textarea from '../../components/common/Textarea'
+import { useAuth } from '../../hooks/useAuth'
 import { getErrorMessage } from '../../utils/apiError'
 import { REQUIREMENT_TYPE_LABEL } from '../../utils/labels'
+import { ROLES } from '../../utils/roles'
 import styles from './JobForm.module.css'
 
 const EMPTY_FORM = { title: '', location: '', description: '' }
@@ -56,8 +58,13 @@ const REQUIREMENT_COLUMNS = [
 
 // Form tạo / sửa tin. jobId: không có = tạo mới; có = sửa (AppRouter gắn key theo jobId
 // để mỗi tin là một lần mount mới, không lẫn state của tin trước)
+// Dùng lại cho admin ở /admin/jobs/:id/edit (QA3): admin sửa được mọi tin nên bỏ bước kiểm người đăng,
+// link quay lại / yêu cầu theo khu /admin/jobs. Admin không có route tạo tin
 function JobForm({ jobId }) {
   const isEdit = Boolean(jobId)
+  const { role } = useAuth()
+  const isAdmin = role === ROLES.ADMIN
+  const basePath = isAdmin ? '/admin/jobs' : '/recruiter/jobs'
   const navigate = useNavigate()
   const location = useLocation()
   // Vừa tạo tin xong (trang tạo chuyển sang đây kèm state.created): báo đã tạo và hỏi phân tích JD
@@ -94,12 +101,12 @@ function JobForm({ jobId }) {
   useEffect(() => {
     if (!isEdit) return undefined
     let ignore = false
-    Promise.all([getJobDetail(jobId), getMyRecruiterProfile()])
+    Promise.all([getJobDetail(jobId), isAdmin ? null : getMyRecruiterProfile()])
       .then(([jobResult, profileResult]) => {
         if (ignore) return
         const job = jobResult.data
-        // HR xem chung, sửa riêng: tin của đồng nghiệp không mở form (backend cũng chặn khi lưu)
-        if (job.recruiterProfileId !== profileResult.data.id) {
+        // HR xem chung, sửa riêng: tin của đồng nghiệp không mở form (backend cũng chặn khi lưu). Admin sửa mọi tin
+        if (profileResult && job.recruiterProfileId !== profileResult.data.id) {
           setForbidden(true)
           return
         }
@@ -116,7 +123,7 @@ function JobForm({ jobId }) {
     return () => {
       ignore = true
     }
-  }, [isEdit, jobId])
+  }, [isEdit, isAdmin, jobId])
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -184,7 +191,7 @@ function JobForm({ jobId }) {
   }
 
   const backLink = (
-    <Link className={styles.backLink} to="/recruiter/jobs">
+    <Link className={styles.backLink} to={basePath}>
       Quay lại danh sách tin
     </Link>
   )
@@ -264,7 +271,7 @@ function JobForm({ jobId }) {
             <Button type="submit" loading={saving}>
               {saving ? 'Đang lưu...' : isEdit ? 'Lưu thay đổi' : 'Tạo tin'}
             </Button>
-            <Link className={styles.secondaryLink} to="/recruiter/jobs">
+            <Link className={styles.secondaryLink} to={basePath}>
               Hủy
             </Link>
           </div>
@@ -292,7 +299,7 @@ function JobForm({ jobId }) {
             <h2 id="requirements-title">Yêu cầu tách từ mô tả công việc</h2>
             <div className={styles.sectionActions}>
               {/* Bảng dưới chỉ đọc; đổi loại, thêm, xóa yêu cầu ở trang riêng (T34) */}
-              <Link className={styles.secondaryLink} to={`/recruiter/jobs/${jobId}/requirements`}>
+              <Link className={styles.secondaryLink} to={`${basePath}/${jobId}/requirements`}>
                 Chỉnh sửa yêu cầu
               </Link>
               <Button variant="secondary" onClick={handleParse} loading={parsing} disabled={jdDirty}>

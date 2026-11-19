@@ -121,7 +121,7 @@ function Register() {
           <label className={styles.label} htmlFor="register-fullName">
             Họ và tên
           </label>
-          <input type="text" autoComplete="name" {...inputProps('fullName')} />
+          <input type="text" autoComplete="name" maxLength={255} {...inputProps('fullName')} />
           {renderFieldError('fullName')}
         </div>
 
@@ -129,7 +129,7 @@ function Register() {
           <label className={styles.label} htmlFor="register-email">
             Email
           </label>
-          <input type="email" autoComplete="email" {...inputProps('email')} />
+          <input type="email" autoComplete="email" maxLength={191} {...inputProps('email')} />
           {renderFieldError('email')}
         </div>
 

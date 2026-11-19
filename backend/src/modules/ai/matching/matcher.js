@@ -8,6 +8,7 @@
 //   NONE    -> NOT_FOUND
 
 const prisma = require('../../../config/prisma');
+const { MAX_DB_ID } = require('../../../utils/ids');
 const { findEvidence, checkYearsRequirement } = require('./evidence.finder');
 const { calculateCoverage } = require('./coverage');
 const { loadSkillIndex } = require('../normalization/normalizer');
@@ -28,7 +29,7 @@ function createError(message, statusCode) {
 
 function parseId(value, label) {
   const id = Number(value);
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!Number.isInteger(id) || id <= 0 || id > MAX_DB_ID) {
     throw createError(`${label} không hợp lệ.`, 400);
   }
   return id;

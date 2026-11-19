@@ -228,6 +228,8 @@ function ApplyAction({ jobId, jobTitle, isOpen, autoOpen = false, onAutoOpened, 
               <ul className={styles.cvList}>
                 {cvs.items.map((cv) => {
                   const selected = cv.id === selectedCvId
+                  // CV phân tích lỗi vẫn gửi kèm được (QA-35); nhắc một dòng dưới CV đó khi đang được chọn
+                  const failedNoteId = selected && cv.status === 'FAILED' ? `${radioName}-failed-${cv.id}` : undefined
                   return (
                     <li key={cv.id} className={selected ? `${styles.cvItem} ${styles.cvItemSelected}` : styles.cvItem}>
                       <label className={styles.cvOption}>
@@ -238,6 +240,7 @@ function ApplyAction({ jobId, jobTitle, isOpen, autoOpen = false, onAutoOpened, 
                           value={cv.id}
                           checked={selected}
                           onChange={() => setSelectedCvId(cv.id)}
+                          aria-describedby={failedNoteId}
                         />
                         <span className={styles.cvInfo}>
                           <span className={styles.cvName}>{cv.fileName}</span>
@@ -248,6 +251,11 @@ function ApplyAction({ jobId, jobTitle, isOpen, autoOpen = false, onAutoOpened, 
                               <span className={styles.currentTag}>Dùng cho hồ sơ</span>
                             )}
                           </span>
+                          {failedNoteId && (
+                            <span id={failedNoteId} className={styles.cvNote}>
+                              CV này chưa phân tích được nên không cập nhật vào hồ sơ. Bạn vẫn gửi kèm đơn được.
+                            </span>
+                          )}
                         </span>
                       </label>
                       {/* Nút Xem nằm ngoài nhãn: bấm Xem không đổi lựa chọn */}
@@ -264,7 +272,10 @@ function ApplyAction({ jobId, jobTitle, isOpen, autoOpen = false, onAutoOpened, 
           {/* T35j (D3): chỉ còn câu cảnh báo khi CV đang chọn khác CV dùng cho hồ sơ (thiếu câu này dễ hiểu sai
               kết quả đối chiếu). aria-live: đổi CV thì trình đọc màn hình đọc câu này khi nó hiện ra */}
           <p className={styles.attachNote} aria-live="polite">
-            {cvs.items.length > 0 && selectedDiffers && 'Hồ sơ của bạn chưa được cập nhật từ CV này.'}
+            {cvs.items.length > 0 &&
+              selectedDiffers &&
+              selectedCv.status !== 'FAILED' &&
+              'Hồ sơ của bạn chưa được cập nhật từ CV này.'}
           </p>
 
           {analysedCv ? (

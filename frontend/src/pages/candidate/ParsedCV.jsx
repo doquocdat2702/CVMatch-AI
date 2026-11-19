@@ -29,26 +29,6 @@ import styles from './ParsedCV.module.css'
 const UNCONFIRMED_STATUS = 'UNCERTAIN'
 const CONFIRMED_STATUS = 'COMPLETED'
 
-// Khung giải thích cách phân tích (T35g) mở sẵn ở lần đầu vào trang; đã xem thì các lần sau thu gọn.
-// Chỉ là tiện ích hiển thị cho từng trình duyệt: localStorage lỗi (chế độ ẩn danh...) thì coi như lần đầu
-const GUIDE_SEEN_KEY = 'cvmatch.parsedCvGuideSeen'
-
-function readGuideSeen() {
-  try {
-    return window.localStorage.getItem(GUIDE_SEEN_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-
-function markGuideSeen() {
-  try {
-    window.localStorage.setItem(GUIDE_SEEN_KEY, '1')
-  } catch {
-    // Không lưu được thì lần sau khung vẫn mở sẵn
-  }
-}
-
 const MODE_TEXT = {
   rule: 'chỉ dùng từ điển kỹ năng, chưa đọc kinh nghiệm và học vấn',
   hybrid: 'dùng từ điển kỹ năng kết hợp AI',
@@ -66,13 +46,8 @@ function inferMode(data) {
 // (text-extraction -> rule.parser + nlp.parser -> normalizer -> người dùng xác nhận), chế độ đã dùng.
 // T35j: bỏ câu nhắc "không dùng để đánh giá năng lực" (CLAUDE.md mục 5)
 //   mode: chế độ của lần phân tích vừa rồi (trang CV của tôi chuyển sang), null thì suy ra từ dữ liệu
+// QA-20: khung luôn thu gọn khi vào trang (bỏ "mở sẵn lần đầu" của T35g), ứng viên bấm tiêu đề để mở
 function AnalysisGuide({ mode, data }) {
-  // Mở sẵn ở lần đầu; đọc localStorage đúng một lần khi vào trang
-  const [initialOpen] = useState(() => !readGuideSeen())
-  useEffect(() => {
-    markGuideSeen()
-  }, [])
-
   const inferred = mode ? null : inferMode(data)
   let modeLine
   if (mode && MODE_TEXT[mode]) {
@@ -86,7 +61,7 @@ function AnalysisGuide({ mode, data }) {
   }
 
   return (
-    <details className={styles.guide} open={initialOpen}>
+    <details className={styles.guide}>
       <summary className={styles.guideSummary}>Cách hệ thống đọc CV của bạn</summary>
       <div className={styles.guideBody}>
         <ol className={styles.steps}>

@@ -189,6 +189,13 @@
   color: var(--color-text-muted);
 }
 
+/* Dòng nhắc dưới CV phân tích lỗi đang được chọn (QA-35) */
+.cvNote {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
 /* Nhãn "Dùng để phân tích hồ sơ" (T35g, trước là "CV hiện tại") */
 .currentTag {
   padding: 0 var(--space-1);

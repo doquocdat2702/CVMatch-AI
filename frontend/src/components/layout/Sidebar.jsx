@@ -24,6 +24,7 @@ const MENU_BY_ROLE = {
     { to: '/admin/dashboard', label: 'Tổng quan' },
     { to: '/admin/users', label: 'Tài khoản người dùng', matches: ['/admin/recruiters'] },
     { to: '/admin/roles', label: 'Phân quyền' },
+    { to: '/admin/jobs', label: 'Tin tuyển dụng' },
     { to: '/admin/profile', label: 'Tài khoản', matches: ['/admin/change-password'] },
   ],
 }

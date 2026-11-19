@@ -1,3 +1,4 @@
+const { MAX_DB_ID, MAX_PAGE_SIZE } = require('../../utils/ids');
 const prisma = require('../../config/prisma');
 const { matchJobWithCandidate } = require('../ai/matching/matcher');
 const { COVERAGE_NOTE } = require('../ai/matching/coverage');
@@ -19,7 +20,7 @@ function createError(message, statusCode) {
 
 function parseId(value, label) {
   const id = Number(value);
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!Number.isInteger(id) || id <= 0 || id > MAX_DB_ID) {
     throw createError(`${label} không hợp lệ.`, 400);
   }
   return id;
@@ -268,9 +269,23 @@ async function getManagedApplication(user, applicationId) {
   return application;
 }
 
-// Đơn của một job: lọc theo status, coverage lúc nộp giảm dần
-async function listApplicationsForJob(userId, jobId, { status } = {}) {
-  const { job } = await getOwnedJob(userId, jobId);
+// Tin để xem đơn: HR xem chung mọi tin của công ty mình (getOwnedJob), ADMIN xem mọi tin (QA-01)
+async function getViewableJob(user, jobId) {
+  if (user.role === 'ADMIN') {
+    const id = parseId(jobId, 'Mã tin tuyển dụng');
+    const job = await prisma.job.findUnique({ where: { id } });
+    if (!job) {
+      throw createError('Không tìm thấy tin tuyển dụng.', 404);
+    }
+    return job;
+  }
+  const { job } = await getOwnedJob(user.userId, jobId);
+  return job;
+}
+
+// Đơn của một job: lọc theo status, coverage lúc nộp giảm dần. user = req.user { userId, role }
+async function listApplicationsForJob(user, jobId, { status } = {}) {
+  const job = await getViewableJob(user, jobId);
 
   const where = { jobId: job.id };
   if (status !== undefined && status !== '') {
@@ -332,6 +347,8 @@ async function listMyJobsApplications(userId, { status, page, limit } = {}) {
   if (!Number.isInteger(pageSize) || pageSize <= 0) {
     pageSize = 10;
   }
+  // Trần số dòng mỗi trang như recommend.service (QA-06): limit=100000 không kéo cả bảng
+  pageSize = Math.min(pageSize, MAX_PAGE_SIZE);
 
   const where = { job: { recruiterProfileId: profile.id } };
   if (status !== undefined && status !== '') {

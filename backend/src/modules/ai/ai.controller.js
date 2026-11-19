@@ -1,3 +1,4 @@
+const { MAX_DB_ID } = require('../../utils/ids');
 const prisma = require('../../config/prisma');
 const { matchJobWithCandidate } = require('./matching/matcher');
 const {
@@ -14,7 +15,7 @@ function createError(message, statusCode) {
 
 function parseId(value, label) {
   const id = Number(value);
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!Number.isInteger(id) || id <= 0 || id > MAX_DB_ID) {
     throw createError(`${label} không hợp lệ.`, 400);
   }
   return id;

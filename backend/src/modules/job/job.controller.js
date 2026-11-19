@@ -21,7 +21,7 @@ async function list(req, res, next) {
 
 async function listMine(req, res, next) {
   try {
-    const data = await jobService.listMyJobs(req.user.userId);
+    const data = await jobService.listMyJobs(req.user);
     return success(res, data, 'Lấy danh sách tin tuyển dụng của bạn thành công');
   } catch (err) {
     return next(err);

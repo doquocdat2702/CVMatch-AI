@@ -35,7 +35,7 @@ async function withdraw(req, res, next) {
 async function listByJob(req, res, next) {
   try {
     const data = await applicationService.listApplicationsForJob(
-      req.user.userId,
+      req.user,
       req.params.jobId,
       req.query || {}
     );

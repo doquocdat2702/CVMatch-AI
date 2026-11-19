@@ -142,6 +142,11 @@ function AppRouter() {
               <Route path="users" element={<AccountList />} />
               <Route path="recruiters/new" element={<CreateRecruiter />} />
               <Route path="roles" element={<RoleManagement />} />
+              {/* Quản lý tin (QA3): dùng lại danh sách, trang sửa tin và trang yêu cầu của nhà tuyển dụng.
+                  Không có jobs/new: tin do nhà tuyển dụng đăng */}
+              <Route path="jobs" element={<JobList />} />
+              <Route path="jobs/:id/edit" element={<EditJobRoute />} />
+              <Route path="jobs/:id/requirements" element={<RequirementsRoute />} />
               {/* Khu "Tài khoản" (T35i), như nhà tuyển dụng */}
               <Route element={<AdminAccountLayout />}>
                 <Route path="profile" element={<AdminProfile />} />

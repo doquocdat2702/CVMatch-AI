@@ -6,9 +6,12 @@ import Button from '../../components/common/Button'
 import Loading from '../../components/common/Loading'
 import Modal from '../../components/common/Modal'
 import Pagination from '../../components/common/Pagination'
+import Select from '../../components/common/Select'
 import Table from '../../components/common/Table'
+import { useAuth } from '../../hooks/useAuth'
 import { getErrorMessage } from '../../utils/apiError'
 import { paginate, readPage, withPage } from '../../utils/pagination'
+import { ROLES } from '../../utils/roles'
 import styles from './JobList.module.css'
 
 // Nội dung hộp thoại xác nhận cho từng thao tác
@@ -31,12 +34,26 @@ const CONFIRM = {
   },
 }
 
+// Lọc trạng thái (chỉ trang admin): ?status=open | closed, không có = tất cả
+const STATUS_OPTIONS = [
+  { value: '', label: 'Tất cả' },
+  { value: 'open', label: 'Đang mở' },
+  { value: 'closed', label: 'Đã đóng' },
+]
+
 // Tin do chính nhà tuyển dụng này đăng (GET /jobs/my). Sửa, đóng, xóa chỉ áp dụng cho tin của mình
 // (HR xem chung, sửa riêng): tin của đồng nghiệp xem ở bảng tin chung.
+// Dùng lại cho /admin/jobs (QA3): GET /jobs/my của ADMIN trả mọi tin của mọi HR; trang admin có thêm cột
+// Người đăng và lọc trạng thái, không có nút tạo tin (tin do HR đăng), sửa tin mở trang /admin/jobs/:id/edit
 function JobList() {
+  const { role } = useAuth()
+  const isAdmin = role === ROLES.ADMIN
+  const basePath = isAdmin ? '/admin/jobs' : '/recruiter/jobs'
   // GET /jobs/my trả cả danh sách: phân trang phía client, trang hiện tại trên URL (?page=)
   const [searchParams, setSearchParams] = useSearchParams()
   const page = readPage(searchParams)
+  const statusParam = searchParams.get('status')
+  const statusFilter = isAdmin && (statusParam === 'open' || statusParam === 'closed') ? statusParam : ''
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -74,6 +91,13 @@ function JobList() {
   function handlePageChange(nextPage) {
     setSearchParams(withPage(searchParams, nextPage))
     window.scrollTo(0, 0)
+  }
+
+  // Đổi bộ lọc: về trang 1, thêm mục lịch sử để Back bỏ bộ lọc vừa chọn (như QA-14)
+  function handleStatusChange(event) {
+    const value = event.target.value
+    setNotice(null)
+    setSearchParams(value ? { status: value } : {})
   }
 
   async function refreshList() {
@@ -126,6 +150,15 @@ function JobList() {
         </div>
       ),
     },
+    ...(isAdmin
+      ? [
+          {
+            key: 'recruiter',
+            title: 'Người đăng',
+            render: (job) => (job.recruiterProfile ? job.recruiterProfile.fullName : <span className={styles.muted}>Chưa có</span>),
+          },
+        ]
+      : []),
     {
       key: 'location',
       title: 'Địa điểm',
@@ -144,7 +177,7 @@ function JobList() {
       align: 'right',
       render: (job) => (
         <div className={styles.rowActions}>
-          <Link className={styles.actionLink} to={`/recruiter/jobs/${job.id}/edit`}>
+          <Link className={styles.actionLink} to={`${basePath}/${job.id}/edit`}>
             Sửa
           </Link>
           {/* Không có API mở lại tin nên chỉ đóng được tin đang mở */}
@@ -184,16 +217,28 @@ function JobList() {
     content = (
       <div className={styles.empty}>
         <p className={styles.emptyText}>Chưa có tin tuyển dụng nào.</p>
-        <Link className={styles.primaryLink} to="/recruiter/jobs/new">
-          Tạo tin mới
-        </Link>
+        {!isAdmin && (
+          <Link className={styles.primaryLink} to="/recruiter/jobs/new">
+            Tạo tin mới
+          </Link>
+        )}
       </div>
     )
   } else {
-    const { pageItems, page: currentPage, totalPages } = paginate(jobs, page)
+    const shownJobs = statusFilter ? jobs.filter((job) => job.isOpen === (statusFilter === 'open')) : jobs
+    const { pageItems, page: currentPage, totalPages } = paginate(shownJobs, page)
     content = (
       <>
-        <Table columns={columns} data={pageItems} />
+        {isAdmin && (
+          <div className={styles.filters}>
+            <Select label="Lọc theo trạng thái" name="status" options={STATUS_OPTIONS} value={statusFilter} onChange={handleStatusChange} />
+          </div>
+        )}
+        {shownJobs.length === 0 ? (
+          <p className={styles.emptyText}>Không có tin tuyển dụng nào ở trạng thái này.</p>
+        ) : (
+          <Table columns={columns} data={pageItems} />
+        )}
         <div className={styles.pagination}>
           <Pagination page={currentPage} totalPages={totalPages} onChange={handlePageChange} />
         </div>
@@ -206,11 +251,17 @@ function JobList() {
     <>
       <div className={styles.pageHeader}>
         <h1>Tin tuyển dụng</h1>
-        <Link className={styles.primaryLink} to="/recruiter/jobs/new">
-          Tạo tin mới
-        </Link>
+        {!isAdmin && (
+          <Link className={styles.primaryLink} to="/recruiter/jobs/new">
+            Tạo tin mới
+          </Link>
+        )}
       </div>
-      <p className={styles.intro}>Tin tuyển dụng do tài khoản này đăng. Tin của nhà tuyển dụng khác xem ở trang Việc làm.</p>
+      <p className={styles.intro}>
+        {isAdmin
+          ? 'Tin tuyển dụng của mọi nhà tuyển dụng. Tin mới do nhà tuyển dụng đăng.'
+          : 'Tin tuyển dụng do tài khoản này đăng. Tin của nhà tuyển dụng khác xem ở trang Việc làm.'}
+      </p>
 
       {notice && (
         <p className={styles.alertSuccess} role="status">

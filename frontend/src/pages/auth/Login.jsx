@@ -1,16 +1,22 @@
 import { useState } from 'react'
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { getErrorMessage } from '../../utils/apiError'
-import { getRoleHome } from '../../utils/roles'
+import { belongsToOtherRole, getRoleHome } from '../../utils/roles'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import AuthLayout from './AuthLayout'
 import styles from './Auth.module.css'
 
-// Chỉ nhận đường dẫn nội bộ ("/jobs/5"), không nhận "//site-khac.com" hay URL đầy đủ,
-// để trang đăng nhập không bị lợi dụng chuyển hướng ra ngoài
+// Chỉ nhận đường dẫn nội bộ ("/jobs/5"), không nhận "//site-khac.com", "/\site-khac.com" hay URL đầy đủ,
+// để trang đăng nhập không bị lợi dụng chuyển hướng ra ngoài. Không quay lại chính trang /login
 function isInternalPath(path) {
-  return typeof path === 'string' && path.startsWith('/') && !path.startsWith('//')
+  return (
+    typeof path === 'string' &&
+    path.startsWith('/') &&
+    !path.startsWith('//') &&
+    !path.startsWith('/\\') &&
+    !/^\/login(?:[/?#]|$)/.test(path)
+  )
 }
 
 // Đăng nhập dùng chung cho Admin, Recruiter và Candidate
@@ -19,14 +25,18 @@ function Login() {
   const { login, isAuthenticated, role, loading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   // Thông báo do trang Đăng ký hoặc Đặt lại mật khẩu gửi sang
   const notice = location.state ? location.state.notice : ''
-  // Trang gửi sang (vd bấm "Ứng tuyển" khi chưa đăng nhập): đăng nhập xong quay lại đúng trang đó
-  const from = location.state && isInternalPath(location.state.from) ? location.state.from : ''
+  // Trang gửi sang (bấm "Ứng tuyển", mở URL cần đăng nhập, hết phiên): đăng nhập xong quay lại đúng trang đó.
+  // Lấy từ state của router, hoặc ?from= khi axiosClient tải lại trang vì gặp 401 (QA-03)
+  const rawFrom = (location.state && location.state.from) || searchParams.get('from')
+  const from = isInternalPath(rawFrom) ? rawFrom : ''
 
-  // Có trang cần quay lại thì về đó, không thì về trang chính của role
+  // Có trang cần quay lại thì về đó (trừ trang thuộc khu của role khác, vào sẽ ra /403),
+  // không thì về trang chính của role
   function redirectPath(userRole) {
-    return from || getRoleHome(userRole)
+    return from && !belongsToOtherRole(from.split(/[?#]/)[0], userRole) ? from : getRoleHome(userRole)
   }
 
   const [form, setForm] = useState({ email: '', password: '' })

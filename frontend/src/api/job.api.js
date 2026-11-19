@@ -24,7 +24,8 @@ export async function createJob(payload) {
   return response.data
 }
 
-// Tin do chính nhà tuyển dụng này đăng (cả tin đã đóng), mỗi tin kèm applicationCount
+// Tin do chính nhà tuyển dụng này đăng (cả tin đã đóng), mỗi tin kèm applicationCount và recruiterProfile { id, fullName }.
+// Gọi bằng tài khoản ADMIN (trang /admin/jobs, QA3): mọi tin của mọi nhà tuyển dụng
 export async function getMyJobs() {
   const response = await axiosClient.get('/jobs/my')
   return response.data

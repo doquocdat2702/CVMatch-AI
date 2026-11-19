@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import styles from '../pages/auth/Auth.module.css'
 
@@ -7,6 +7,7 @@ import styles from '../pages/auth/Auth.module.css'
 // Dùng được cả 2 cách: bọc trực tiếp (children) hoặc làm route cha (Outlet).
 function ProtectedRoute({ allowedRoles, children }) {
   const { isAuthenticated, role, loading } = useAuth()
+  const location = useLocation()
 
   // Đang khôi phục phiên bằng getMe, chưa biết đã đăng nhập hay chưa
   if (loading) {
@@ -18,7 +19,8 @@ function ProtectedRoute({ allowedRoles, children }) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
+    // Gửi kèm trang đang mở để đăng nhập xong quay lại đúng trang này, giữ cả bộ lọc trên URL (QA-03)
+    return <Navigate to="/login" replace state={{ from: `${location.pathname}${location.search}` }} />
   }
 
   if (allowedRoles && !allowedRoles.includes(role)) {

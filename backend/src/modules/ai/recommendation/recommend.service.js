@@ -5,6 +5,7 @@
 // Mỗi kết quả luôn kèm matrix có evidence và note, không bao giờ chỉ trả con số coverage.
 
 const prisma = require('../../../config/prisma');
+const { MAX_DB_ID } = require('../../../utils/ids');
 const { matchJobWithCandidate } = require('../matching/matcher');
 const { loadSkillIndex } = require('../normalization/normalizer');
 const { COVERAGE_NOTE } = require('../matching/coverage');
@@ -25,7 +26,7 @@ function createError(message, statusCode) {
 
 function parseId(value, label) {
   const id = Number(value);
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!Number.isInteger(id) || id <= 0 || id > MAX_DB_ID) {
     throw createError(`${label} không hợp lệ.`, 400);
   }
   return id;
@@ -145,9 +146,13 @@ async function recommendCandidatesForJob(jobId, limit = DEFAULT_LIMIT) {
     return { ...base, items: [], message: MESSAGE_JOB_NOT_PARSED };
   }
 
-  // Chỉ xét ứng viên có ít nhất một CV status COMPLETED
+  // Chỉ xét ứng viên có ít nhất một CV status COMPLETED, tài khoản đang hoạt động và vẫn là ứng viên (QA-04):
+  // tài khoản bị khóa hoặc đã đổi sang nhà tuyển dụng còn giữ hồ sơ ứng viên cũ nhưng không được gợi ý
   const candidates = await prisma.candidateProfile.findMany({
-    where: { cvs: { some: { status: 'COMPLETED' } } },
+    where: {
+      cvs: { some: { status: 'COMPLETED' } },
+      user: { isActive: true, role: { name: 'CANDIDATE' } },
+    },
     orderBy: { id: 'asc' },
     select: { id: true },
   });

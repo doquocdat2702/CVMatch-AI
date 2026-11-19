@@ -16,8 +16,10 @@ import Modal from '../../components/common/Modal'
 import Select from '../../components/common/Select'
 import Table from '../../components/common/Table'
 import Textarea from '../../components/common/Textarea'
+import { useAuth } from '../../hooks/useAuth'
 import { getErrorMessage } from '../../utils/apiError'
 import { REQUIREMENT_TYPE_LABEL } from '../../utils/labels'
+import { ROLES } from '../../utils/roles'
 import styles from './ParsedJD.module.css'
 
 const TYPE_OPTIONS = ['REQUIRED', 'PREFERRED', 'OPTIONAL'].map((type) => ({
@@ -45,7 +47,11 @@ function validateAddForm(form) {
 
 // Xem và chỉnh yêu cầu đã tách từ JD của một tin (chỉ người đăng tin được sửa).
 // jobId do AppRouter truyền, kèm key theo jobId để mỗi tin là một lần mount mới.
+// Dùng lại cho admin ở /admin/jobs/:id/requirements (QA3): admin sửa được mọi tin nên bỏ bước kiểm người đăng
 function ParsedJD({ jobId }) {
+  const { role } = useAuth()
+  const isAdmin = role === ROLES.ADMIN
+  const basePath = isAdmin ? '/admin/jobs' : '/recruiter/jobs'
   const [job, setJob] = useState(null)
   const [requirements, setRequirements] = useState([])
   const [loading, setLoading] = useState(true)
@@ -72,11 +78,11 @@ function ParsedJD({ jobId }) {
 
   useEffect(() => {
     let ignore = false
-    Promise.all([getJobDetail(jobId), getMyRecruiterProfile(), getRequirements(jobId)])
+    Promise.all([getJobDetail(jobId), isAdmin ? null : getMyRecruiterProfile(), getRequirements(jobId)])
       .then(([jobResult, profileResult, requirementsResult]) => {
         if (ignore) return
-        // HR xem chung, sửa riêng: tin của đồng nghiệp không mở trang chỉnh sửa (backend cũng chặn)
-        if (jobResult.data.recruiterProfileId !== profileResult.data.id) {
+        // HR xem chung, sửa riêng: tin của đồng nghiệp không mở trang chỉnh sửa (backend cũng chặn). Admin sửa mọi tin
+        if (profileResult && jobResult.data.recruiterProfileId !== profileResult.data.id) {
           setForbidden(true)
           return
         }
@@ -92,7 +98,7 @@ function ParsedJD({ jobId }) {
     return () => {
       ignore = true
     }
-  }, [jobId])
+  }, [isAdmin, jobId])
 
   // ===== Đổi loại: lưu ngay khi chọn =====
 
@@ -262,7 +268,7 @@ function ParsedJD({ jobId }) {
   ]
 
   const backLink = (
-    <Link className={styles.backLink} to={`/recruiter/jobs/${jobId}/edit`}>
+    <Link className={styles.backLink} to={`${basePath}/${jobId}/edit`}>
       Quay lại tin tuyển dụng
     </Link>
   )

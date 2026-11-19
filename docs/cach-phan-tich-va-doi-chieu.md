@@ -42,7 +42,8 @@ Chế độ NLP đặt bằng biến `NLP_MODE` (`rule` hoặc `hybrid`, mặc �
     trong dòng, gộp nhiều dòng trống. `hasUsableText` đòi ít nhất 10 ký tự không phải khoảng trắng; ít hơn thì báo
     "File PDF không chứa văn bản, có thể là bản scan" (hệ thống không OCR).
 - Quá `EXTRACT_TIMEOUT_MS` (mặc định 15000 ms) hoặc file hỏng: CV chuyển `FAILED` kèm lý do, file giữ nguyên.
-  Thành công: lưu `rawText`, CV chuyển `COMPLETED`, ghi `parsedAt`.
+  Thành công: lưu `rawText`, CV chuyển `COMPLETED`. Bước này KHÔNG đổi `parsedAt` (QA-24): `parsedAt` chỉ ghi khi phân
+  tích thành công (mục 5, bước 6), đọc file lỗi hay phân tích lỗi đều giữ nguyên giá trị cũ.
 
 ## 3. Phân tích bằng rule (chạy ở cả hai chế độ)
 
@@ -126,7 +127,40 @@ Chế độ NLP đặt bằng biến `NLP_MODE` (`rule` hoặc `hybrid`, mặc �
 2. Rule: bỏ kỹ năng có `skillId` đã có trong hồ sơ (do NLP giữ lại hoặc người dùng đã xác nhận) để không ghi trùng.
 3. Ghi bản ghi mới, luôn `isConfirmed = false`. Mục ứng viên đã xác nhận hoặc tự nhập (`MANUAL`) không bị đụng tới.
 4. Chỉ điền họ tên, số điện thoại, tiêu đề hồ sơ khi trường đó đang trống.
-5. CV `COMPLETED`, cập nhật `parsedAt`. API trả thêm `mode` đã dùng.
+5. Mục tiêu nghề nghiệp: chỉ điền khi ô đang trống (mục 5.1).
+6. CV `COMPLETED`, cập nhật `parsedAt`. API trả thêm `mode` đã dùng.
+
+### 5.1 Mục tiêu nghề nghiệp (`CandidateProfile.objective`, T35k / T35l)
+
+- **Nguồn**: ứng viên tự nhập ở trang Hồ sơ (tối đa 1000 ký tự, backend gộp khoảng trắng thừa, quá thì 400), hoặc phân
+  tích CV tự điền.
+- **Rule** (`rule.parser.js: findObjective`, chạy ở cả hai chế độ): tìm dòng tiêu đề khớp danh sách sau (so sau khi bỏ
+  dấu, chữ thường; có / không dấu hai chấm; bỏ số thứ tự và ký hiệu đầu dòng ■ ◆ ● ► ➤ ✓ #):
+  - Tiếng Việt: "Mục tiêu nghề nghiệp", "Mục tiêu công việc", "Mục tiêu", "Định hướng nghề nghiệp",
+    "Giới thiệu bản thân", "Giới thiệu", "Về tôi", "Tóm tắt".
+  - Tiếng Anh: "Career Objective", "Objective", "Career Goal(s)", "Summary", "Professional Summary", "About Me",
+    "Profile Summary".
+  - **Không** nhận "Profile" đứng một mình (trong CV thường là thông tin liên hệ); dòng đó vẫn là tiêu đề dừng.
+  - Lấy các dòng sau tiêu đề (hoặc phần sau dấu hai chấm nếu tiêu đề kèm nội dung cùng dòng) tới **tiêu đề mục kế
+    tiếp** (Học vấn, Kinh nghiệm, Kỹ năng, Thông tin cá nhân, Sở thích..., hoặc dòng viết HOA ngắn đứng riêng). Dòng bị
+    PDF ngắt giữa câu được nối lại; gạch đầu dòng giữ thành dòng riêng. Cắt tối đa 1000 ký tự, ưu tiên cắt ở khoảng
+    trắng (`clampObjective`).
+- **Hybrid**: Gemini trả thêm trường `objective` (trích nguyên văn, tối đa 1000 ký tự, cắt bằng cùng `clampObjective`);
+  Gemini không trả thì dùng kết quả rule.
+- **Quy tắc không ghi đè**: chỉ điền khi `objective` đang trống (null hoặc chuỗi rỗng). Điều kiện nằm ngay trong lệnh ghi
+  (`updateMany where objective null`), nên ứng viên vừa lưu mục tiêu trong lúc phân tích cũng không bị ghi đè. Không có
+  trường nào phân biệt "ứng viên nhập" với "phân tích điền", nên đã điền một lần thì CV sau cũng không thay; muốn lấy
+  mục tiêu từ CV mới, ứng viên xóa trống ô rồi phân tích lại (trang Hồ sơ nhắc đúng câu này khi ô đang có nội dung).
+- **Không điền được** thì `cv.service.js` ghi một dòng log `[CV] CV <id>: không điền mục tiêu nghề nghiệp vì ...` (không
+  thấy tiêu đề khớp / có tiêu đề nhưng không có nội dung / hybrid thì Gemini cũng không trả / ô đã có nội dung sẵn). Log
+  chỉ có mã CV và lý do, không có nội dung CV, không hiện ra giao diện.
+- **Hạn chế**:
+  - CV không có tiêu đề nào trong danh sách (chỉ có một đoạn giới thiệu không tiêu đề) thì rule không điền; hybrid có
+    thể vẫn lấy được nhờ Gemini.
+  - **CV nhiều cột** (làm bằng Canva / Word, cột trái là liên hệ, cột phải là nội dung): thư viện đọc PDF không biết bố cục
+    cột nên dòng của hai cột có thể xen nhau hoặc đảo thứ tự. Đoạn lấy được có thể lẫn chữ của cột bên cạnh, hoặc bị cắt
+    sớm vì gặp tiêu đề của cột kia. Ứng viên nên xem lại ô mục tiêu sau khi phân tích.
+  - Tiêu đề lạ không có trong danh sách ("Lời ngỏ", "Đôi nét về tôi"...) không được nhận.
 
 ## 6. Chuẩn hóa
 
@@ -284,7 +318,8 @@ kinh nghiệm chưa đủ 2 năm ra Chưa chắc chắn, đủ 2 năm ra Có b�
 - **Đối chiếu không đọc file CV của đơn.** Ma trận và coverage dùng **hồ sơ hiện tại** của ứng viên (bảng
   CandidateSkill, CandidateExperience, CandidateEducation), tức kết quả của lần phân tích CV gần nhất cộng các chỉnh
   sửa, xác nhận của ứng viên. Vì vậy ứng viên có thể gửi kèm CV A trong khi hồ sơ được phân tích từ CV B; hộp ứng
-  tuyển nói rõ điều này ("Lưu ý: hồ sơ của bạn chưa được cập nhật từ CV này.").
+  tuyển nói rõ điều này ("Hồ sơ của bạn chưa được cập nhật từ CV này."). CV phân tích lỗi vẫn gửi kèm được; khi
+  chọn CV đó, hộp ứng tuyển ghi "CV này chưa phân tích được nên không cập nhật vào hồ sơ. Bạn vẫn gửi kèm đơn được.".
 - Đơn nộp trước T35g có `cvId = null`: giao diện hiện CV hiện tại của ứng viên kèm ghi chú "Đang hiển thị CV hiện tại của bạn".
 
 ## 10. Hai ví dụ chạy tay
@@ -375,6 +410,8 @@ tích (rule không lưu kinh nghiệm) sẽ ra coverage khác, vì vậy coverag
 - Bộ tách JD dựa trên tiêu đề phần và từ khóa: câu mô tả công việc cũng có thể thành yêu cầu, câu không có từ khóa
   thì không phân loại được bằng rule (chế độ rule để PREFERRED, HR nên kiểm tra lại).
 - Đối chiếu dùng hồ sơ hiện tại, không dùng file CV gửi kèm đơn (mục 9).
+- Mục tiêu nghề nghiệp bằng rule chỉ nhận theo danh sách tiêu đề; CV nhiều cột có thể làm đoạn mục tiêu lẫn chữ của
+  cột bên cạnh (mục 5.1).
 - Skill Go (đã duyệt, theo quy tắc khóa ngắn): rule chỉ nhận "GO" viết HOA đứng riêng hoặc "Golang"; "Go" viết hoa
   chữ đầu trong CV không được bóc bằng rule (Gemini trả tên "Go" thì vẫn tra ra Skill Go).
 - Cụm "A/B" chỉ giữ nguyên khi cả cụm là name / alias của một Skill (mục 7.1); "thiết kế UI/UX" ra một yêu cầu nhưng

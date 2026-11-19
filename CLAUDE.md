@@ -83,7 +83,15 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 - HR: **xem chung, sửa riêng.** Mọi HR xem được mọi job và đơn; chỉ người đăng job mới được sửa/đóng/xóa job,
   parse JD, sửa requirement, đổi trạng thái đơn (hàm dùng chung `assertCanManageJob`). Admin toàn quyền.
 - HR nghỉ việc: admin tự sửa/đóng job của họ. Chức năng chuyển job sang HR khác: KHÔNG làm (hướng phát triển).
+  **Từ QA2 (QA-01)**: route sửa / đóng / xóa tin, phân tích JD, thêm / sửa / xóa yêu cầu, xem đơn của một tin
+  (`GET /applications/job/:jobId`) và đổi trạng thái đơn cho cả RECRUITER và ADMIN (`authorize('RECRUITER', 'ADMIN')`);
+  kiểm "đúng người đăng tin" vẫn ở `assertCanManageJob`, ADMIN đi qua không điều kiện.
+  **Từ QA3**: giao diện admin quản lý tin ở `/admin/jobs` (mục 5, Route). `GET /jobs/my` cho RECRUITER và ADMIN: RECRUITER
+  vẫn chỉ tin của mình, ADMIN nhận mọi tin của mọi HR (gồm tin đã đóng); mỗi tin trả thêm `recruiterProfile { id, fullName }`.
+  Admin KHÔNG tạo tin (`POST /jobs` vẫn chỉ RECRUITER).
 - Ứng viên chỉ xem đơn và CV của chính mình.
+- "Ứng viên gợi ý" (QA2, QA-04) chỉ lấy hồ sơ có CV COMPLETED của tài khoản đang hoạt động và vẫn là CANDIDATE (lọc
+  trong truy vấn). Danh sách đơn ứng tuyển của HR KHÔNG lọc theo trạng thái tài khoản (đơn đã nộp vẫn cần xử lý).
 - auth.middleware đọc lại `isActive` và role từ DB ở mỗi request (khóa tài khoản, đổi role có hiệu lực ngay).
 - Admin không tự khóa / tự xóa / tự hạ role; không được khóa hoặc hạ admin đang hoạt động cuối cùng.
 - Xóa tài khoản có dữ liệu tuyển dụng (recruiter có job, ứng viên có đơn) -> 400, gợi ý khóa thay vì xóa.
@@ -96,6 +104,12 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 
 ### 4.3 Bảo mật
 - Rate limit đăng nhập: tối đa 10 lần SAI / 15 phút / IP (đăng nhập đúng không tính) -> 429.
+- **Đăng ký (QA-25)**: tối đa 30 lần / giờ / IP, tính MỌI request (`registerLimiter`) -> 429 "Bạn đã đăng ký quá nhiều lần.
+  Vui lòng thử lại sau 1 giờ.". Đăng nhập bằng email không tồn tại vẫn so bcrypt với chuỗi băm giả cố định
+  (`auth.service.js: DUMMY_PASSWORD_HASH`, cost 10) để thời gian phản hồi gần bằng khi email có thật; câu lỗi giữ nguyên
+  "Email hoặc mật khẩu không đúng.".
+- **Không bật `trust proxy` (QA-27)**: limiter theo IP tính theo IP kết nối thật. Bật khi chạy trực tiếp thì client tự gửi
+  `X-Forwarded-For` để vượt giới hạn; chỉ bật (đúng số tầng proxy) khi triển khai sau Nginx / proxy (mục 9, README).
 - Quên mật khẩu qua email CHỈ cho ứng viên: token JWT ký bằng JWT_SECRET + mật khẩu đã băm, hạn 15 phút,
   dùng một lần, luôn trả câu chung (không lộ email nào tồn tại). Giới hạn 5 lần / 15 phút.
 - HR/Admin quên mật khẩu: admin đặt lại (PATCH /admin/users/:id/password).
@@ -130,14 +144,30 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   thẻ tóm tắt khu Tài khoản ứng viên (`AccountAreas`), trang Hồ sơ, hộp Xuất CV; nơi khác (AccountMenu, chi tiết tin,
   chi tiết đối chiếu, Kết quả phân tích CV) gọi không kèm. PUT /candidates/me KHÔNG trả `avatar` (giao diện không dùng);
   chỉ 2 endpoint ảnh luôn trả `avatar` để trang Hồ sơ cập nhật ảnh ngay.
+  **QA2 (QA-36)**: `POST /me/avatar` giới hạn 10 lần tải THÀNH CÔNG / 15 phút / tài khoản (`avatarUploadLimiter`, đặt sau
+  kiểm role, lần bị từ chối không tính) -> 429 "Bạn đã đổi ảnh đại diện quá nhiều lần. Vui lòng thử lại sau 15 phút.".
+  Đổi / xóa ảnh ghi `avatarPath` có điều kiện "vẫn là giá trị vừa đọc" (`swapAvatarPath`, thử lại tối đa 5 lần, quá thì
+  409) và chỉ xóa đúng file vừa bị thay, nên hai lần tải cùng lúc không để lại file mồ côi.
   `avatarPath` không bao giờ trả ra ngoài; ảnh KHÔNG trả cho HR / Admin (`GET /candidates/:id`, `GET /admin/users/:id`
   bỏ `avatarPath`). Base64 nặng ~1,33 lần ảnh (ảnh 1 MB -> ~1,33 MB, chỉ ở các lần gọi kèm ảnh).
 - **Đối chiếu vẫn dùng hồ sơ hiện tại** (lần phân tích CV gần nhất + chỉnh sửa của ứng viên), không đọc file CV của đơn.
   Mô tả chi tiết cách phân tích và đối chiếu: `docs/cach-phan-tich-va-doi-chieu.md`.
 - helmet, CORS theo CORS_ORIGIN, JWT_SECRET >= 32 ký tự.
 - Production: chỉ ẩn message của lỗi 500 không xác định; giữ message của lỗi đã định nghĩa (400/403/404/429/503).
+  **Từ QA2 (QA-02)**: lỗi 5xx không xác định (lỗi bất ngờ, lỗi Prisma có đường dẫn file và đoạn code) KHÔNG trả message
+  gốc ở BẤT KỲ chế độ nào (câu chung "Đã có lỗi xảy ra. Vui lòng thử lại sau."), log máy chủ vẫn ghi đủ kèm stack.
+  `error.middleware.js` đổi lỗi thư viện sang câu tiếng Việt: Prisma P2000 (chuỗi dài hơn cột) -> 400, JSON hỏng -> 400,
+  body quá lớn -> 413. Đường dẫn `/api/...` không tồn tại -> 404 JSON (QA-10). Mã số > 2147483647 -> 400 như mã sai
+  (`utils/ids.js: MAX_DB_ID`, QA-08); `limit` phân trang tối đa 50 (`MAX_PAGE_SIZE`, QA-06). Từ khóa / địa điểm tìm tin
+  escape `%` `_` `\` (QA-07). Website công ty chỉ nhận `http://` / `https://` (QA-11).
+- **Không trả `filePath` / `rawText` của CV (QA2, QA-31)**: `cv.service.js: toCvView` bỏ cả hai khỏi response tải lên,
+  danh sách, chi tiết, trích xuất; thay bằng `textLength` (số ký tự đọc được). Không màn hình nào cần toàn văn CV.
+  Tên file gốc dài hơn 255 ký tự thì cắt phần tên, giữ đuôi.
 - Frontend: axiosClient gặp 401 thì xóa phiên, chỉ chuyển /login khi đang ở route cần đăng nhập.
   Đăng nhập xong quay lại trang trước, chỉ nhận đường dẫn nội bộ (bắt đầu bằng `/`, không phải `//`).
+  **Từ QA2 (QA-03)**: ProtectedRoute chuyển /login kèm `state.from` (đường dẫn + query); axiosClient gặp 401 tải lại
+  `/login?from=<đường dẫn>`; Login đọc `state.from` hoặc `?from=`. Không quay lại `/login` và trang thuộc khu của role khác
+  (`utils/roles.js: belongsToOtherRole`, vd ứng viên mở `/admin/...`), khi đó về trang chính của role.
 
 ### 4.4 NLP: chế độ rule / hybrid
 - `NLP_MODE=rule|hybrid` (mặc định hybrid). Giá trị khác -> server không khởi động. Log chế độ khi khởi động.
@@ -147,6 +177,8 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 - Parse JD trả `data = { requirements, mode, unresolvedCount }`. Parse CV trả thêm `mode`.
 - Parse lỗi -> CV.status = FAILED, errorMessage "Phân tích thất bại: <lý do>", giữ rawText.
   Parse thành công -> COMPLETED + cập nhật parsedAt (trong cùng transaction với dữ liệu).
+  **QA-24**: chỉ bước phân tích thành công ghi parsedAt; bước trích xuất chữ (`extractCvText`) không đụng parsedAt,
+  đọc file lỗi hay phân tích lỗi đều giữ nguyên parsedAt cũ.
 - Parse ở chế độ rule chỉ thay kỹ năng chưa xác nhận có source RULE, giữ kỹ năng từ NLP.
 - **Mục tiêu nghề nghiệp (T35k)**: ứng viên tự nhập (tối đa 1000 ký tự, backend cắt khoảng trắng thừa, quá -> 400).
   Phân tích CV tự điền: rule tìm đoạn dưới tiêu đề (T35l mở rộng; không phân biệt hoa thường, có / không dấu, có / không
@@ -254,6 +286,12 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   `/admin/change-password` (T35e). Đăng nhập xong vào `/admin/dashboard` (từ T35c). Từ T35i Sidebar admin: Tổng quan,
   Tài khoản người dùng (`/admin/users`, sáng cả ở `/admin/recruiters/new`, mở trang tạo bằng nút trên danh sách), Phân
   quyền, Tài khoản (`/admin/profile`; khu Tài khoản gồm Hồ sơ / Đổi mật khẩu).
+  **Từ QA3**: `/admin/jobs` (Tin tuyển dụng, mục Sidebar ngay trên "Tài khoản"), `/admin/jobs/:id/edit`,
+  `/admin/jobs/:id/requirements`, dùng lại `JobList` / `JobForm` / `ParsedJD` của HR (đường dẫn gốc theo role). Trang
+  admin có thêm cột Người đăng và lọc trạng thái `?status=open|closed` (phân trang phía client như trang HR), không có
+  "Tạo tin mới", không có route `jobs/new`; trang sửa / yêu cầu bỏ bước kiểm người đăng khi là admin. Nút Đóng / Xóa theo
+  đúng quy tắc của HR (chỉ đóng tin đang mở, chỉ xóa tin chưa có đơn). Trang HR giữ nguyên (không cột Người đăng, không
+  lọc). Chưa có lọc theo người đăng nên `/admin/users` không có link "Xem tin đã đăng".
 - Đổi mật khẩu (T35e): 3 route trên, mỗi route chỉ cho đúng role (sai role -> /403), dùng chung trang
   `pages/common/ChangePassword`. Trang Hồ sơ của cả 3 role không còn form mật khẩu. Từ T35i cả 3 role cùng một kiểu
   (PageHeader + Panel + ChangePasswordForm có Hiện / Ẩn, danh sách điều kiện; đã bỏ prop `enhanced`, `siteStyle`).
@@ -274,7 +312,7 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   `AdminAccountLayout`. Trang con gọi `useOutletContext().refreshProfile` sau khi lưu hồ sơ.
 - `ChangePasswordForm` (từ T35e chỉ dùng ở trang Đổi mật khẩu riêng), `RequirementEvidenceMatrix` (props thuần, HR dùng lại;
   T35j chia nhóm theo loại, tiêu đề dòng là tên tiêu chí, prop `notFoundLink`, `note` chỉ HR truyền),
-  `ApplyAction`, `components/cv-export/` (buildCVData + 2 mẫu CV Cổ điển / Hiện đại),
+  `ApplyAction`, `components/cv-export/` (buildCVData + 3 mẫu CV Cổ điển / Hiện đại / Chuyên nghiệp),
   `components/dashboard/` (T35c: StatCard, BarChart vẽ bằng div + CSS).
 - utils: format.js (formatDateTime, formatDate, formatMonthYear, formatNumber, formatRelativeTime; T35f thêm
   formatRelative, formatPostedAt), labels.js (có CV_STATUS_LABEL từ T35c), apiError.js, roles.js, validation.js,
@@ -315,7 +353,8 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 | 8b Gia cố & thống kê | G1–G6, G7 (công ty cố định theo COMPANY_NAME, seed an toàn) | Xong |
 | Kiểm thử backend | smoke / timeout / nlp-fail / real-mail | Xong |
 | 9 Frontend | T26, T27, T28, T29, T29b, T30, T31, T32, T33, T34, T35, T35b, T35c, T35d, T35e, T35f, T35g, T35h, T35i, T35j, T35k, T35l | Xong |
-| 9b Dữ liệu & chuẩn hóa | Task F: F1, F2, F4, F5 (giữ cụm "A/B" là tên Skill), tin mẫu theo phòng ban (F3 làm trước đó) | Xong (chưa chạy trên DB thật) |
+| 9b Dữ liệu & chuẩn hóa | Task F: F1, F2, F4, F5 (giữ cụm "A/B" là tên Skill), tin mẫu theo phòng ban (F3 làm trước đó) | Xong (đã seed DB thật) |
+| 9c Rà soát | QA1 (báo lỗi, `docs/qa-report.md`), QA2 (sửa theo QA1), QA3 (màn hình quản lý tin cho admin) | Xong |
 | 10 Đánh giá | **T36**–T38 | **Tiếp theo: T36** |
 
 ### Lưu ý cho các task còn lại
@@ -392,13 +431,12 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   tóm tắt một dòng, menu thành tab cuộn ngang. Hồ sơ chia Thông tin cá nhân (email chỉ đọc) / Kỹ năng (chip, nhãn nguồn)
   / Kinh nghiệm / Học vấn (dòng thời gian, chỉ đọc). Đổi mật khẩu: `ChangePasswordForm enhanced` (Hiện / Ẩn,
   aria-pressed, danh sách 3 điều kiện có sẵn: 6 ký tự, khác mật khẩu cũ, xác nhận khớp); HR / Admin giữ form cũ.
-  Trang Kết quả phân tích có khung "Cách hệ thống đọc CV của bạn" (mở sẵn lần đầu, localStorage), nhãn nguồn
+  Trang Kết quả phân tích có khung "Cách hệ thống đọc CV của bạn" (từ QA-20 luôn thu gọn khi vào trang, bỏ "mở sẵn
+  lần đầu" và localStorage), nhãn nguồn
   Từ điển / AI / Tự nhập (`PROFILE_SOURCE_LABEL` trong labels.js) + Đã / Chưa xác nhận; Chi tiết đối chiếu có chú thích
   3 trạng thái theo đúng matcher. Bỏ ô địa điểm ở trang chủ. Tài liệu `docs/cach-phan-tich-va-doi-chieu.md`.
   variables.css thêm `--account-mark-size`. Smoke test (file local) đã gửi `cvId` và có ca mới cho cvId / xóa CV / quyền xem.
-  **DB thật chưa có migration `add_application_cv`**: trước khi chạy `npm run dev` trên cvmatch, sao lưu DB rồi chạy
-  `npx prisma migrate deploy` (thư mục backend, dùng `.env`); Prisma client đã sinh lại theo schema mới nên chưa migrate
-  thì mọi truy vấn Application trên cvmatch lỗi thiếu cột.
+  Migration `add_application_cv` đã chạy trên cvmatch (QA1 kiểm: 6 / 6 migration, 0 chờ).
 - **T35h (đã xong, chủ dự án tự commit)**: chỉ viết lại câu chữ hiển thị (frontend, message API backend, email quên mật
   khẩu), không đổi logic / route / API / mã HTTP. Quy ước từ đây: gọi ứng viên là "bạn", HR / Admin trung tính; không
   "chúng tôi" (trừ Giới thiệu, Chính sách, Điều khoản); câu trọn vẹn có dấu chấm, nhãn / nút / tiêu đề không chấm; lỗi
@@ -412,7 +450,7 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   xóa giữ nguyên: đúng HR, chưa có đơn, hỏi y/N). Từ F5 tin DevOps và UI/UX dùng CI/CD, UI/UX ở dòng yêu cầu
   (115 yêu cầu, đều gắn Skill). Tin cùng tiêu đề đã có
   thì bị bỏ qua (JD cũ giữ nguyên), muốn thay JD thì chạy `--remove` trước. Unit test chuẩn hóa (file local):
-  `node --env-file=.env.test scripts/test-normalize.js`. DB thật CHƯA chạy seed mới.
+  `node --env-file=.env.test scripts/test-normalize.js`. DB thật đã chạy seed mới (QA1 kiểm: 133 Skill, 17 tin mẫu).
 - **T35i (đã xong, chủ dự án tự commit)**: menu admin bỏ "Tạo nhà tuyển dụng" (nút "Tạo tài khoản nhà tuyển dụng" có sẵn trên
   trang danh sách, h1 và mục Sidebar đổi thành "Tài khoản người dùng", trang tạo có link "Quay lại danh sách tài khoản").
   Khu Tài khoản cho HR / Admin cùng bố cục với ứng viên, đặt trong MainLayout (mục 5); thẻ tóm tắt HR: chữ viết tắt,
@@ -423,7 +461,7 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   có `?jobId` (mặc định; `jobId` không phải tin của mình cũng về đây), dùng `GET /applications/mine` phân trang phía
   server 9 dòng, thêm cột "Tin tuyển dụng" (link trang sửa tin, "Đã đóng"); chọn một tin như cũ. Smoke có 6 ca mới cho
   `/applications/mine` (67 endpoint).
-- **T35j (đã xong, chưa commit)**: nâng giao diện ứng viên cho trang tuyển dụng công nghệ. Bảng đối chiếu chia nhóm
+- **T35j (đã xong, chủ dự án tự commit)**: nâng giao diện ứng viên cho trang tuyển dụng công nghệ. Bảng đối chiếu chia nhóm
   theo loại, tiêu đề dòng là tên tiêu chí; chi tiết đối chiếu có kết quả tổng ở đầu (x/y + thanh + đếm 3 trạng thái),
   Badge trạng thái có chú thích một câu (`MatchStatusBadge`, thay khối "Cách đọc bảng này"), link "Cập nhật hồ sơ" ở dòng Không tìm thấy, JD dùng `JobDescription`. Chip kỹ năng Hồ sơ
   theo tên Skill / tên bỏ ngoặc + ghi chú nhỏ, gộp trùng (chỉ hiển thị). Tab Gợi ý: tin 0 bằng chứng xuống nhóm cuối
@@ -433,13 +471,11 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   chi tiết tin có khung "Thông tin chung". Trang auth chung bố cục hai nửa (`AuthLayout`). Kết quả phân tích CV: bảng
   kỹ năng gọn, "Chưa xác nhận" trước, "Xác nhận tất cả" (gọi tuần tự API cập nhật có sẵn), bằng chứng thu gọn. Bảng câu
   đã bỏ / rút lưu ngoài repo (báo cáo T35j).
-- **T35k (đã xong, chưa commit)**: ảnh đại diện ứng viên (mục 4.3), mục tiêu nghề nghiệp (mục 4.4), mẫu CV thứ ba
+- **T35k (đã xong, chủ dự án tự commit)**: ảnh đại diện ứng viên (mục 4.3), mục tiêu nghề nghiệp (mục 4.4), mẫu CV thứ ba
   "Chuyên nghiệp", hai mẫu cũ thêm mục mục tiêu, hộp Xuất CV có dòng nguồn dữ liệu kèm link Hồ sơ / Kết quả phân tích CV,
-  /privacy thêm ảnh đại diện và mục tiêu vào danh sách dữ liệu thu thập. Migration chỉ đã chạy trên DB test.
-  **DB thật CHƯA có migration `20261117090000_add_candidate_avatar_objective`**: trước khi chạy `npm run dev` trên
-  cvmatch, sao lưu DB rồi chạy `npx prisma migrate deploy` (thư mục backend, dùng `.env`); Prisma client đã sinh lại
-  theo schema mới nên chưa migrate thì mọi truy vấn CandidateProfile trên cvmatch lỗi thiếu cột.
-- **T35l (đã xong, chưa commit)**: CV xuất ra gọn một trang (hồ sơ cỡ trung bình ở cả 3 mẫu, kiểm bằng PDF thật), mẫu
+  /privacy thêm ảnh đại diện và mục tiêu vào danh sách dữ liệu thu thập. Migration
+  `20261117090000_add_candidate_avatar_objective` đã chạy trên cả DB test và cvmatch (QA1 kiểm).
+- **T35l (đã xong, chủ dự án tự commit)**: CV xuất ra gọn một trang (hồ sơ cỡ trung bình ở cả 3 mẫu, kiểm bằng PDF thật), mẫu
   Chuyên nghiệp sắp lại hai cột, kỹ năng dạng thẻ / một dòng, chống tiêu đề mồ côi và trang trống; hộp Xuất CV có
   phần chỉnh sửa cho lần xuất này (KHÔNG lưu: không kéo thả, không sửa nội dung từng mục kinh nghiệm / học vấn); mở
   rộng tiêu đề mục tiêu + log lý do (mục 4.4). Không thêm thư viện, trường DB, endpoint.
@@ -447,6 +483,17 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   x 5 ý, 3 học vấn, mục tiêu 1000 ký tự) 2 trang ở cả 3 mẫu. Để đạt 2 trang, mẫu Chuyên nghiệp đổi biến:
   `--cv-side-width` 32%, `--cv-page-space` 10mm, `--cv-gutter` 8mm, thêm `--cv-leading` 20px. Khung xem trước có
   nút "Vừa khung" / "Cỡ thật" (vừa khung chữ chỉ ~5-7px, không đọc được). Kịch bản kiểm thử nằm ngoài repo.
+- **QA2 (sửa theo QA1, chưa commit)**: backend như các dòng "QA2" ở mục 4.2, 4.3, 7. Frontend: đăng nhập quay lại
+  trang trước (QA-03); trang Đơn ứng tuyển của ứng viên lọc trạng thái trên URL `?status=` (QA-33); đổi bộ lọc ở Đơn
+  ứng tuyển / Ứng viên gợi ý của HR và ứng viên thêm mục lịch sử (không `replace`) nên Back bỏ bộ lọc vừa chọn (QA-14);
+  hộp ứng tuyển: CV phân tích lỗi VẪN gửi kèm được (QA-35, giữ quy tắc T35g), chọn CV đó thì dưới CV hiện "CV này chưa
+  phân tích được nên không cập nhật vào hồ sơ. Bạn vẫn gửi kèm đơn được." (thay câu "Hồ sơ của bạn chưa được cập nhật từ
+  CV này."); form Đăng ký có `maxLength` họ tên 255 / email 191. Danh sách mã đã sửa / bỏ qua: `docs/qa-report.md`.
+- **QA3 (chưa commit)**: phần giao diện của QA-01, route `/admin/jobs` (mục 4.2 và 5). Không thêm endpoint: mở rộng
+  quyền + response của `GET /jobs/my`. Cùng task: QA-20 (khung hướng dẫn ở Kết quả phân tích luôn thu gọn), QA-24
+  (`parsedAt` chỉ ghi khi phân tích thành công, mục 4.4), QA-25 (giới hạn đăng ký + so bcrypt giả, mục 4.3), QA-27
+  (không bật `trust proxy`, hoãn tới khi triển khai, mục 4.3 và 9). Kiểm thêm: `scripts/test-qa3.js` (file local, tự bật
+  server test nhiều lần, cổng 5001 phải trống).
 - **T36–T38**: so sánh rule vs hybrid trên cùng bộ dữ liệu. Trước bảo vệ cần bộ **dữ liệu demo thật**
   (job đa ngành, JD đầy đủ, CV mẫu phân tích hybrid để ma trận có đủ xanh/vàng/đỏ).
 
@@ -460,8 +507,16 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   - `node --env-file=.env.test scripts/test-real-mail.js <email>` — gửi mail thật, dán link khi được hỏi
 - Script tự dừng nếu DATABASE_URL không chứa `_test`.
 - **Lệnh reset DB do chủ dự án tự chạy**, AI không tự chạy lệnh xóa dữ liệu.
-- Các file test (`backend/scripts/lib/`, `smoke-test.js`, `test-*.js` trừ `test-extract.js`) nằm trong .gitignore,
-  chỉ lưu trên máy. Sao lưu thư mục `backend/scripts` ra ngoài sau mỗi lần sửa.
+- Các file test (`backend/scripts/lib/`, `smoke-test.js`, `test-*.js` trừ `test-extract.js`) và
+  `find-orphan-uploads.js` nằm trong .gitignore, chỉ lưu trên máy. Sao lưu thư mục `backend/scripts` ra ngoài sau mỗi
+  lần sửa.
+- **Thư mục upload riêng cho DB test (QA2, QA-05)**: `.env.test` / `.env.test.example` đặt `UPLOAD_DIR="uploads-test"`
+  (trong `backend/.gitignore`); `.env` thật giữ `uploads`. Tìm file mồ côi (không có bản ghi `CV.filePath` /
+  `CandidateProfile.avatarPath` trỏ tới): `node --env-file=.env.test scripts/find-orphan-uploads.js` (chỉ liệt kê),
+  thêm `--quarantine` để CHUYỂN (không xóa) vào `<UPLOAD_DIR>/_mo_coi/<ngày>/` sau khi hỏi y/N. Script chỉ đọc DB, không
+  có lệnh xóa file, bỏ qua file sửa trong 60 phút gần nhất, không cho cách ly khi DB test trỏ vào thư mục `uploads`.
+  Chạy trên DB thật (dùng `.env`) do chủ dự án tự chạy, sao lưu `uploads` trước.
+- Báo cáo rà soát: `docs/qa-report.md` (QA1 báo lỗi, QA2 thêm cột Trạng thái từng mã lỗi).
 - Nhánh "admin cuối cùng" là lớp bảo vệ dự phòng, không kích hoạt được qua API.
 - **`.env.test` BẮT BUỘC khai báo `COMPANY_NAME`** (như `.env.test.example`; từ F5 đã có, cùng tên với `.env`:
   "Công Ty TNHH DTSOFTWARE"). Thiếu thì dotenv trong env.js nạp bù từ `.env` và server test / seed đổi tên công ty
@@ -483,6 +538,7 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 
 Chuyển job giữa HR, refresh token / tokenVersion, token trong cookie httpOnly, audit log,
 xuất file thống kê, xác minh email khi đăng ký, LLM chạy cục bộ (Ollama), cache kết quả LLM.
+Triển khai sau Nginx / proxy: bật `app.set('trust proxy', <số tầng proxy>)` trong `app.js` (QA-27, hiện không bật).
 
 ## 10. Chuẩn bị ngày bảo vệ
 

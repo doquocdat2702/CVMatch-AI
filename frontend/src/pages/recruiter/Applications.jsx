@@ -146,7 +146,8 @@ function Applications() {
     // Bỏ tham số rỗng cho URL gọn
     const params = Object.fromEntries(Object.entries(next).filter(([, value]) => value))
     setNotice(null)
-    setSearchParams(params, { replace: true })
+    // Người dùng tự đổi bộ lọc: thêm mục lịch sử để Back bỏ bộ lọc vừa chọn, không rời trang (QA-14)
+    setSearchParams(params)
   }
 
   function handlePageChange(nextPage) {

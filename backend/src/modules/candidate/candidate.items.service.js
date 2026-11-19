@@ -1,6 +1,7 @@
 // Ứng viên tự thêm / sửa / xóa dữ liệu mà hệ thống phân tích ra.
 // Mọi thao tác chỉ áp dụng trên hồ sơ của chính người đang đăng nhập.
 const prisma = require('../../config/prisma');
+const { MAX_DB_ID } = require('../../utils/ids');
 const { normalizeSkillName, resolveSkillId } = require('../ai/normalization/normalizer');
 
 const SOURCE_MANUAL = 'MANUAL';
@@ -21,7 +22,7 @@ async function getMyProfile(userId) {
 
 function parseId(value, label) {
   const id = Number(value);
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!Number.isInteger(id) || id <= 0 || id > MAX_DB_ID) {
     throw createError(`Mã ${label} không hợp lệ.`, 400);
   }
   return id;

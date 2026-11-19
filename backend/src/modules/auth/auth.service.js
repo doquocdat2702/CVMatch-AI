@@ -8,6 +8,11 @@ const { signToken } = require('../../utils/jwt');
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 6;
 
+// Chuỗi băm bcrypt giả, cùng cost 10 với utils/hash.js (QA-25). Băm từ một chuỗi ngẫu nhiên đã bỏ đi, không phải mật khẩu
+// của ai. Đăng nhập bằng email không tồn tại vẫn so mật khẩu với chuỗi này để thời gian phản hồi gần bằng khi email có
+// thật, không dò được email đã đăng ký qua thời gian phản hồi
+const DUMMY_PASSWORD_HASH = '$2b$10$TJqw7S9ivyGrZb8MkGK7/OvOHHFXsEEi4oRTHUUIIl2mUSJvGndji';
+
 const RESET_PURPOSE = 'reset';
 const RESET_TOKEN_EXPIRES_IN = '15m';
 const INVALID_RESET_LINK = 'Liên kết đặt lại mật khẩu đã hết hạn hoặc đã được dùng. Vui lòng gửi yêu cầu mới.';
@@ -85,6 +90,8 @@ async function login({ email, password }) {
   });
 
   if (!user) {
+    // Vẫn so bcrypt (kết quả bỏ đi) rồi trả đúng câu như sai mật khẩu
+    await comparePassword(password, DUMMY_PASSWORD_HASH);
     throw createError('Email hoặc mật khẩu không đúng.', 400);
   }
 

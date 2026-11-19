@@ -1,3 +1,4 @@
+const { MAX_DB_ID, MAX_PAGE_SIZE } = require('../../utils/ids');
 const prisma = require('../../config/prisma');
 const { normalizeText } = require('../ai/normalization/normalizer');
 
@@ -9,7 +10,7 @@ function createError(message, statusCode) {
 
 function parseId(value, label) {
   const id = Number(value);
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!Number.isInteger(id) || id <= 0 || id > MAX_DB_ID) {
     throw createError(`${label} không hợp lệ.`, 400);
   }
   return id;
@@ -139,6 +140,12 @@ async function loadTopSkills() {
     .map(([name]) => name);
 }
 
+// Từ khóa đưa vào contains (LIKE '%...%'): escape %, _ và \ để "%" không thành ký tự đại diện khớp mọi tin (QA-07).
+// Chỉ dùng cho contains / startsWith / endsWith; so sánh bằng (=) không cần escape
+function escapeLike(value) {
+  return value.replace(/[\\%_]/g, (ch) => `\\${ch}`);
+}
+
 // Điều kiện "tin có yêu cầu gắn Skill khớp từ khóa". Alias lưu dạng không dấu, chữ thường, cách nhau bởi dấu phẩy
 // nên so thêm từ khóa đã chuẩn hóa (normalizeText). Từ khóa >= 3 ký tự: khớp một phần tên / alias;
 // ngắn hơn: chỉ khớp đúng tên hoặc đúng một alias trong danh sách
@@ -146,15 +153,16 @@ function skillKeywordCondition(keyword) {
   const forms = [...new Set([keyword, normalizeText(keyword)].filter(Boolean))];
   const conditions = [];
   for (const form of forms) {
+    const like = escapeLike(form);
     if (form.length >= SKILL_KEYWORD_MIN_CONTAINS) {
-      conditions.push({ name: { contains: form } }, { aliases: { contains: form } });
+      conditions.push({ name: { contains: like } }, { aliases: { contains: like } });
     } else {
       conditions.push(
         { name: form },
         { aliases: form },
-        { aliases: { startsWith: `${form},` } },
-        { aliases: { endsWith: `,${form}` } },
-        { aliases: { contains: `,${form},` } }
+        { aliases: { startsWith: `${like},` } },
+        { aliases: { endsWith: `,${like}` } },
+        { aliases: { contains: `,${like},` } }
       );
     }
   }
@@ -174,15 +182,17 @@ async function listOpenJobs({ page, limit, keyword, location } = {}) {
   if (!Number.isInteger(pageSize) || pageSize <= 0) {
     pageSize = 10;
   }
+  // Trần số dòng mỗi trang như recommend.service (QA-06): limit=100000 không kéo cả bảng
+  pageSize = Math.min(pageSize, MAX_PAGE_SIZE);
 
   const where = { isOpen: true };
 
   if (typeof keyword === 'string' && keyword.trim()) {
     const value = keyword.trim();
-    where.OR = [{ title: { contains: value } }, skillKeywordCondition(value)];
+    where.OR = [{ title: { contains: escapeLike(value) } }, skillKeywordCondition(value)];
   }
   if (typeof location === 'string' && location.trim()) {
-    where.location = { contains: location.trim() };
+    where.location = { contains: escapeLike(location.trim()) };
   }
 
   const [total, jobs, topSkills] = await Promise.all([
@@ -212,15 +222,21 @@ async function listOpenJobs({ page, limit, keyword, location } = {}) {
   };
 }
 
-// Job của nhà tuyển dụng, gồm cả job đã đóng, kèm số đơn ứng tuyển
-async function listMyJobs(userId) {
-  const profile = await getRecruiterProfile(userId);
+// Job của nhà tuyển dụng, gồm cả job đã đóng, kèm số đơn ứng tuyển và người đăng.
+// ADMIN (QA3): mọi job của mọi HR, cùng dạng dữ liệu, để trang /admin/jobs dùng lại danh sách tin của HR
+async function listMyJobs(user) {
+  let where = {};
+  if (user.role !== 'ADMIN') {
+    const profile = await getRecruiterProfile(user.userId);
+    where = { recruiterProfileId: profile.id };
+  }
 
   const jobs = await prisma.job.findMany({
-    where: { recruiterProfileId: profile.id },
+    where,
     orderBy: { createdAt: 'desc' },
     include: {
       company: { select: { id: true, name: true } },
+      recruiterProfile: { select: { id: true, fullName: true } },
       _count: { select: { applications: true } },
     },
   });
@@ -312,8 +328,22 @@ async function deleteJob(user, jobId) {
     );
   }
 
-  await prisma.jobRequirement.deleteMany({ where: { jobId: job.id } });
-  await prisma.job.delete({ where: { id: job.id } });
+  // Xóa yêu cầu và tin trong một transaction (QA-12): lỗi giữa chừng thì không mất yêu cầu mà tin vẫn còn.
+  // Đơn vừa được nộp giữa lúc đếm và lúc xóa: khóa ngoại chặn (P2003), trả cùng câu như trên
+  try {
+    await prisma.$transaction([
+      prisma.jobRequirement.deleteMany({ where: { jobId: job.id } }),
+      prisma.job.delete({ where: { id: job.id } }),
+    ]);
+  } catch (err) {
+    if (err.code === 'P2003') {
+      throw createError(
+        'Tin tuyển dụng đã có đơn ứng tuyển nên không thể xóa. Có thể đóng tin thay thế.',
+        400
+      );
+    }
+    throw err;
+  }
 
   return { id: job.id };
 }

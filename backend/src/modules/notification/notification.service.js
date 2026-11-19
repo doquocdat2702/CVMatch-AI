@@ -1,3 +1,4 @@
+const { MAX_DB_ID, MAX_PAGE_SIZE } = require('../../utils/ids');
 const prisma = require('../../config/prisma');
 
 // type lưu dạng String, KHÔNG tạo enum mới; chỉ nhận đúng 2 giá trị này
@@ -22,7 +23,7 @@ function createError(message, statusCode) {
 
 function parseId(value, label) {
   const id = Number(value);
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!Number.isInteger(id) || id <= 0 || id > MAX_DB_ID) {
     throw createError(`${label} không hợp lệ.`, 400);
   }
   return id;
@@ -107,6 +108,8 @@ async function listMyNotifications(userId, { page, limit } = {}) {
   if (!Number.isInteger(pageSize) || pageSize <= 0) {
     pageSize = 10;
   }
+  // Trần số dòng mỗi trang như recommend.service (QA-06): limit=100000 không kéo cả bảng
+  pageSize = Math.min(pageSize, MAX_PAGE_SIZE);
 
   const where = { userId };
 

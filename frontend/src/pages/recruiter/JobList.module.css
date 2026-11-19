@@ -18,6 +18,12 @@
   color: var(--color-text-muted);
 }
 
+/* Ô lọc trạng thái (chỉ trang admin, QA3): cùng độ rộng với một ô lọc ở trang Đơn ứng tuyển */
+.filters {
+  max-width: calc(var(--form-max) / 2);
+  margin-bottom: var(--space-4);
+}
+
 /* Link dạng nút chính */
 .primaryLink {
   display: inline-flex;

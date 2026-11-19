@@ -30,3 +30,7 @@ cần mở khóa thì mới đăng nhập được.
 
 Sửa `COMPANY_NAME` trong `backend/.env` rồi khởi động lại server. Mỗi lần khởi động, server đặt tên công ty theo biến
 này.
+
+### Triển khai sau proxy
+
+Chạy trực tiếp thì KHÔNG bật `trust proxy`; đặt sau Nginx hoặc proxy khác thì thêm `app.set('trust proxy', <số tầng proxy>)` vào `backend/src/app.js` (một tầng Nginx là `1`, không dùng `true`) để giới hạn theo IP tính đúng người dùng.

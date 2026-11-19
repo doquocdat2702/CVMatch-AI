@@ -1,11 +1,12 @@
 const express = require('express');
 const authController = require('./auth.controller');
 const authenticate = require('../../middleware/auth.middleware');
-const { loginLimiter, forgotPasswordLimiter } = require('../../middleware/rate-limit.middleware');
+const { loginLimiter, forgotPasswordLimiter, registerLimiter } = require('../../middleware/rate-limit.middleware');
 
 const router = express.Router();
 
-router.post('/register', authController.register);
+// Giới hạn 30 lần / giờ / IP (QA-25)
+router.post('/register', registerLimiter, authController.register);
 router.post('/login', loginLimiter, authController.login);
 router.get('/me', authenticate, authController.me);
 router.put('/change-password', authenticate, authController.changePassword);

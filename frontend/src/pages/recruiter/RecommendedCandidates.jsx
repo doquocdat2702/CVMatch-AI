@@ -89,9 +89,10 @@ function RecommendedCandidates() {
     setJobsReloadKey((key) => key + 1)
   }
 
-  // Đổi tin: URL chỉ còn jobId nên ?page= bị bỏ, về trang 1
+  // Đổi tin: URL chỉ còn jobId nên ?page= bị bỏ, về trang 1. Thêm mục lịch sử để Back quay về tin trước,
+  // không rời trang (QA-14)
   function handleJobChange(event) {
-    setSearchParams({ jobId: event.target.value }, { replace: true })
+    setSearchParams({ jobId: event.target.value })
   }
 
   function handlePageChange(nextPage) {

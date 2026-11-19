@@ -29,8 +29,9 @@ function MyApplications() {
   const [error, setError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
 
-  // '' = tất cả trạng thái
-  const [statusFilter, setStatusFilter] = useState('')
+  // Bộ lọc trạng thái trên URL (?status=, QA-33) để F5 / Back giữ đúng bộ lọc. '' = tất cả; giá trị lạ coi như không lọc
+  const paramStatus = searchParams.get('status')
+  const statusFilter = STATUSES.includes(paramStatus) ? paramStatus : ''
   const [notice, setNotice] = useState(null)
 
   // Đơn đang chờ xác nhận rút
@@ -61,16 +62,24 @@ function MyApplications() {
     setReloadKey((key) => key + 1)
   }
 
-  // Đổi trạng thái lọc thì về trang 1
+  // Đổi trạng thái lọc thì về trang 1. Thêm mục lịch sử (không replace) để Back bỏ bộ lọc vừa chọn
+  function changeStatusFilter(status) {
+    const params = withPage(searchParams, 1)
+    if (status) {
+      params.set('status', status)
+    } else {
+      params.delete('status')
+    }
+    setSearchParams(params)
+  }
+
   function handleStatusChange(event) {
-    setStatusFilter(event.target.value)
-    setSearchParams(withPage(searchParams, 1), { replace: true })
+    changeStatusFilter(event.target.value)
   }
 
   // Lọc ra rỗng: nút "Xem tất cả đơn" bỏ lọc, về trang 1
   function clearStatusFilter() {
-    setStatusFilter('')
-    setSearchParams(withPage(searchParams, 1), { replace: true })
+    changeStatusFilter('')
   }
 
   function handlePageChange(nextPage) {

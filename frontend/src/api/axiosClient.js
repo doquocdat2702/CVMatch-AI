@@ -34,8 +34,11 @@ axiosClient.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
+      // Tải lại trang nên không mang được state của router: gửi trang đang mở qua ?from= để đăng nhập xong
+      // quay lại đúng trang đó (QA-03)
       if (!isPublicPath(window.location.pathname)) {
-        window.location.href = '/login'
+        const from = `${window.location.pathname}${window.location.search}`
+        window.location.href = `/login?from=${encodeURIComponent(from)}`
       }
     }
     return Promise.reject(error)

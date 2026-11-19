@@ -1,3 +1,4 @@
+const { MAX_DB_ID } = require('../../utils/ids');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -103,6 +104,29 @@ async function getMyProfile(userId, { withAvatar = false } = {}) {
   return toOwnProfile(profile, { withAvatar });
 }
 
+// Đổi avatarPath của hồ sơ sang nextPath (null = bỏ ảnh), trả đường dẫn ảnh VỪA BỊ THAY để xóa file cũ.
+// Ghi có điều kiện "avatarPath vẫn là giá trị vừa đọc": hai lần tải / xóa cùng lúc thì lần sau thấy 0 dòng,
+// đọc lại rồi thay đúng ảnh của lần trước. Mỗi lần chỉ xóa đúng file mình đã thay, không file nào thành mồ côi
+// (QA-36). Thử lại tối đa vài lần, quá thì báo lỗi (lần gọi này không thay được ảnh)
+const AVATAR_SWAP_ATTEMPTS = 5;
+async function swapAvatarPath(profileId, nextPath) {
+  for (let attempt = 0; attempt < AVATAR_SWAP_ATTEMPTS; attempt += 1) {
+    const current = await prisma.candidateProfile.findUnique({
+      where: { id: profileId },
+      select: { avatarPath: true },
+    });
+    if (!current) {
+      throw createError('Không tìm thấy hồ sơ ứng viên.', 404);
+    }
+    const { count } = await prisma.candidateProfile.updateMany({
+      where: { id: profileId, avatarPath: current.avatarPath },
+      data: { avatarPath: nextPath },
+    });
+    if (count === 1) return current.avatarPath;
+  }
+  throw createError('Ảnh đại diện đang được cập nhật ở nơi khác. Vui lòng thử lại.', 409);
+}
+
 // file: req.file của multer (bộ nhớ, đã giới hạn 1 MB). Ghi file mới xong mới cập nhật DB, rồi mới xóa ảnh cũ
 async function setMyAvatar(userId, file) {
   if (!file) {
@@ -119,15 +143,16 @@ async function setMyAvatar(userId, file) {
   await fs.promises.writeFile(absolutePath, file.buffer, { flag: 'wx' });
   const relativePath = path.relative(process.cwd(), absolutePath).split(path.sep).join('/');
 
+  let replacedPath;
   try {
-    await prisma.candidateProfile.update({ where: { id: profile.id }, data: { avatarPath: relativePath } });
+    replacedPath = await swapAvatarPath(profile.id, relativePath);
   } catch (err) {
     // Ghi DB thất bại thì không để lại file rác
     await removeAvatarFile(relativePath);
     throw err;
   }
-  if (profile.avatarPath && profile.avatarPath !== relativePath) {
-    await removeAvatarFile(profile.avatarPath);
+  if (replacedPath && replacedPath !== relativePath) {
+    await removeAvatarFile(replacedPath);
   }
 
   return getMyProfile(userId, { withAvatar: true });
@@ -137,8 +162,10 @@ async function setMyAvatar(userId, file) {
 async function deleteMyAvatar(userId) {
   const profile = await findProfileOrThrow(userId);
   if (profile.avatarPath) {
-    await prisma.candidateProfile.update({ where: { id: profile.id }, data: { avatarPath: null } });
-    await removeAvatarFile(profile.avatarPath);
+    const replacedPath = await swapAvatarPath(profile.id, null);
+    if (replacedPath) {
+      await removeAvatarFile(replacedPath);
+    }
   }
   return getMyProfile(userId, { withAvatar: true });
 }
@@ -205,7 +232,7 @@ async function updateMyProfile(userId, { fullName, phone, address, headline, obj
 // Nhà tuyển dụng xem hồ sơ một ứng viên
 async function getProfileById(candidateProfileId) {
   const id = Number(candidateProfileId);
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!Number.isInteger(id) || id <= 0 || id > MAX_DB_ID) {
     throw createError('Mã hồ sơ ứng viên không hợp lệ.', 400);
   }
 
