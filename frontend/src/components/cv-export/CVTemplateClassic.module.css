@@ -41,6 +41,13 @@
   font-weight: var(--weight-semibold);
 }
 
+/* T35m: dòng GitHub / LinkedIn là liên kết nhưng trông như chữ thường (in ra giấy không có gạch chân, màu riêng);
+   bản PDF vẫn bấm được */
+.contactLink {
+  color: inherit;
+  text-decoration: none;
+}
+
 /* T35l: khoảng cách giữa các mục gọn lại để hồ sơ cỡ trung bình nằm trong một trang A4 */
 .section {
   margin-top: var(--space-4);

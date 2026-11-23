@@ -92,15 +92,18 @@ model RecruiterProfile {
 }
 
 model CandidateProfile {
-  id         Int     @id @default(autoincrement())
-  userId     Int     @unique
-  fullName   String  @db.VarChar(255)
-  phone      String? @db.VarChar(50)
-  address    String? @db.VarChar(255)
-  headline   String? @db.VarChar(255)
+  id          Int     @id @default(autoincrement())
+  userId      Int     @unique
+  fullName    String  @db.VarChar(255)
+  phone       String? @db.VarChar(50)
+  address     String? @db.VarChar(255)
+  headline    String? @db.VarChar(255)
   // T35k (ngoại lệ đã duyệt): đường dẫn ảnh đại diện (uploads/avatars/<uuid>.jpg|png) và mục tiêu nghề nghiệp
-  avatarPath String?
-  objective  String? @db.Text
+  avatarPath  String?
+  objective   String? @db.Text
+  // T35m (ngoại lệ đã duyệt): liên kết GitHub / LinkedIn, chỉ nhận http(s) (utils/webLink.js), không trả cho HR / Admin
+  githubUrl   String? @db.VarChar(255)
+  linkedinUrl String? @db.VarChar(255)
 
   user         User                  @relation(fields: [userId], references: [id])
   cvs          CV[]

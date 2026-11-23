@@ -459,7 +459,21 @@ Sidebar chính   ┌ tóm tắt (Giấy) ──────┐  Hồ sơ (serif 
   "Còn N ký tự." (nối với ô qua `aria-describedby`); ô đang có nội dung thì gợi ý có thêm dòng thứ hai (12px Chì,
   cùng khối gợi ý): "Xóa trống ô này rồi phân tích lại CV nếu muốn lấy mục tiêu từ CV mới.", ô trống thì không hiện.
 
-### Xuất CV: 3 mẫu (T29b, T35k, T35l)
+### Liên kết GitHub / LinkedIn ở trang Hồ sơ (T35m)
+
+- Khối "Thông tin cá nhân", sau Tiêu đề hồ sơ, trước Mục tiêu nghề nghiệp: hai ô "GitHub", "LinkedIn" (`Input`
+  `type="url"`, `inputMode="url"`, `maxLength` 255), gợi ý 12px Chì "Ví dụ: https://github.com/tentaikhoan" /
+  "Ví dụ: https://www.linkedin.com/in/tentaikhoan".
+- Kiểm theo `utils/webLink.js` (cùng quy tắc với backend): chỉ http:// hoặc https://, tối đa 255 ký tự, để trống là
+  không có liên kết. Lỗi hiện ngay dưới ô (kiểu lỗi chung của `Input`, ô viền đỏ, `aria-invalid`, `aria-describedby`)
+  khi rời ô hoặc bấm Lưu; đang gõ lần đầu không báo, ô đang báo lỗi thì kiểm lại khi gõ để lỗi mất ngay khi đúng.
+  Bấm Lưu khi còn lỗi thì không gửi API. Lỗi liên kết từ API cũng hiện dưới đúng ô.
+- Chế độ xem: hai dòng trong lưới 2 cột như các trường khác. Giá trị là liên kết dạng gọn (bỏ `http(s)://`, `www.`
+  và `/` cuối: github.com/tentaikhoan), chữ Xanh mực gạch chân, hover Xanh mực đậm, `target="_blank"`
+  `rel="noopener noreferrer"`. Trống thì "Chưa cập nhật". Giá trị không phải http(s) (dữ liệu lạ) chỉ hiện chữ, không
+  bao giờ thành href.
+
+### Xuất CV: 3 mẫu (T29b, T35k, T35l, T35m)
 
 - Hộp "Xuất CV" (T35l, Modal `wide`): trên cùng nhóm radio "Mẫu CV" 3 thẻ ngang (tên đậm + mô tả 12px Chì, không còn
   hình thu nhỏ), thứ tự Cổ điển, Hiện đại, Chuyên nghiệp. Dưới đó hai cột bằng nhau: trái "Nội dung bản in" (chỉnh
@@ -471,7 +485,8 @@ Sidebar chính   ┌ tóm tắt (Giấy) ──────┐  Hồ sơ (serif 
 - Phần chỉnh sửa (chỉ cho lần xuất này: state của hộp, KHÔNG gọi API lưu, KHÔNG localStorage; đóng hộp là mất):
   đầu phần là tiêu đề 16px đậm + nút phụ nhỏ "Khôi phục dữ liệu gốc" (khóa khi chưa có thay đổi, bấm mở hộp xác nhận
   "Khôi phục dữ liệu gốc?"). Các nhóm ngăn bằng đường kẻ mảnh, tiêu đề nhóm 14px đậm: "Thông tin cá nhân" (Họ và tên,
-  Tiêu đề hồ sơ, Email, Số điện thoại, Địa chỉ; Mục tiêu nghề nghiệp `Textarea` 4 dòng, tối đa 1000 ký tự, bộ đếm
+  Tiêu đề hồ sơ, Email, Số điện thoại, GitHub, LinkedIn (T35m: gợi ý ví dụ, kiểm như trang Hồ sơ, lỗi hiện dưới ô khi
+  rời ô hoặc bấm In; liên kết sai thì bấm In không in và không lên bản xem trước), Địa chỉ; Mục tiêu nghề nghiệp `Textarea` 4 dòng, tối đa 1000 ký tự, bộ đếm
   "Còn N ký tự."; họ tên trống thì báo lỗi dưới ô và khóa nút In), "Kỹ năng (x/y được in)" (thẻ có ô tích, đang in thì
   nền Xanh nhạt viền Xanh mực; nút phụ "Thêm kỹ năng" mở ô "Tên kỹ năng mới" + "Thêm" / "Xong", Enter cũng thêm, trùng
   tên (không phân biệt hoa thường) báo "Kỹ năng này đã có trong danh sách."; kỹ năng vừa thêm có nút chữ đỏ "Xóa"),
@@ -494,6 +509,11 @@ Sidebar chính   ┌ tóm tắt (Giấy) ──────┐  Hồ sơ (serif 
   2-3 kinh nghiệm, 1-2 học vấn) gọn một trang A4; nhiều hơn thì sang trang 2 có nội dung thật. Đã kiểm bằng PDF thật
   (T35l phần B): hồ sơ nhiều dữ liệu 30 kỹ năng, 5 kinh nghiệm x 5 gạch đầu dòng, 3 học vấn, mục tiêu 1000 ký tự ra
   đúng 2 trang ở cả 3 mẫu.
+- Liên kết GitHub / LinkedIn trên cả 3 mẫu (T35m): trong khối liên hệ, thứ tự Email, Số điện thoại, GitHub, LinkedIn,
+  Địa chỉ (Chuyên nghiệp: Số điện thoại, Email, GitHub, LinkedIn, Địa chỉ). In ra giấy là chữ dạng gọn
+  (github.com/tentaikhoan), cùng màu / không gạch chân như các dòng liên hệ khác; vẫn là thẻ `<a>` với địa chỉ đầy đủ
+  nên bản PDF bấm được. Trống hoặc không phải http(s) thì ẩn cả dòng. Hồ sơ cỡ trung bình có đủ hai dòng vẫn một trang
+  ở cả 3 mẫu (đã kiểm bằng PDF thật). Cột trái mẫu Chuyên nghiệp hẹp nên liên kết dài tự xuống dòng.
 - Cổ điển, Hiện đại: mục "Mục tiêu nghề nghiệp" ngay dưới phần họ tên / tiêu đề hồ sơ (Cổ điển: mục đầu tiên sau
   phần đầu; Hiện đại: khối ngang cả trang trên hai cột), giữ xuống dòng, trống thì ẩn cả mục. Hiện đại từ T35l: hai
   cột tỉ lệ 1:2 (trước 2:3), cách nhau 16px; học vấn "bằng cấp, ngành, thời gian" chung một dòng.
@@ -501,8 +521,9 @@ Sidebar chính   ┌ tóm tắt (Giấy) ──────┐  Hồ sơ (serif 
   32% nền Mực đen, chữ
   `--color-on-ink`, CHỈ có (T35l): ảnh tròn `--cv-avatar-size` 32mm viền trắng 2px (chưa có ảnh: vòng tròn Xanh mực
   chữ trắng 36px), họ tên 24px đậm 600 căn giữa, tiêu đề hồ sơ chữ `--color-on-ink-muted`, mục "Liên hệ" (Số điện
-  thoại, Email, Địa chỉ, mỗi dòng một icon SVG của `FooterIcons` nét `--color-on-ink-muted`; trường trống thì ẩn
-  dòng). Tiêu đề mục cột trái 16px đậm 600, gạch dưới 1px `--color-on-ink-line`. Cột phải nền Giấy theo thứ tự "Mục
+  thoại, Email, GitHub, LinkedIn, Địa chỉ, mỗi dòng một icon SVG của `FooterIcons` nét `--color-on-ink-muted`;
+  GitHub là dấu mã nguồn `</>` (`CodeIcon`), LinkedIn là thẻ hồ sơ (`ProfileCardIcon`), KHÔNG logo thương hiệu;
+  trường trống thì ẩn dòng). Tiêu đề mục cột trái 16px đậm 600, gạch dưới 1px `--color-on-ink-line`. Cột phải nền Giấy theo thứ tự "Mục
   tiêu nghề nghiệp" (đoạn văn 14px, giãn dòng 21px, giữ xuống dòng) -> "Kỹ năng" (thẻ nằm ngang tự xuống dòng, KHÔNG
   thanh mức độ / phần trăm / sao) -> "Kinh nghiệm làm việc" -> "Học vấn"; tiêu đề 18px Xanh mực gạch dưới 3px; mỗi
   mục: tên (đậm) bên trái, khoảng thời gian 12px Chì căn phải, dòng phụ Chì, mô tả kinh nghiệm thành gạch đầu dòng
@@ -741,6 +762,8 @@ giữa trang). Trang không có câu phụ thì form cách tiêu đề 24px. Tra
   `public/favicon.svg`: SVG viết tay cùng kiểu (ô Xanh mực + chữ "D" trắng theo `VITE_APP_NAME=DMatch`, font hệ thống dự phòng); đổi
   `VITE_APP_NAME` thì sửa tay chữ trong file.
 - Icon footer (`FooterIcons.jsx`, T35e, **icon chức năng ở footer — ngoại lệ đã duyệt**): vị trí, điện thoại, phong bì;
+  T35m thêm `CodeIcon` (dấu `</>`) và `ProfileCardIcon` (thẻ hồ sơ) chỉ cho dòng GitHub / LinkedIn ở cột Liên hệ của
+  mẫu CV Chuyên nghiệp (ngoại lệ đã duyệt, cùng cách vẽ, không logo thương hiệu);
   SVG viết tay, 16px, chỉ nét 2px màu Chì (6.44:1), `aria-hidden="true"`; nhãn cho trình đọc màn hình nằm ở dòng chữ.
   Không thư viện icon, không logo Facebook / YouTube (chỉ link chữ).
 
@@ -752,5 +775,6 @@ giữa trang). Trang không có câu phụ thì form cách tiêu đề 24px. Tra
   CandidateMatrixModal, trang Ứng viên gợi ý), /privacy và /terms; KHÔNG hiện ở các màn hình ứng viên, kể cả khối
   Quy trình ứng tuyển trên trang chủ. Một màn hình ứng viên tối đa một câu phụ.
 - AI chỉ hỗ trợ: kết quả phân tích luôn đi kèm bằng chứng, không trình bày như quyết định.
-- Không dùng: gradient, emoji, icon (trừ chuông thông báo và 3 icon footer), mũi tên "→" trong nút,
+- Không dùng: gradient, emoji, icon (trừ chuông thông báo, 3 icon footer và 2 icon liên kết của mẫu CV Chuyên
+  nghiệp), mũi tên "→" trong nút,
   nhãn viết hoa phía trên tiêu đề, card đổ bóng cho từng phần.

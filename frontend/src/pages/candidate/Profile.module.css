@@ -102,6 +102,17 @@
   color: var(--color-text-muted);
 }
 
+/* Liên kết GitHub / LinkedIn ở chế độ xem (T35m): dạng gọn, chữ Xanh mực gạch chân */
+.link {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.link:hover {
+  color: var(--color-primary-hover);
+}
+
 /* Chế độ sửa */
 .form {
   display: flex;

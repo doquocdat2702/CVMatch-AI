@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { getMyProfile } from '../../api/candidate.api'
 import { useAuth } from '../../hooks/useAuth'
 import { getErrorMessage } from '../../utils/apiError'
+import { LINK_FIELDS, WEB_LINK_MAX_LENGTH, checkWebLink } from '../../utils/webLink'
 import Button from '../common/Button'
 import Input from '../common/Input'
 import Loading from '../common/Loading'
@@ -36,11 +37,21 @@ const PRINT_AREA_CLASS = 'cv-print-area'
 // Giới hạn ô chữ khớp trang Hồ sơ (backend chỉ áp khi lưu hồ sơ; ở đây chỉ để bản in không bị chữ quá dài)
 const OBJECTIVE_MAX_LENGTH = 1000
 const SKILL_MAX_LENGTH = 100
+// T35m: GitHub / LinkedIn nằm giữa Số điện thoại và Địa chỉ, đúng thứ tự in trên CV; kiểm cùng quy tắc với trang Hồ sơ
 const TEXT_FIELDS = [
   { name: 'fullName', label: 'Họ và tên', maxLength: 255, autoComplete: 'name' },
   { name: 'headline', label: 'Tiêu đề hồ sơ', maxLength: 255 },
   { name: 'email', label: 'Email', type: 'email', maxLength: 255, autoComplete: 'email' },
   { name: 'phone', label: 'Số điện thoại', type: 'tel', maxLength: 50, autoComplete: 'tel' },
+  ...LINK_FIELDS.map((field) => ({
+    ...field,
+    type: 'url',
+    inputMode: 'url',
+    autoComplete: 'url',
+    maxLength: WEB_LINK_MAX_LENGTH,
+    hint: `Ví dụ: ${field.example}`,
+    isLink: true,
+  })),
   { name: 'address', label: 'Địa chỉ', maxLength: 255, autoComplete: 'street-address' },
 ]
 
@@ -54,6 +65,8 @@ function makeDraft(profile) {
     headline: profile.headline || '',
     email: profile.email || '',
     phone: profile.phone || '',
+    githubUrl: profile.githubUrl || '',
+    linkedinUrl: profile.linkedinUrl || '',
     address: profile.address || '',
     objective: profile.objective || '',
     skills: cv.skills.map((name) => ({ id: `goc:${name.toLowerCase()}`, name, checked: true, added: false })),
@@ -72,6 +85,8 @@ function applyDraft(profile, draft) {
     headline: draft.headline.trim(),
     email: draft.email.trim(),
     phone: draft.phone.trim(),
+    githubUrl: draft.githubUrl.trim(),
+    linkedinUrl: draft.linkedinUrl.trim(),
     address: draft.address.trim(),
     objective: draft.objective,
     skills: draft.skills.filter((skill) => skill.checked).map((skill) => ({ rawName: skill.name })),
@@ -151,6 +166,8 @@ function CVExportModal({ onClose }) {
   const [zoom, setZoom] = useState('fit')
   // Hộp xác nhận: { type: 'close', to?: đường dẫn sẽ chuyển tới } | { type: 'reset' } | null
   const [confirm, setConfirm] = useState(null)
+  // Ô liên kết đã rời khỏi ít nhất một lần (hoặc đã bấm In): mới hiện lỗi, để không báo lỗi khi đang gõ dở
+  const [touchedLinks, setTouchedLinks] = useState([])
   const newSkillRef = useRef(null)
   const addSkillButtonRef = useRef(null)
   const skillCounter = useRef(0)
@@ -194,6 +211,15 @@ function CVExportModal({ onClose }) {
   const selected = TEMPLATES.find((template) => template.id === templateId)
   const SelectedTemplate = selected.Component
   const nameMissing = Boolean(current && !current.fullName.trim())
+  // Lỗi của từng ô liên kết theo giá trị đang sửa (T35m). Liên kết sai không lên bản xem trước (buildCVData bỏ dòng)
+  const linkErrors = {}
+  if (current) {
+    for (const field of LINK_FIELDS) {
+      const message = checkWebLink(current[field.name], field)
+      if (message) linkErrors[field.name] = message
+    }
+  }
+  const hasLinkError = Object.keys(linkErrors).length > 0
 
   function handleRetry() {
     setError('')
@@ -282,13 +308,24 @@ function CVExportModal({ onClose }) {
 
   function confirmReset() {
     setDraft(null)
+    setTouchedLinks([])
     setAddingSkill(false)
     setNewSkill('')
     setSkillError('')
     setConfirm(null)
   }
 
+  function handleLinkBlur(event) {
+    const { name } = event.target
+    setTouchedLinks((prev) => (prev.includes(name) ? prev : [...prev, name]))
+  }
+
   function handlePrint() {
+    // Liên kết đang sai: hiện lỗi dưới ô, không in (bản in sẽ thiếu dòng đó mà người dùng không biết)
+    if (hasLinkError) {
+      setTouchedLinks(LINK_FIELDS.map((field) => field.name))
+      return
+    }
     // Trình duyệt lấy tiêu đề trang làm tên file PDF mặc định: đặt tạm "CV - Họ tên" rồi trả lại.
     // window.print() chờ tới khi hộp thoại in đóng mới chạy tiếp
     const previousTitle = document.title
@@ -408,9 +445,18 @@ function CVExportModal({ onClose }) {
                       type={field.type || 'text'}
                       maxLength={field.maxLength}
                       autoComplete={field.autoComplete}
+                      inputMode={field.inputMode}
+                      hint={field.hint}
                       value={current[field.name]}
                       onChange={handleFieldChange}
-                      error={field.name === 'fullName' && nameMissing ? 'Vui lòng nhập họ và tên để in CV.' : ''}
+                      onBlur={field.isLink ? handleLinkBlur : undefined}
+                      error={
+                        field.isLink
+                          ? (touchedLinks.includes(field.name) && linkErrors[field.name]) || ''
+                          : field.name === 'fullName' && nameMissing
+                            ? 'Vui lòng nhập họ và tên để in CV.'
+                            : ''
+                      }
                     />
                   ))}
                   <Textarea

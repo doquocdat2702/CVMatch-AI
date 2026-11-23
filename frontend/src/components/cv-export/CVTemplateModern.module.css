@@ -90,6 +90,13 @@
   overflow-wrap: anywhere;
 }
 
+/* T35m: dòng GitHub / LinkedIn là liên kết nhưng trông như chữ thường (in ra giấy không có gạch chân, màu riêng);
+   bản PDF vẫn bấm được */
+.contactLink {
+  color: inherit;
+  text-decoration: none;
+}
+
 /* Kỹ năng (T35l): thẻ nằm ngang, tự xuống dòng, viền mảnh không tô nền (mẫu này không tô nền để in không tốn mực) */
 .skills {
   display: flex;

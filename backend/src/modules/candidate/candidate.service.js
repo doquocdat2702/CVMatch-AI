@@ -4,12 +4,21 @@ const fs = require('fs');
 const path = require('path');
 const prisma = require('../../config/prisma');
 const { UPLOAD_PATH } = require('../../config/multer');
+const { parseWebLink } = require('../../utils/webLink');
 
 function createError(message, statusCode) {
   const err = new Error(message);
   err.statusCode = statusCode;
   return err;
 }
+
+// Liên kết GitHub / LinkedIn (T35m): ứng viên tự nhập, chỉ trả cho chính ứng viên. HR / Admin không nhận
+// (giống ảnh đại diện T35k): bỏ cùng avatarPath ở getProfileById và admin.service (getUserDetail)
+const LINK_FIELDS = {
+  githubUrl: { label: 'Liên kết GitHub', example: 'https://github.com/tentaikhoan' },
+  linkedinUrl: { label: 'Liên kết LinkedIn', example: 'https://www.linkedin.com/in/tentaikhoan' },
+};
+const HIDDEN_FROM_STAFF = { avatarPath: true, githubUrl: true, linkedinUrl: true };
 
 const PROFILE_INCLUDE = {
   skills: { include: { skill: true } },
@@ -184,7 +193,7 @@ function cleanObjective(value) {
     .trim();
 }
 
-async function updateMyProfile(userId, { fullName, phone, address, headline, objective }) {
+async function updateMyProfile(userId, { fullName, phone, address, headline, objective, githubUrl, linkedinUrl }) {
   const profile = await prisma.candidateProfile.findUnique({ where: { userId } });
   if (!profile) {
     throw createError('Không tìm thấy hồ sơ ứng viên.', 404);
@@ -215,6 +224,13 @@ async function updateMyProfile(userId, { fullName, phone, address, headline, obj
     }
     data.objective = value || null;
   }
+  // Liên kết (T35m): cắt khoảng trắng, rỗng -> null, chỉ http(s), tối đa 255 ký tự (utils/webLink.js)
+  const links = { githubUrl, linkedinUrl };
+  for (const [name, config] of Object.entries(LINK_FIELDS)) {
+    if (links[name] !== undefined) {
+      data[name] = parseWebLink(links[name], config);
+    }
+  }
 
   if (Object.keys(data).length === 0) {
     throw createError('Chưa có thay đổi nào để lưu.', 400);
@@ -236,10 +252,10 @@ async function getProfileById(candidateProfileId) {
     throw createError('Mã hồ sơ ứng viên không hợp lệ.', 400);
   }
 
-  // Ảnh đại diện không trả cho nhà tuyển dụng (T35k): bỏ cả đường dẫn file
+  // Ảnh đại diện (T35k) và liên kết GitHub / LinkedIn (T35m) không trả cho nhà tuyển dụng
   const profile = await prisma.candidateProfile.findUnique({
     where: { id },
-    omit: { avatarPath: true },
+    omit: HIDDEN_FROM_STAFF,
     include: PROFILE_INCLUDE,
   });
 
@@ -259,4 +275,5 @@ module.exports = {
   removeAvatarFile,
   detectImageType,
   OBJECTIVE_MAX_LENGTH,
+  HIDDEN_FROM_STAFF,
 };

@@ -3,6 +3,7 @@
 // buildCVData, nên sau này backend có thể dùng lại cùng hàm và cùng template để sinh CV.
 import { formatMonthYear } from '../../utils/format'
 import { getInitials } from '../../utils/initials'
+import { isWebLink, shortWebLink } from '../../utils/webLink'
 
 // Mô tả kinh nghiệm thành các gạch đầu dòng (mẫu Chuyên nghiệp, T35k): mỗi dòng một ý, bỏ ký hiệu đầu dòng có sẵn
 function toBulletLines(text) {
@@ -47,10 +48,16 @@ function uniqueSkillNames(skills) {
 // profile: dữ liệu GET /candidates/me kèm email của tài khoản (API hồ sơ không có email).
 // Giữ cả mục chưa xác nhận, không lọc bỏ.
 export function buildCVData(profile) {
-  // type để mẫu Chuyên nghiệp gắn icon và tự sắp thứ tự; hai mẫu cũ chỉ đọc label / value như trước
+  // type để mẫu Chuyên nghiệp gắn icon và tự sắp thứ tự; hai mẫu cũ chỉ đọc label / value như trước.
+  // T35m: GitHub / LinkedIn sau Email, Số điện thoại, trước Địa chỉ. value là dạng gọn để in ra giấy vẫn đọc được
+  // (github.com/tentaikhoan), href là địa chỉ đầy đủ để bản PDF bấm được. Chỉ nhận http(s) hợp lệ, không thì bỏ dòng
+  const link = (type, label, url) =>
+    isWebLink(url) ? { type, label, value: shortWebLink(url), href: url.trim() } : { type, label, value: '' }
   const contacts = [
     { type: 'email', label: 'Email', value: profile.email },
     { type: 'phone', label: 'Điện thoại', value: profile.phone },
+    link('github', 'GitHub', profile.githubUrl),
+    link('linkedin', 'LinkedIn', profile.linkedinUrl),
     { type: 'address', label: 'Địa chỉ', value: profile.address },
   ].filter((contact) => contact.value)
 

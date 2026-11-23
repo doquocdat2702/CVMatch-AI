@@ -1,11 +1,18 @@
-import { LocationIcon, MailIcon, PhoneIcon } from '../layout/FooterIcons'
+import { CodeIcon, LocationIcon, MailIcon, PhoneIcon, ProfileCardIcon } from '../layout/FooterIcons'
 import { buildCVData } from './cvData'
 import styles from './CVTemplateProfessional.module.css'
 
-// Liên hệ theo thứ tự Số điện thoại, Email, Địa chỉ; mỗi dòng một icon SVG viết tay (dùng lại FooterIcons,
-// ngoại lệ icon chức năng đã duyệt). Trường trống thì buildCVData đã bỏ cả dòng
-const CONTACT_ORDER = ['phone', 'email', 'address']
-const CONTACT_ICON = { phone: PhoneIcon, email: MailIcon, address: LocationIcon }
+// Liên hệ theo thứ tự Số điện thoại, Email, GitHub, LinkedIn (T35m), Địa chỉ; mỗi dòng một icon SVG viết tay (dùng
+// lại FooterIcons, ngoại lệ icon chức năng đã duyệt; GitHub / LinkedIn không dùng logo thương hiệu). Trường trống thì
+// buildCVData đã bỏ cả dòng
+const CONTACT_ORDER = ['phone', 'email', 'github', 'linkedin', 'address']
+const CONTACT_ICON = {
+  phone: PhoneIcon,
+  email: MailIcon,
+  github: CodeIcon,
+  linkedin: ProfileCardIcon,
+  address: LocationIcon,
+}
 
 // Mẫu Chuyên nghiệp (T35k, sắp lại ở T35l): A4 dọc, hai cột.
 // - Cột trái nền Mực đen chữ sáng, CHỈ có: ảnh, họ tên, tiêu đề hồ sơ, Liên hệ.
@@ -66,7 +73,14 @@ function CVTemplateProfessional({ profile }) {
                           <Icon />
                           <span className={styles.contactValue}>
                             <span className={styles.srOnly}>{contact.label}: </span>
-                            {contact.value}
+                            {/* T35m: dạng chữ gọn để in ra giấy vẫn đọc được, vẫn là liên kết để bản PDF bấm được */}
+                            {contact.href ? (
+                              <a className={styles.contactLink} href={contact.href}>
+                                {contact.value}
+                              </a>
+                            ) : (
+                              contact.value
+                            )}
                           </span>
                         </li>
                       )

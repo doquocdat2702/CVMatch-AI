@@ -30,7 +30,16 @@ function CVTemplateModern({ profile }) {
                 {cv.contacts.map((contact) => (
                   <div key={contact.label}>
                     <dt className={styles.contactLabel}>{contact.label}</dt>
-                    <dd className={styles.contactValue}>{contact.value}</dd>
+                    <dd className={styles.contactValue}>
+                      {/* T35m: GitHub / LinkedIn in ra dạng chữ gọn, vẫn là liên kết để bản PDF bấm được */}
+                      {contact.href ? (
+                        <a className={styles.contactLink} href={contact.href}>
+                          {contact.value}
+                        </a>
+                      ) : (
+                        contact.value
+                      )}
+                    </dd>
                   </div>
                 ))}
               </dl>

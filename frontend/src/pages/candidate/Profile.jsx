@@ -15,6 +15,7 @@ import { formatMonthYear } from '../../utils/format'
 import { getInitials } from '../../utils/initials'
 import { PROFILE_SOURCE_LABEL } from '../../utils/labels'
 import { groupProfileSkills } from '../../utils/skillLabel'
+import { LINK_FIELDS, WEB_LINK_MAX_LENGTH, checkWebLink, isWebLink, shortWebLink } from '../../utils/webLink'
 import styles from './Profile.module.css'
 
 // 4 trường ứng viên tự sửa; maxLength khớp độ dài cột trong database
@@ -33,7 +34,7 @@ const FIELDS = [
 // Mục tiêu nghề nghiệp (T35k): ô nhiều dòng, khớp giới hạn của backend
 const OBJECTIVE_MAX_LENGTH = 1000
 
-const EMPTY_FORM = { fullName: '', phone: '', address: '', headline: '', objective: '' }
+const EMPTY_FORM = { fullName: '', phone: '', address: '', headline: '', githubUrl: '', linkedinUrl: '', objective: '' }
 const EMPTY_DETAILS = { skills: [], experiences: [], educations: [] }
 
 // Chỉ lấy các trường ứng viên tự sửa, null đổi thành chuỗi rỗng để đưa vào ô nhập
@@ -43,8 +44,22 @@ function pickFields(profile) {
     phone: profile.phone || '',
     address: profile.address || '',
     headline: profile.headline || '',
+    githubUrl: profile.githubUrl || '',
+    linkedinUrl: profile.linkedinUrl || '',
     objective: profile.objective || '',
   }
+}
+
+// Liên kết ở chế độ xem (T35m): dạng gọn github.com/tentaikhoan, mở tab mới. Giá trị không phải http(s) (dữ liệu lạ)
+// chỉ hiện chữ, không bao giờ thành href
+function WebLinkValue({ value, emptyClassName, linkClassName }) {
+  if (!value) return <span className={emptyClassName}>Chưa cập nhật</span>
+  if (!isWebLink(value)) return value
+  return (
+    <a className={linkClassName} href={value} target="_blank" rel="noopener noreferrer">
+      {shortWebLink(value)}
+    </a>
+  )
 }
 
 // Mới nhất trước; mục không có ngày bắt đầu xếp cuối
@@ -156,7 +171,17 @@ function Profile() {
   function handleChange(event) {
     const { name, value } = event.target
     setForm((prev) => ({ ...prev, [name]: value }))
-    setFieldErrors((prev) => ({ ...prev, [name]: '' }))
+    setFieldErrors((prev) => {
+      // Ô liên kết đang báo lỗi: kiểm lại ngay khi gõ để lỗi mất khi đã sửa đúng (không báo lỗi khi đang gõ lần đầu)
+      const linkField = LINK_FIELDS.find((field) => field.name === name)
+      return { ...prev, [name]: linkField && prev[name] ? checkWebLink(value, linkField) : '' }
+    })
+  }
+
+  // Rời ô liên kết: báo lỗi ngay dưới ô nếu nhập sai
+  function handleLinkBlur(event) {
+    const linkField = LINK_FIELDS.find((field) => field.name === event.target.name)
+    setFieldErrors((prev) => ({ ...prev, [linkField.name]: checkWebLink(event.target.value, linkField) }))
   }
 
   async function handleSubmit(event) {
@@ -164,8 +189,14 @@ function Profile() {
     setSaveError('')
 
     const fullName = form.fullName.trim()
-    if (!fullName) {
-      setFieldErrors({ fullName: 'Vui lòng nhập họ và tên.' })
+    const errors = {}
+    if (!fullName) errors.fullName = 'Vui lòng nhập họ và tên.'
+    for (const field of LINK_FIELDS) {
+      const message = checkWebLink(form[field.name], field)
+      if (message) errors[field.name] = message
+    }
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
       return
     }
 
@@ -177,6 +208,8 @@ function Profile() {
         phone: form.phone.trim(),
         address: form.address.trim(),
         headline: form.headline.trim(),
+        githubUrl: form.githubUrl.trim(),
+        linkedinUrl: form.linkedinUrl.trim(),
         objective: form.objective,
       })
       setProfile(pickFields(result.data))
@@ -185,7 +218,11 @@ function Profile() {
       setSaved(true)
       if (account) account.refreshProfile()
     } catch (err) {
-      setSaveError(getErrorMessage(err, 'Chưa lưu được hồ sơ. Vui lòng thử lại.'))
+      const message = getErrorMessage(err, 'Chưa lưu được hồ sơ. Vui lòng thử lại.')
+      // Lỗi liên kết từ API (câu bắt đầu bằng "Liên kết GitHub" / "Liên kết LinkedIn"): hiện dưới đúng ô
+      const linkField = LINK_FIELDS.find((field) => message.startsWith(field.errorLabel))
+      if (linkField) setFieldErrors((prev) => ({ ...prev, [linkField.name]: message }))
+      else setSaveError(message)
     } finally {
       setSaving(false)
     }
@@ -332,6 +369,25 @@ function Profile() {
               />
             ))}
 
+            {/* Liên kết GitHub / LinkedIn (T35m): kiểm khi rời ô và khi lưu, cùng quy tắc với backend */}
+            {LINK_FIELDS.map((field) => (
+              <Input
+                key={field.name}
+                label={field.label}
+                name={field.name}
+                type="url"
+                inputMode="url"
+                autoComplete="url"
+                maxLength={WEB_LINK_MAX_LENGTH}
+                hint={`Ví dụ: ${field.example}`}
+                value={form[field.name]}
+                onChange={handleChange}
+                onBlur={handleLinkBlur}
+                error={fieldErrors[field.name]}
+                disabled={saving}
+              />
+            ))}
+
             <Textarea
               label="Mục tiêu nghề nghiệp"
               name="objective"
@@ -376,6 +432,14 @@ function Profile() {
                   <dt className={styles.term}>{field.label}</dt>
                   <dd className={styles.value}>
                     {profile[field.name] || <span className={styles.empty}>Chưa cập nhật</span>}
+                  </dd>
+                </div>
+              ))}
+              {LINK_FIELDS.map((field) => (
+                <div key={field.name}>
+                  <dt className={styles.term}>{field.label}</dt>
+                  <dd className={styles.value}>
+                    <WebLinkValue value={profile[field.name]} emptyClassName={styles.empty} linkClassName={styles.link} />
                   </dd>
                 </div>
               ))}

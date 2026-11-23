@@ -15,7 +15,15 @@ function CVTemplateClassic({ profile }) {
           <ul className={styles.contacts}>
             {cv.contacts.map((contact) => (
               <li key={contact.label}>
-                <span className={styles.contactLabel}>{contact.label}:</span> {contact.value}
+                <span className={styles.contactLabel}>{contact.label}:</span>{' '}
+                {/* T35m: GitHub / LinkedIn in ra dạng chữ gọn, vẫn là liên kết để bản PDF bấm được */}
+                {contact.href ? (
+                  <a className={styles.contactLink} href={contact.href}>
+                    {contact.value}
+                  </a>
+                ) : (
+                  contact.value
+                )}
               </li>
             ))}
           </ul>

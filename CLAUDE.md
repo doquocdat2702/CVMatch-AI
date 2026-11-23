@@ -38,7 +38,10 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 - **Ngoại lệ trường DB đã duyệt (T35g): `Application.cvId Int?`** (quan hệ tới CV, `onDelete: Restrict`, index cvId),
   migration `20261106201202_add_application_cv`.
 - **Ngoại lệ trường DB đã duyệt (T35k): `CandidateProfile.avatarPath String?` và `CandidateProfile.objective String?
-  @db.Text`**, migration `20261117090000_add_candidate_avatar_objective`. Ngoài các trường này không thêm trường nào.
+  @db.Text`**, migration `20261117090000_add_candidate_avatar_objective`.
+- **Ngoại lệ trường DB đã duyệt (T35m): `CandidateProfile.githubUrl String? @db.VarChar(255)` và `linkedinUrl String?
+  @db.VarChar(255)`**, migration `20261121090000_add_candidate_links` (đã chạy trên DB test; DB thật `cvmatch` CHƯA chạy,
+  chủ dự án tự chạy `npx prisma migrate deploy` trong `backend` sau khi sao lưu). Ngoài các trường này không thêm trường nào.
   KHÔNG có Sở thích, Ngày sinh, Giới tính; KHÔNG lưu / hiển thị mức độ thành thạo kỹ năng.
 - 4 enum: CvStatus (UPLOADED, PROCESSING, COMPLETED, FAILED) | RequirementType (REQUIRED, PREFERRED, OPTIONAL) |
   MatchStatus (SUPPORTED, UNCERTAIN, NOT_FOUND) | ApplicationStatus (APPLIED, REVIEWING, ACCEPTED, REJECTED).
@@ -108,6 +111,15 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   Vui lòng thử lại sau 1 giờ.". Đăng nhập bằng email không tồn tại vẫn so bcrypt với chuỗi băm giả cố định
   (`auth.service.js: DUMMY_PASSWORD_HASH`, cost 10) để thời gian phản hồi gần bằng khi email có thật; câu lỗi giữ nguyên
   "Email hoặc mật khẩu không đúng.".
+- **Liên kết GitHub / LinkedIn (T35m)**: `PUT /candidates/me` nhận thêm `githubUrl`, `linkedinUrl`. Một hàm kiểm dùng
+  chung `backend/src/utils/webLink.js: parseWebLink` (frontend cùng quy tắc ở `src/utils/webLink.js: checkWebLink`):
+  cắt khoảng trắng hai đầu, rỗng -> null; tối đa 255 ký tự; CHỈ nhận `http://` / `https://` có tên miền, mọi giao thức
+  khác (javascript:, data:, file:, vbscript:, ftp:...) -> 400. Câu lỗi: "<Liên kết GitHub|LinkedIn> chỉ nhận địa chỉ web
+  bắt đầu bằng http:// hoặc https://." / "... cần có http:// hoặc https:// ở đầu, ví dụ <ví dụ>." / "... tối đa 255 ký
+  tự." / "... không phải địa chỉ web hợp lệ. Ví dụ: <ví dụ>.". Một trường sai thì cả lần lưu bị từ chối. Chỉ trả cho
+  chính ứng viên (`GET /candidates/me`, `/auth/me`); KHÔNG trả cho HR / Admin, như ảnh đại diện: `GET /candidates/:id`
+  và `GET /admin/users/:id` bỏ cùng `avatarPath` (`candidate.service.js: HIDDEN_FROM_STAFF`). Giao diện chỉ đặt vào href
+  giá trị qua được `isWebLink`. `Company.website` giữ kiểm riêng của QA2 (QA-11), không đổi.
 - **Không bật `trust proxy` (QA-27)**: limiter theo IP tính theo IP kết nối thật. Bật khi chạy trực tiếp thì client tự gửi
   `X-Forwarded-For` để vượt giới hạn; chỉ bật (đúng số tầng proxy) khi triển khai sau Nginx / proxy (mục 9, README).
 - Quên mật khẩu qua email CHỈ cho ứng viên: token JWT ký bằng JWT_SECRET + mật khẩu đã băm, hạn 15 phút,
@@ -240,8 +252,9 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 - Font tự host trong `public/fonts/` (Be Vietnam Pro cho giao diện, Source Serif 4 cho tiêu đề), có giấy phép OFL.
   Không gọi Google Fonts. Font dự phòng: Arial, Times New Roman (không dùng Georgia vì vỡ dấu).
 - Không emoji, không gradient, không card đổ bóng tràn lan, không icon trang trí. index.html `lang="vi"`.
-  Icon chức năng chỉ có chuông thông báo (T35b) và 3 icon footer vị trí / điện thoại / phong bì (T35e, ngoại lệ đã duyệt),
-  đều là SVG viết tay. Tên công ty và thanh dưới của footer viết hoa (ngoại lệ đã duyệt).
+  Icon chức năng chỉ có chuông thông báo (T35b), 3 icon footer vị trí / điện thoại / phong bì (T35e, ngoại lệ đã duyệt) và
+  2 icon dòng GitHub / LinkedIn của mẫu CV Chuyên nghiệp (T35m: dấu `</>`, thẻ hồ sơ; không logo thương hiệu), đều là SVG
+  viết tay. Tên công ty và thanh dưới của footer viết hoa (ngoại lệ đã duyệt).
 - Coverage luôn hiển thị dạng **"x/y yêu cầu có bằng chứng (z%)"** + thanh màu trung tính, không thang đỏ-xanh,
   không nhãn "phù hợp/không phù hợp".
 - **Note của API và câu nhắc 'không phải điểm năng lực' / 'quyết định tuyển dụng thuộc về nhà tuyển dụng' chỉ hiện
@@ -352,7 +365,7 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
 | 1–8 Backend | T01–T25, T22b | Xong |
 | 8b Gia cố & thống kê | G1–G6, G7 (công ty cố định theo COMPANY_NAME, seed an toàn) | Xong |
 | Kiểm thử backend | smoke / timeout / nlp-fail / real-mail | Xong |
-| 9 Frontend | T26, T27, T28, T29, T29b, T30, T31, T32, T33, T34, T35, T35b, T35c, T35d, T35e, T35f, T35g, T35h, T35i, T35j, T35k, T35l | Xong |
+| 9 Frontend | T26, T27, T28, T29, T29b, T30, T31, T32, T33, T34, T35, T35b, T35c, T35d, T35e, T35f, T35g, T35h, T35i, T35j, T35k, T35l, T35m | Xong (T35m chưa commit) |
 | 9b Dữ liệu & chuẩn hóa | Task F: F1, F2, F4, F5 (giữ cụm "A/B" là tên Skill), tin mẫu theo phòng ban (F3 làm trước đó) | Xong (đã seed DB thật) |
 | 9c Rà soát | QA1 (báo lỗi, `docs/qa-report.md`), QA2 (sửa theo QA1), QA3 (màn hình quản lý tin cho admin) | Xong |
 | 10 Đánh giá | **T36**–T38 | **Tiếp theo: T36** |
@@ -494,6 +507,15 @@ Bộ prompt đầy đủ theo từng task (T00–T38, G1–G6) nằm trong tài 
   (`parsedAt` chỉ ghi khi phân tích thành công, mục 4.4), QA-25 (giới hạn đăng ký + so bcrypt giả, mục 4.3), QA-27
   (không bật `trust proxy`, hoãn tới khi triển khai, mục 4.3 và 9). Kiểm thêm: `scripts/test-qa3.js` (file local, tự bật
   server test nhiều lần, cổng 5001 phải trống).
+- **T35m (chưa commit)**: liên kết GitHub / LinkedIn (mục 3, 4.3). Trang Hồ sơ thêm 2 ô (gợi ý ví dụ, lỗi dưới ô khi rời ô
+  / bấm Lưu), chế độ xem hiện dạng gọn (bỏ `http(s)://`, `www.`, `/` cuối: `utils/webLink.js: shortWebLink`), mở tab mới
+  `rel="noopener noreferrer"`. 3 mẫu CV: dòng GitHub / LinkedIn sau Email, Số điện thoại, trước Địa chỉ, in dạng chữ gọn
+  nhưng vẫn là `<a>` (PDF bấm được), trống thì ẩn dòng (`cvData.js` thêm `href` cho contact). Mẫu Chuyên nghiệp có icon
+  `CodeIcon` / `ProfileCardIcon` trong `FooterIcons.jsx` (ngoại lệ icon đã duyệt, không logo thương hiệu). Hộp Xuất CV
+  thêm 2 ô vào "Thông tin cá nhân" (bản nháp, không lưu; liên kết sai thì bấm In không in, lỗi dưới ô). Hồ sơ cỡ trung
+  bình có đủ 2 dòng vẫn 1 trang ở cả 3 mẫu (PDF thật). Kiểm: `scripts/test-t35m.js` (file local, B1–B3). /privacy đã
+  thêm "liên kết GitHub, LinkedIn" vào câu liệt kê dữ liệu thu thập (cùng câu với mục tiêu nghề nghiệp, ảnh đại diện).
+  Liên kết dài tự xuống dòng ở cột trái mẫu Chuyên nghiệp: chủ dự án chốt giữ nguyên.
 - **T36–T38**: so sánh rule vs hybrid trên cùng bộ dữ liệu. Trước bảo vệ cần bộ **dữ liệu demo thật**
   (job đa ngành, JD đầy đủ, CV mẫu phân tích hybrid để ma trận có đủ xanh/vàng/đỏ).
 
